@@ -10,10 +10,7 @@
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
-    "@sqlite": {
-      "org/sqlite-wasm": "^3.53.0-build1"
-    },
-    "@sqlite.org/sqlite-wasm": "^3.54.1-build1",
+    "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
     "@tailwindcss/vite": "^4.3.3",
     "@wxt-dev/module-svelte": "^2.0.5",
     "svelte": "^5.57.0",
