@@ -1,0 +1,13 @@
+{
+  "name": "bush-cache",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@sqlite.org/sqlite-wasm": "^3.54.1-build1",
+    "vitest": "^5.0.5"
+  }
+}
