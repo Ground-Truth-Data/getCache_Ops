@@ -15,7 +15,7 @@
 </script>
 
 <main class="mx-auto max-w-3xl p-6 font-sans">
-	<h1 class="mb-4 text-2xl font-semibold">getCache Ops</h1>
+	<h1 class="mb-4 text-2xl font-semibold">Get Cache Ops</h1>
 	{#await tables}
 		<p class="text-gray-500">Opening sample.sqlite…</p>
 	{:then list}
