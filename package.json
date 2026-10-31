@@ -3,9 +3,16 @@
   "private": true,
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
+    "pretest": "npm run sample",
     "test": "vitest run",
+    "predev": "npm run sample",
     "dev": "vite",
+    "prebuild": "npm run sample",
     "build": "vite build",
     "preview": "vite preview",
     "sample": "node scripts/makeSample.mjs"
@@ -14,6 +21,7 @@
     "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tailwindcss/vite": "^4.3.3",
+    "knip": "^6.43.0",
     "svelte": "^5.57.0",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.0",
