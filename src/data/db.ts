@@ -23,6 +23,7 @@ export async function openDatabase(data: ArrayBuffer | Uint8Array): Promise<void
 			capi.SQLITE_DESERIALIZE_FREEONCLOSE | capi.SQLITE_DESERIALIZE_RESIZEABLE,
 		),
 	);
+	db.exec('PRAGMA query_only = 1');
 }
 
 export function query(sql: string, bind?: unknown[]): Record<string, unknown>[] {
