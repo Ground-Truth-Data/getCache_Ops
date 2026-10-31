@@ -3,7 +3,7 @@ import { beforeAll, expect, test } from 'vitest';
 import { describe as describeTable, listTables, openDatabase, query } from './db';
 
 beforeAll(async () => {
-	await openDatabase(readFileSync(new URL('../../test/sample.sqlite', import.meta.url)));
+	await openDatabase(readFileSync(new URL('../../public/sample.sqlite', import.meta.url)));
 });
 
 test('listTables names every user table', () => {
