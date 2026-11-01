@@ -46,7 +46,7 @@
 		{#if brand.logo}<img src={brand.logo} alt="" class="h-10" />{/if}
 		<h1 class="font-display text-3xl text-(--accent)">{brand.name}</h1>
 		<label class="ml-auto cursor-pointer rounded-lg border border-(--accent) px-3 py-1 font-display text-(--accent)">
-			Open a Get Cache file <input type="file" accept=".sqlite,.sqlite3,.db" class="hidden" onchange={(e) => openFile(e.currentTarget.files?.[0])} />
+			Open a Get Cache file <input type="file" accept=".getcache,.sqlite,.sqlite3,.db" class="hidden" onchange={(e) => openFile(e.currentTarget.files?.[0])} />
 		</label>
 		<button class="rounded-lg bg-(--accent) px-3 py-1 font-display text-on-accent" onclick={trySample}>Try the sample season</button>
 	</header>
