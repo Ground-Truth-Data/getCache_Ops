@@ -4,7 +4,7 @@ import { PLUGIN_API_VERSION, type Ops, type Plugin } from './api';
 const modules = import.meta.glob<{ default: Plugin }>(['../plugins/*.ts', '../../custom/plugins/*.ts', '!**/*.test.ts'], {
 	eager: true,
 });
-const order = ['season', 'schema'];
+const order = ['season', 'tables', 'schema'];
 const rank = (p: Plugin) => (order.includes(p.id) ? order.indexOf(p.id) : order.length);
 
 /** Built-ins first, then the company's custom/plugins, each a tab. */

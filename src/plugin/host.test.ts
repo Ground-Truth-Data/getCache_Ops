@@ -17,7 +17,6 @@ test('a file older than the plugin understands is refused', () => {
 	expect(refusal(plugin({ minSchema: 58 }), 57)).toMatch(/schema 58/);
 });
 
-test('the built-ins load, the season first', () => {
-	expect(plugins.map((p) => p.id)).toEqual(expect.arrayContaining(['season', 'schema']));
-	expect(plugins[0].id).toBe('season');
+test('the built-ins load in order: season, tables, schema', () => {
+	expect(plugins.map((p) => p.id).slice(0, 3)).toEqual(['season', 'tables', 'schema']);
 });
