@@ -1,7 +1,7 @@
 // Builds public/sample.sqlite: one planter's spring season on a real v57 schema, every row invented.
 // Seeded, so a rerun writes the same file. The schema's own FKs, CHECKs and triggers vet every insert.
 // Run: node scripts/makeSample.mjs
-import { readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 const OUT = new URL('../public/sample.sqlite', import.meta.url).pathname;
@@ -34,6 +34,7 @@ const uuid = () => {
 };
 const key = (prefix) => (prefix ? `${prefix}-${uuid()}` : uuid());
 
+mkdirSync(new URL('../public/', import.meta.url), { recursive: true });
 rmSync(OUT, { force: true });
 const db = new DatabaseSync(OUT);
 db.exec(readFileSync(SCHEMA, 'utf8'));
