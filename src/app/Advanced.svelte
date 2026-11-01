@@ -26,7 +26,7 @@
 <details class="rounded-xl border border-rule p-4" bind:open>
 	<summary class="cursor-pointer font-display text-xl text-muted">Raw tables and schema</summary>
 	{#if open}
-		<select class="my-4 rounded-lg border border-rule bg-ground px-2 py-1" value={name} onchange={(e) => (picked = e.currentTarget.value)}>
+		<select name="table" class="my-4 rounded-lg border border-rule bg-ground px-2 py-1" value={name} onchange={(e) => (picked = e.currentTarget.value)}>
 			{#each names as n (n)}<option>{n}</option>{/each}
 		</select>
 		{#key name}
