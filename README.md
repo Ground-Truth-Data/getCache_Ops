@@ -34,10 +34,8 @@ Your name, logo and colour go in `custom/brand.ts` and your tabs in
 
 ### Put it online
 
-Push to GitHub, import the repo on Vercel, set the one env var
-`PUBLIC_SHARED_ENCRYPT_KEY` (ask Get Cache for it; locally it goes in
-`.env.local`) and press Deploy. Without it a backup is refused with a plain
-message. No server, no database; Vercel's free plan is enough.
+Push to GitHub, import the repo on Vercel and press Deploy. No settings, no
+server, no database; Vercel's free plan is enough.
 
 ### Send an improvement back
 

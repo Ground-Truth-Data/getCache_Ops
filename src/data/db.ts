@@ -4,16 +4,12 @@ export type Column = { name: string; type: string; notNull: boolean; primaryKey:
 
 let db: Database | undefined;
 
-/** A planter's Account → Backup file: a JSON envelope whose payload is the whole
- *  database, gzipped, then AES-GCM sealed with Get Cache's shared app key. */
+/** A planter's Account → Backup file: a JSON envelope whose payload is the whole database, gzipped. */
 async function unwrapBackup(text: string): Promise<Uint8Array> {
-	const { kind, payload } = JSON.parse(text);
+	const { kind, encrypted, payload } = JSON.parse(text);
 	if (kind !== 'backup') throw new Error(`is a ${kind} file, not a backup: ask the planter for Account → Backup.`);
-	const hex = import.meta.env.PUBLIC_SHARED_ENCRYPT_KEY;
-	if (!hex) throw new Error("can't be opened: this Ops has no PUBLIC_SHARED_ENCRYPT_KEY.");
-	const key = await crypto.subtle.importKey('raw', Uint8Array.from(hex.match(/../g), (h: string) => parseInt(h, 16)), 'AES-GCM', false, ['decrypt']);
-	const sealed = Uint8Array.from(atob(payload), (c) => c.charCodeAt(0));
-	const zipped = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: sealed.subarray(0, 12) }, key, sealed.subarray(12));
+	if (encrypted) throw new Error('is an older encrypted backup: ask the planter to make a new one (Account → Backup).');
+	const zipped = Uint8Array.from(atob(payload), (c) => c.charCodeAt(0));
 	return new Uint8Array(await new Response(new Blob([zipped]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
 }
 

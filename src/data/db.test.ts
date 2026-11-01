@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
-import { beforeAll, expect, test, vi } from 'vitest';
+import { beforeAll, expect, test } from 'vitest';
 import { describe as describeTable, listTables, openDatabase, query } from './db';
 
 const sample = readFileSync(new URL('../../public/sample.sqlite', import.meta.url));
@@ -18,17 +18,12 @@ test('describe returns each column with its type', () => {
 	expect(describeTable('tallyTable')[0]).toMatchObject({ name: 'versionKey', primaryKey: true });
 });
 
-test('opens a Get Cache backup: gzipped, sealed, wrapped in JSON', async () => {
-	const hex = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('');
-	vi.stubEnv('PUBLIC_SHARED_ENCRYPT_KEY', hex);
-	const key = await crypto.subtle.importKey('raw', Buffer.from(hex, 'hex'), 'AES-GCM', false, ['encrypt']);
-	const iv = crypto.getRandomValues(new Uint8Array(12));
-	const sealed = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, gzipSync(sample));
-	const payload = Buffer.concat([iv, new Uint8Array(sealed)]).toString('base64');
-	await openDatabase(new TextEncoder().encode(JSON.stringify({ version: 1, kind: 'backup', encrypted: true, payload })));
+test('opens a Get Cache backup: the database gzipped in a JSON envelope', async () => {
+	const envelope = (e: object) => new TextEncoder().encode(JSON.stringify({ version: 1, kind: 'backup', payload: gzipSync(sample).toString('base64'), ...e }));
+	await openDatabase(envelope({ encrypted: false }));
 	expect(query('PRAGMA user_version')).toEqual([{ user_version: 57 }]);
-	await expect(openDatabase(new TextEncoder().encode('{"kind":"map","payload":""}'))).rejects.toThrow('not a backup');
-	await openDatabase(sample);
+	await expect(openDatabase(envelope({ encrypted: true }))).rejects.toThrow('is an older encrypted backup: ask the planter to make a new one');
+	await expect(openDatabase(envelope({ kind: 'map' }))).rejects.toThrow('not a backup');
 });
 
 test('a file that is not SQLite is refused, and the open one stays open', async () => {
