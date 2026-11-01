@@ -34,9 +34,9 @@ export default {
 		const make = <K extends keyof HTMLElementTagNameMap>(tag: K, className: string, props: object = {}) =>
 			Object.assign(document.createElement(tag), { className }, props);
 		const button = 'rounded-lg border border-(--accent) px-3 py-1 font-display text-(--accent) disabled:opacity-30';
-		const pick = make('select', 'rounded-lg border border-rule bg-transparent px-2 py-1');
+		const pick = make('select', 'rounded-lg border border-rule bg-transparent px-2 py-1', { name: 'table' });
 		pick.append(...names.map((n) => new Option(n, n)));
-		const search = make('input', 'rounded-lg border border-rule bg-transparent px-2 py-1', { type: 'search', placeholder: 'Search' });
+		const search = make('input', 'rounded-lg border border-rule bg-transparent px-2 py-1', { type: 'search', name: 'search', placeholder: 'Search' });
 		const save = make('button', button);
 		const prev = make('button', button, { textContent: 'Prev' });
 		const next = make('button', button, { textContent: 'Next' });
