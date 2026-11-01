@@ -5,6 +5,13 @@ Get Cache Ops opens a planter's Get Cache file in your browser and shows it as
 tables and charts. Nothing is uploaded: the file never leaves the computer it
 is opened on, and you only ever see a file a planter chose to send you.
 
+### How a planter sends you their file
+
+In Get Cache the planter opens Account and taps Backup. Their phone shares a
+file like `261101Sam.backup.getCache` holding everything on it; they send it
+by AirDrop, email, Messages or a shared drive. Open it with "Open a Get Cache
+file" or drop it on the page.
+
 ### Make your copy
 
 Create an empty private repo (or fork, if your Ops can be public), then:
@@ -27,8 +34,10 @@ Your name, logo and colour go in `custom/brand.ts` and your tabs in
 
 ### Put it online
 
-Push to GitHub, import the repo on Vercel and press Deploy. No settings, no
-server, no database; Vercel's free plan is enough.
+Push to GitHub, import the repo on Vercel, set the one env var
+`PUBLIC_SHARED_ENCRYPT_KEY` (ask Get Cache for it; locally it goes in
+`.env.local`) and press Deploy. Without it a backup is refused with a plain
+message. No server, no database; Vercel's free plan is enough.
 
 ### Send an improvement back
 
