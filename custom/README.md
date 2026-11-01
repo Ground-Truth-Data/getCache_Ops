@@ -1,27 +1,27 @@
 # custom/ — yours
 
-Everything your company adds lives here. Upstream never edits this folder, so
-`git pull upstream main` never conflicts with it.
+Everything your company adds lives here; upstream never edits it.
 
-## Your name, logo and colour — `custom/brand.ts` (optional)
+## `brand.ts` — name, logo, colour
 
 ```ts
-export default {
-	name: 'JRP Ops',
-	logo: '/jrp-logo.svg', // put the file in public/
-	accent: '#b5462c',
-};
+import logo from './jrp-logo.svg'; // the image sits beside this file
+
+export default { name: 'JRP Ops', logo, accent: '#b5462c' };
 ```
 
-Leave out any field to keep the default. Delete the file to go back to Get Cache Ops.
+Any field left out keeps the default.
 
-## Your pages and reports — `custom/plugins/*.ts`
+## `plugins/*.ts` — your tabs
 
-Each file is one tab, picked up when the site is built. A plugin gets the open
-file read-only through `ops`; see `PLUGIN_API.md` for everything in it.
+Each file is one tab. This one pays a per-tree rate per day and downloads the
+result as CSV; `PLUGIN_API.md` has the rest of `ops`.
 
 ```ts
 import type { Plugin } from '../../src/plugin/api';
+import { table } from '../../src/plugin/table';
+
+const RATE = 0.14;
 
 export default {
 	id: 'jrp-payroll',
@@ -29,11 +29,17 @@ export default {
 	api: 1,
 	minSchema: 57,
 	mount(el, ops) {
-		const rows = ops.query(`SELECT boxTag, sum(plantedQty * pricePerTree) AS pay FROM tallyView GROUP BY boxTag`);
-		el.textContent = JSON.stringify(rows);
+		const rows = ops.query(
+			`SELECT b.plantedDt AS date, CAST(sum(t.plantedQty) AS INTEGER) AS trees, round(sum(t.plantedQty) * ?, 2) AS pay
+			 FROM bagUpView b JOIN tallyView t USING (bagUpKey) GROUP BY b.plantedDt ORDER BY b.plantedDt`,
+			[RATE],
+		);
+		const csv = [Object.keys(rows[0] ?? {}), ...rows.map(Object.values)].map((r) => r.join(',')).join('\n');
+		const button = document.createElement('button');
+		button.textContent = 'Download CSV';
+		button.onclick = () => ops.download('jrp-payroll.csv', csv);
+		el.append(button, table('Payroll', rows));
 		return () => el.replaceChildren();
 	},
 } satisfies Plugin;
 ```
-
-`mount` gets a plain DOM element, so use Svelte, another framework or nothing.

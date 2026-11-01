@@ -1,17 +1,17 @@
 # Plugin API
 
-A plugin is one tab. Put it in `custom/plugins/<name>.ts`; the build picks it
-up. The built-in tabs in `src/plugins/` are written against this same API.
+A plugin is one tab: a file in `custom/plugins/`. The built-in tabs in
+`src/plugins/` use the same API.
 
 ```ts
 import type { Plugin } from '../../src/plugin/api';
 
 export default {
-	id: 'acme-payroll',  // unique and stable
+	id: 'jrp-payroll',   // unique and stable
 	name: 'Payroll',     // the tab's label
 	api: 1,              // the plugin API major it was built for
 	minSchema: 57,       // the oldest Get Cache file it understands
-	mount(el, ops) {     // draw into el; return the cleanup
+	mount(el, ops) {     // draw into el (any framework or none); return the cleanup
 		return () => el.replaceChildren();
 	},
 } satisfies Plugin;
@@ -27,22 +27,20 @@ export default {
 | `tables()` | Every table with its columns (`name`, `type`, `notNull`, `primaryKey`) |
 | `download(filename, data)` | Saves a `Blob` or string on the user's computer |
 
-Read the `…View` views (`tallyView`, `bagUpView`, `blockView`…): each shows only
-the live version of every row.
+Query the `…View` views (`tallyView`, `bagUpView`, `blockView`…): each holds
+only the live version of every row. `table(title, rows)` from
+`src/plugin/table` draws rows as the built-in tabs do.
 
 ## Refusals
 
-A tab says why it won't run, in place of its content, when:
-
-- its `api` is not this Ops's major, or
-- the open file's schema is older than its `minSchema`.
-
-The Get Cache schema only adds tables and columns, so a plugin built for 57
-keeps working on every newer file.
+In place of its content, a tab says why it won't run when its `api` is not
+this Ops's major or the open file's schema is older than its `minSchema`. The
+Get Cache schema only adds tables and columns, so a plugin built for 57 keeps
+working on every newer file.
 
 ## Versions
 
-Within a major, `ops` only gains members. Changing or removing one is a new
+Within a major, `ops` only gains members; changing or removing one is a new
 major, listed here.
 
 - **1.0.0** — `apiVersion`, `schemaVersion`, `query`, `tables`, `download`.

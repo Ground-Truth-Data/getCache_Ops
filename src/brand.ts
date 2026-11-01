@@ -1,6 +1,6 @@
 export interface Brand {
 	name: string;
-	/** An image URL; a file in public/ is served at /<file>. */
+	/** An image URL; custom/brand.ts imports its own file. */
 	logo?: string;
 	accent: string;
 }
