@@ -1,9 +1,12 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, expect, test } from 'vitest';
+import { gzipSync } from 'node:zlib';
+import { beforeAll, expect, test, vi } from 'vitest';
 import { describe as describeTable, listTables, openDatabase, query } from './db';
 
+const sample = readFileSync(new URL('../../public/sample.sqlite', import.meta.url));
+
 beforeAll(async () => {
-	await openDatabase(readFileSync(new URL('../../public/sample.sqlite', import.meta.url)));
+	await openDatabase(sample);
 });
 
 test('listTables names the Get Cache tables', () => {
@@ -13,6 +16,19 @@ test('listTables names the Get Cache tables', () => {
 test('describe returns each column with its type', () => {
 	expect(describeTable('tallyTable')).toContainEqual({ name: 'plantedQty', type: 'REAL', notNull: true, primaryKey: false });
 	expect(describeTable('tallyTable')[0]).toMatchObject({ name: 'versionKey', primaryKey: true });
+});
+
+test('opens a Get Cache backup: gzipped, sealed, wrapped in JSON', async () => {
+	const hex = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('');
+	vi.stubEnv('PUBLIC_SHARED_ENCRYPT_KEY', hex);
+	const key = await crypto.subtle.importKey('raw', Buffer.from(hex, 'hex'), 'AES-GCM', false, ['encrypt']);
+	const iv = crypto.getRandomValues(new Uint8Array(12));
+	const sealed = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, gzipSync(sample));
+	const payload = Buffer.concat([iv, new Uint8Array(sealed)]).toString('base64');
+	await openDatabase(new TextEncoder().encode(JSON.stringify({ version: 1, kind: 'backup', encrypted: true, payload })));
+	expect(query('PRAGMA user_version')).toEqual([{ user_version: 57 }]);
+	await expect(openDatabase(new TextEncoder().encode('{"kind":"map","payload":""}'))).rejects.toThrow('not a backup');
+	await openDatabase(sample);
 });
 
 test('query returns row objects', () => {
