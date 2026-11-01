@@ -31,6 +31,8 @@ Query the `…View` views (`tallyView`, `bagUpView`, `blockView`…): each holds
 only the live version of every row. `table(title, rows)` from
 `src/plugin/table` draws rows as the built-in tabs do.
 
+The reports in `src/reports.ts` are the public contract: their columns only gain, never change. Raw tables change between versions.
+
 ## Refusals
 
 In place of its content, a tab says why it won't run when its `api` is not

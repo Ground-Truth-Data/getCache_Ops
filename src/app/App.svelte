@@ -2,14 +2,23 @@
 	import { brand } from '../brand';
 	import { askGetCache } from '../data/bridge';
 	import { openDatabase } from '../data/db';
-	import type { Ops } from '../plugin/api';
-	import { makeOps, plugins, refusal } from '../plugin/host';
+	import type { Ops, Plugin } from '../plugin/api';
+	import { customs, makeOps, refusal, season } from '../plugin/host';
+	import { VERSION } from '../version';
+	import Advanced from './Advanced.svelte';
+	import Reports from './Reports.svelte';
 
 	let ops = $state<Ops>();
 	let error = $state<string>();
 	let source = $state('');
-	let tab = $state(plugins[0].id);
 	let over = $state(false);
+	if (!location.hash) history.replaceState(null, '', '#/season');
+	let hash = $state(location.hash);
+
+	const pages = [['season', 'Season'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['advanced', 'Advanced']];
+	const parts = $derived(hash.replace(/^#\/?/, '').split('/'));
+	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/'))?.[0] ?? 'season');
+	const plugin = $derived(page === 'season' ? season : customs.find((p) => page === `p/${p.id}`));
 
 	async function open(bytes: ArrayBuffer | Uint8Array, name: string) {
 		try {
@@ -37,57 +46,65 @@
 		openFile(e.dataTransfer?.files[0]);
 	}
 
-	function mount(el: HTMLElement, [plugin, ops]: [(typeof plugins)[number], Ops]) {
+	function mount(el: HTMLElement, [plugin, ops]: [Plugin, Ops]) {
 		return { destroy: plugin.mount(el, ops) };
 	}
 </script>
 
 <svelte:head><title>{brand.name}</title>{#if brand.logo}<link rel="icon" href={brand.logo} />{/if}</svelte:head>
 
-<svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} />
+<svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => (hash = location.hash)} />
 <svelte:document onvisibilitychange={() => document.visibilityState === 'visible' && ask()} />
 
-<main class="mx-auto max-w-4xl p-6 font-sans" style:--accent={brand.accent}>
-	<header class="mb-6 flex flex-wrap items-center gap-4">
-		{#if brand.logo}<img src={brand.logo} alt="" class="h-10" />{/if}
-		<h1 class="font-display text-3xl text-(--accent)">{brand.name}</h1>
-		<button class="ml-auto rounded-lg bg-(--accent) px-3 py-1 font-display text-on-accent" onclick={trySample}>Try the sample season</button>
-		<input id="pick" type="file" class="hidden" onchange={(e) => openFile(e.currentTarget.files?.[0])} />
+<div class="font-sans" style:--accent={brand.accent}>
+	<header class="sticky top-0 z-10 border-b border-rule bg-ground">
+		<nav class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
+			{#if brand.logo}<img src={brand.logo} alt="" class="mr-2 h-8" />{/if}
+			<span class="mr-4 font-display text-2xl text-(--accent)">{brand.name}</span>
+			{#each pages as [path, label] (path)}
+				<a
+					href="#/{path}"
+					aria-current={page === path ? 'page' : undefined}
+					class="rounded-lg px-3 py-1 font-display text-lg {page === path ? 'bg-(--accent) text-on-accent' : 'text-muted hover:text-ink'}">{label}</a>
+			{/each}
+			<button class="ml-auto rounded-lg border border-(--accent) px-3 py-1 font-display text-(--accent)" onclick={trySample}>Try the sample season</button>
+			<input id="pick" type="file" class="hidden" onchange={(e) => openFile(e.currentTarget.files?.[0])} />
+		</nav>
 	</header>
 
-	{#if error}<p class="mb-4 text-red-400" data-error>{error}</p>{/if}
-	{#if ops}
-		<p class="mb-4 text-sm text-muted">
-			Showing {source} · schema {ops.schemaVersion} · nothing leaves this computer · drop a file anywhere or
-			<label for="pick" class="cursor-pointer text-(--accent) underline">choose one</label>
-		</p>
-	{/if}
-	<nav class="mb-6 flex gap-2 border-b border-rule">
-		{#each plugins as p (p.id)}
-			<button
-				class="-mb-px border-b-2 px-3 py-2 font-display disabled:opacity-40 {ops && tab === p.id ? 'border-(--accent) text-(--accent)' : 'border-transparent text-muted'}"
-				disabled={!ops}
-				onclick={() => (tab = p.id)}>{p.name}</button>
-		{/each}
-	</nav>
-	{#if ops}
-		{#each plugins.filter((p) => p.id === tab) as p (p.id + source)}
-			{@const why = refusal(p, ops.schemaVersion)}
-			{#if why}
-				<p class="text-muted" data-refused={p.id}>{why}</p>
-			{:else}
-				<div use:mount={[p, ops]}></div>
+	<main class="mx-auto max-w-5xl px-6 py-6">
+		{#if error}<p class="mb-4 text-red-400" data-error>{error}</p>{/if}
+		{#if ops}
+			<p class="mb-6 text-sm text-muted">
+				Showing {source} · schema {ops.schemaVersion} · nothing leaves this computer · drop a file anywhere or
+				<label for="pick" class="cursor-pointer text-(--accent) underline">choose one</label>
+			</p>
+			{#if page === 'reports'}
+				<Reports {ops} slug={parts[1]} />
+			{:else if page === 'advanced'}
+				<Advanced {ops} />
+			{:else if plugin}
+				{#key plugin.id + source}
+					{@const why = refusal(plugin, ops.schemaVersion)}
+					{#if why}
+						<p class="text-muted" data-refused={plugin.id}>{why}</p>
+					{:else}
+						<div use:mount={[plugin, ops]}></div>
+					{/if}
+				{/key}
 			{/if}
-		{/each}
-	{:else}
-		<label
-			for="pick"
-			class="flex min-h-[60vh] cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-(--accent) p-6 text-center font-display text-2xl text-(--accent) {over ? 'bg-(--accent)/10' : ''}"
-			ondragenter={() => (over = true)}
-			ondragleave={() => (over = false)}
-			data-dropzone>Drop a Get Cache backup to see charts and tables</label>
-		<p class="mt-4 text-center text-sm text-muted">
-			Your own data shows here while <a href="/app/menu" target="_blank" class="text-(--accent) underline">Get Cache is open in another tab</a>
-		</p>
-	{/if}
-</main>
+		{:else}
+			<label
+				for="pick"
+				class="flex min-h-[60vh] cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-(--accent) p-6 text-center font-display text-2xl text-(--accent) {over ? 'bg-(--accent)/10' : ''}"
+				ondragenter={() => (over = true)}
+				ondragleave={() => (over = false)}
+				data-dropzone>Drop a Get Cache backup to see charts and tables</label>
+			<p class="mt-4 text-center text-sm text-muted">
+				Your own data shows here while <a href="/app/menu" target="_blank" class="text-(--accent) underline">Get Cache is open in another tab</a>
+			</p>
+		{/if}
+	</main>
+
+	<span class="fixed right-3 bottom-3 rounded-md border border-rule bg-ground px-2 py-0.5 font-display text-sm text-muted" title="Version" data-version>{VERSION}</span>
+</div>

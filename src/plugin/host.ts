@@ -4,13 +4,11 @@ import { PLUGIN_API_VERSION, type Ops, type Plugin } from './api';
 const modules = import.meta.glob<{ default: Plugin }>(['../plugins/*.ts', '../../custom/plugins/*.ts', '!**/*.test.ts'], {
 	eager: true,
 });
-const order = ['season', 'tables', 'schema'];
-const rank = (p: Plugin) => (order.includes(p.id) ? order.indexOf(p.id) : order.length);
+const plugins = Object.values(modules).map((m) => m.default);
 
-/** Built-ins first, then the company's custom/plugins, each a tab. */
-export const plugins = Object.values(modules)
-	.map((m) => m.default)
-	.sort((a, b) => rank(a) - rank(b));
+export const season = plugins.find((p) => p.id === 'season')!;
+/** The company's custom/plugins, each a page between Reports and Advanced. */
+export const customs = plugins.filter((p) => p !== season);
 
 /** Why this plugin can't run on this file, or undefined when it can. */
 export function refusal(plugin: Plugin, schemaVersion: number): string | undefined {
