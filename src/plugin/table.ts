@@ -7,11 +7,11 @@ export function table(title: string, rows: Record<string, unknown>[]): HTMLEleme
 	const cell = (tag: string, text: unknown) => {
 		const el = document.createElement(tag);
 		el.textContent = typeof text === 'number' ? text.toLocaleString() : String(text ?? '');
-		el.className = 'border-b border-gray-200 px-3 py-1 text-left';
+		el.className = 'border-b border-rule px-3 py-1 text-left';
 		return el;
 	};
 	const h2 = document.createElement('h2');
-	h2.className = 'mb-2 text-lg font-medium';
+	h2.className = 'mb-2 font-display text-xl text-heading';
 	h2.textContent = `${title} · ${rows.length} rows`;
 	const t = document.createElement('table');
 	t.className = 'w-full text-sm tabular-nums';

@@ -36,20 +36,20 @@
 <main class="mx-auto max-w-4xl p-6 font-sans" style:--accent={brand.accent}>
 	<header class="mb-6 flex flex-wrap items-center gap-4">
 		{#if brand.logo}<img src={brand.logo} alt="" class="h-10" />{/if}
-		<h1 class="text-2xl font-semibold text-(--accent)">{brand.name}</h1>
-		<label class="ml-auto cursor-pointer rounded border border-(--accent) px-3 py-1 text-sm text-(--accent)">
+		<h1 class="font-display text-3xl text-(--accent)">{brand.name}</h1>
+		<label class="ml-auto cursor-pointer rounded-lg border border-(--accent) px-3 py-1 font-display text-(--accent)">
 			Open a Get Cache file <input type="file" accept=".sqlite,.sqlite3,.db" class="hidden" onchange={pick} />
 		</label>
-		<button class="rounded bg-(--accent) px-3 py-1 text-sm text-white" onclick={trySample}>Try the sample season</button>
+		<button class="rounded-lg bg-(--accent) px-3 py-1 font-display text-on-accent" onclick={trySample}>Try the sample season</button>
 	</header>
 
 	{#if error}
-		<p class="text-red-600" data-error>{error}</p>
+		<p class="text-red-400" data-error>{error}</p>
 	{:else if ops}
-		<p class="mb-4 text-sm text-gray-500">Showing {source} · schema {ops.schemaVersion} · nothing leaves this computer</p>
-		<nav class="mb-6 flex gap-2 border-b border-gray-200">
+		<p class="mb-4 text-sm text-muted">Showing {source} · schema {ops.schemaVersion} · nothing leaves this computer</p>
+		<nav class="mb-6 flex gap-2 border-b border-rule">
 			{#each plugins as p (p.id)}
-				<button class="-mb-px border-b-2 px-3 py-2 {tab === p.id ? 'border-(--accent) font-medium' : 'border-transparent text-gray-500'}" onclick={() => (tab = p.id)}>
+				<button class="-mb-px border-b-2 px-3 py-2 font-display {tab === p.id ? 'border-(--accent) text-(--accent)' : 'border-transparent text-muted'}" onclick={() => (tab = p.id)}>
 					{p.name}
 				</button>
 			{/each}
@@ -57,12 +57,12 @@
 		{#each plugins.filter((p) => p.id === tab) as p (p.id + source)}
 			{@const why = refusal(p, ops.schemaVersion)}
 			{#if why}
-				<p class="text-gray-600" data-refused={p.id}>{why}</p>
+				<p class="text-muted" data-refused={p.id}>{why}</p>
 			{:else}
 				<div use:mount={[p, ops]}></div>
 			{/if}
 		{/each}
 	{:else}
-		<p class="text-gray-500">Opening the sample season…</p>
+		<p class="text-muted">Opening the sample season…</p>
 	{/if}
 </main>
