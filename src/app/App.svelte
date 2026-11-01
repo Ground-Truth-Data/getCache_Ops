@@ -16,7 +16,7 @@
 	let hash = $state(location.hash);
 
 	const pages = [['season', 'Season'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['advanced', 'Advanced']];
-	const parts = $derived(hash.replace(/^#\/?/, '').split('/'));
+	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/'))?.[0] ?? 'season');
 	const plugin = $derived(page === 'season' ? season : customs.find((p) => page === `p/${p.id}`));
 
