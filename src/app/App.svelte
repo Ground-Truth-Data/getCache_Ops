@@ -16,7 +16,7 @@
 			source = name;
 			error = undefined;
 		} catch (e) {
-			error = `${name}: ${(e as Error).message}`;
+			error = `${name} ${(e as Error).message}`;
 		}
 	}
 

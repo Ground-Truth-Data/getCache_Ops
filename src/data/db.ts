@@ -8,9 +8,9 @@ let db: Database | undefined;
  *  database, gzipped, then AES-GCM sealed with Get Cache's shared app key. */
 async function unwrapBackup(text: string): Promise<Uint8Array> {
 	const { kind, payload } = JSON.parse(text);
-	if (kind !== 'backup') throw new Error(`a ${kind} file, not a backup: ask the planter for Account → Backup`);
+	if (kind !== 'backup') throw new Error(`is a ${kind} file, not a backup: ask the planter for Account → Backup.`);
 	const hex = import.meta.env.PUBLIC_SHARED_ENCRYPT_KEY;
-	if (!hex) throw new Error('this Ops has no PUBLIC_SHARED_ENCRYPT_KEY, so it cannot open a backup');
+	if (!hex) throw new Error("can't be opened: this Ops has no PUBLIC_SHARED_ENCRYPT_KEY.");
 	const key = await crypto.subtle.importKey('raw', Uint8Array.from(hex.match(/../g), (h: string) => parseInt(h, 16)), 'AES-GCM', false, ['decrypt']);
 	const sealed = Uint8Array.from(atob(payload), (c) => c.charCodeAt(0));
 	const zipped = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: sealed.subarray(0, 12) }, key, sealed.subarray(12));
@@ -22,6 +22,7 @@ export async function openDatabase(data: ArrayBuffer | Uint8Array): Promise<void
 	// A Node Buffer is a Uint8Array subclass that allocFromTypedArray rejects; copy to a plain one.
 	let bytes = new Uint8Array(data);
 	if (bytes[0] === 0x7b /* { */) bytes = await unwrapBackup(new TextDecoder().decode(bytes));
+	if (new TextDecoder().decode(bytes.subarray(0, 16)) !== 'SQLite format 3\0') throw new Error("isn't a Get Cache file.");
 	const sqlite3 = await sqlite3InitModule();
 	const { capi, wasm } = sqlite3;
 	db?.close();

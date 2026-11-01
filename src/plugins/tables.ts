@@ -40,6 +40,7 @@ export default {
 			note.textContent = rows.length > SHOWN ? `Showing the first ${SHOWN} of ${rows.length.toLocaleString()}; the CSV has them all` : '';
 			body.replaceChildren(table(pick.value, rows.slice(0, SHOWN)));
 		};
+		pick.value = names.find((n) => n.endsWith('View') && ops.query(`SELECT 1 FROM "${n}" LIMIT 1`).length) ?? names[0];
 		pick.onchange = show;
 		save.onclick = () => ops.download(`${pick.value}.csv`, csv(all()));
 		show();

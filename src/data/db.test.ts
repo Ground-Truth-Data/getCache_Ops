@@ -31,6 +31,11 @@ test('opens a Get Cache backup: gzipped, sealed, wrapped in JSON', async () => {
 	await openDatabase(sample);
 });
 
+test('a file that is not SQLite is refused, and the open one stays open', async () => {
+	await expect(openDatabase(new TextEncoder().encode('just some notes'))).rejects.toThrow("isn't a Get Cache file");
+	expect(query('PRAGMA user_version')).toEqual([{ user_version: 57 }]);
+});
+
 test('query returns row objects', () => {
 	expect(query('PRAGMA user_version')).toEqual([{ user_version: 57 }]);
 	const [day] = query('SELECT plantedDt, count(*) AS bagUps FROM bagUpView GROUP BY plantedDt ORDER BY plantedDt LIMIT 1');
