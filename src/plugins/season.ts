@@ -1,3 +1,4 @@
+import * as Plot from '@observablehq/plot';
 import type { Plugin } from '../plugin/api';
 import { table } from '../plugin/table';
 
@@ -20,7 +21,22 @@ export default {
 	api: 1,
 	minSchema: 57,
 	mount(el, ops) {
-		el.append(...Object.entries(reports).map(([title, sql]) => table(title, ops.query(sql))));
+		const rows = Object.entries(reports).map(([title, sql]) => [title, ops.query(sql)] as const);
+		const [days, blocks] = rows.map(([, r]) => r);
+		const accent = getComputedStyle(el).getPropertyValue('--accent');
+		const style = { background: 'transparent', overflow: 'visible', marginBottom: '2rem' };
+		const perDay = Plot.plot({
+			style, width: el.clientWidth, marginLeft: 50, y: { grid: true, label: 'Trees' }, x: { type: 'utc', label: null },
+			marks: [Plot.rectY(days, { x: (d) => new Date(d.date as string), y: 'trees', interval: 'day', fill: accent, tip: true }), Plot.ruleY([0])],
+		});
+		const perBlock = Plot.plot({
+			style, width: el.clientWidth, marginLeft: 120, x: { grid: true, label: 'Trees' }, y: { label: null },
+			marks: [
+				Plot.barX(blocks, { y: 'block', x: 'allocated', fill: 'var(--color-rule)' }),
+				Plot.barX(blocks, { y: 'block', x: 'trees', fill: accent, insetTop: 6, insetBottom: 6, tip: true }),
+			],
+		});
+		el.append(perDay, perBlock, ...rows.map(([title, r]) => table(title, r)));
 		return () => el.replaceChildren();
 	},
 } satisfies Plugin;
