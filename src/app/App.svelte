@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { brand } from '../brand';
+	import { askGetCache } from '../data/bridge';
 	import { openDatabase } from '../data/db';
 	import type { Ops } from '../plugin/api';
 	import { makeOps, plugins, refusal } from '../plugin/host';
@@ -10,7 +11,7 @@
 	let tab = $state(plugins[0].id);
 	let over = $state(false);
 
-	async function open(bytes: ArrayBuffer, name: string) {
+	async function open(bytes: ArrayBuffer | Uint8Array, name: string) {
 		try {
 			await openDatabase(bytes);
 			ops = makeOps();
@@ -21,7 +22,10 @@
 		}
 	}
 
-	const trySample = async () => open(await (await fetch('/sample.sqlite')).arrayBuffer(), 'the sample season');
+	const trySample = async () => open(await (await fetch('sample.sqlite')).arrayBuffer(), 'the sample season');
+
+	const LIVE = 'your Get Cache data in this browser';
+	const { ask } = askGetCache((bytes) => (!source || source === LIVE) && open(bytes, LIVE));
 
 	async function openFile(file?: File) {
 		if (file) open(await file.arrayBuffer(), file.name);
@@ -41,6 +45,7 @@
 <svelte:head><title>{brand.name}</title>{#if brand.logo}<link rel="icon" href={brand.logo} />{/if}</svelte:head>
 
 <svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} />
+<svelte:document onvisibilitychange={() => document.visibilityState === 'visible' && ask()} />
 
 <main class="mx-auto max-w-4xl p-6 font-sans" style:--accent={brand.accent}>
 	<header class="mb-6 flex flex-wrap items-center gap-4">
@@ -81,5 +86,8 @@
 			ondragenter={() => (over = true)}
 			ondragleave={() => (over = false)}
 			data-dropzone>Drop a Get Cache backup to see charts and tables</label>
+		<p class="mt-4 text-center text-sm text-muted">
+			Your own data shows here while <a href="/app/menu" target="_blank" class="text-(--accent) underline">Get Cache is open in another tab</a>
+		</p>
 	{/if}
 </main>
