@@ -36,7 +36,8 @@ export default {
 				Plot.barX(blocks, { y: 'block', x: 'trees', fill: accent, insetTop: 6, insetBottom: 6, tip: true }),
 			],
 		});
-		el.append(perDay, perBlock, ...rows.map(([title, r]) => table(title, r)));
+		const h2 = (textContent: string) => Object.assign(document.createElement('h2'), { className: 'mb-2 font-display text-xl text-heading', textContent });
+		el.append(h2('Trees planted per day'), perDay, h2('Planted vs allocated per block'), perBlock,...rows.map(([title, r]) => table(title, r)));
 		return () => el.replaceChildren();
 	},
 } satisfies Plugin;
