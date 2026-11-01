@@ -37,6 +37,8 @@
 	}
 </script>
 
+<svelte:head><title>{brand.name}</title>{#if brand.logo}<link rel="icon" href={brand.logo} />{/if}</svelte:head>
+
 <svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} />
 
 <main class="mx-auto max-w-4xl p-6 font-sans" style:--accent={brand.accent}>
