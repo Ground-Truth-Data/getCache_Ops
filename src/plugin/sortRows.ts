@@ -67,3 +67,9 @@ export function sortRows<T>(
 		compareValues(pick(a, sort.col), pick(b, sort.col), sort.asc),
 	);
 }
+
+/** Header indicator: ▲ / ▼ on the active column, ↕ on the rest. */
+export function sortArrow(sort: SortState, col: string): string {
+	if (sort.col !== col) return "↕";
+	return sort.asc ? "▲" : "▼";
+}

@@ -1,7 +1,8 @@
 <!--
   One query result as the admin spreadsheet: search, sort, column picker,
   Comfort/Fit/Full, row selection, copy/export, Σ row, pager. Column choice and
-  page ride in the hash after `?`, so Copy link sends this exact view.
+  page ride in the hash after `?`, keyed by `name` because one page can hold
+  two tables, so Copy link sends this exact view.
 -->
 <script lang="ts">
 import "./table/adminTable.css";
@@ -12,7 +13,7 @@ import ColumnPicker from "./table/ColumnPicker.svelte";
 import JsonPeek from "./table/JsonPeek.svelte";
 import TableToolbar from "./table/TableToolbar.svelte";
 import { hiddenFromParams, hiddenToParams, visibleColumns } from "./table/columnPrefs";
-import { type SortState, sortRows } from "./table/sortRows";
+import { type SortState, sortRows } from "../plugin/sortRows";
 
 type Row = Record<string, unknown>;
 
@@ -25,10 +26,14 @@ $effect(() => {
 	return () => removeEventListener("hashchange", sync);
 });
 const route = $derived(hash.split("?")[0] || "#");
-const params = $derived(new URLSearchParams(hash.split("?")[1] ?? ""));
+const all = $derived([...new URLSearchParams(hash.split("?")[1] ?? "")]);
+const mine = (k: string) => k.startsWith(`${name}.`);
+const params = $derived(new URLSearchParams(all.filter(([k]) => mine(k)).map(([k, v]) => [k.slice(name.length + 1), v])));
 const hrefWith = (edit: (p: URLSearchParams) => void) => {
-	const p = new URLSearchParams(params);
-	edit(p);
+	const own = new URLSearchParams(params);
+	edit(own);
+	const p = new URLSearchParams(all.filter(([k]) => !mine(k)));
+	for (const [k, v] of own) p.append(`${name}.${k}`, v);
 	const q = p.toString();
 	return q ? `${route}?${q}` : route;
 };

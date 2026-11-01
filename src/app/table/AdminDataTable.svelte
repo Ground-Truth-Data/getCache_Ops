@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
 import type { Snippet } from "svelte";
-import { type SortState, nextSort } from "./sortRows";
+import { type SortState, nextSort } from "../../plugin/sortRows";
 import {
 	applyColumnOrder,
 	type ColumnPrefs,
