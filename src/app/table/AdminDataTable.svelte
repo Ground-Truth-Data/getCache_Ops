@@ -85,7 +85,7 @@ let {
 	onSort,
 	frozen = 0,
 	lead,
-	leadWidth = "2.2rem",
+	leadWidth: leadWidthProp = undefined,
 	onPeek,
 	totals = {},
 	rowNumberOffset = undefined,
@@ -332,6 +332,9 @@ const isPeek = (c: string) => peekColumns.includes(c);
 // Row numbers ride the lead track but don't depend on the `lead` snippet: a
 // page wanting a gutter of numbers and no checkboxes gets one.
 const hasLead = $derived(Boolean(lead) || rowNumberOffset !== undefined);
+// The row number sits BESIDE the checkbox, never under it: stacked, it doubled every row's height.
+const leadRem = $derived(rowNumberOffset !== undefined && lead ? 4.6 : 2.2);
+const leadWidth = $derived(leadWidthProp ?? `${leadRem}rem`);
 const leadCount = $derived(hasLead ? 1 : 0);
 const span = $derived(leadCount + allCols.length + (trail ? 1 : 0));
 // Clamped: a `frozen` past the last column would freeze the whole table.
@@ -350,7 +353,8 @@ const frozenTotal = $derived(
 function clickSort(col: string) {
 	onSort(nextSort(sort, col));
 }
-const arrow = (c: string) => (sort.col === c ? (sort.asc ? "↑" : "↓") : "↕");
+// U+FE0E asks for the text glyph: in a mono header font without ↕, macOS otherwise draws the boxed emoji.
+const arrow = (c: string) => (sort.col === c ? (sort.asc ? "↑" : "↓") : "↕") + "︎";
 
 // "—" is the server's rendering of null, and a popup saying "—" answers no
 // question anyone asked.
@@ -806,7 +810,7 @@ const barShare = (c: string, row: Record<string, unknown>) => {
 	.adt :global(tr.subtotal th.adt-frozen) {
 		background: var(--at-panel-2);
 		z-index: 6;
-		box-shadow: var(--at-lift-2), inset 0 0 0 100vmax var(--at-panel-2);
+		box-shadow: var(--at-lift-2), var(--at-sum-rules), inset 0 0 0 100vmax var(--at-panel-2);
 	}
 	.adt :global(tbody tr:hover td.adt-frozen) {
 		background: var(--at-hover);
@@ -835,7 +839,7 @@ const barShare = (c: string, row: Record<string, unknown>) => {
 		box-shadow: var(--at-edge-hi), var(--at-lift-1), inset 0 0 0 100vmax var(--at-inset);
 	}
 	.adt :global(tr.subtotal th.adt-seam) {
-		box-shadow: var(--at-lift-2), var(--at-lift-1), inset 0 0 0 100vmax var(--at-panel-2);
+		box-shadow: var(--at-lift-2), var(--at-sum-rules), var(--at-lift-1), inset 0 0 0 100vmax var(--at-panel-2);
 	}
 	.adt :global(tbody tr:hover td.adt-seam) {
 		box-shadow: var(--at-lift-1), inset 0 0 0 100vmax var(--at-hover);
@@ -872,10 +876,8 @@ const barShare = (c: string, row: Record<string, unknown>) => {
 	}
 
 	.adt-lead {
-		width: 2.2rem;
-		text-align: center;
-		/* The 24px gutter leaves no room inside 2.2rem, so tick and row number would stack. */
 		white-space: nowrap;
+		text-align: left;
 	}
 
 	.adt-cell-btn {
