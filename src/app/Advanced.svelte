@@ -12,7 +12,7 @@
 	const name = $derived(
 		names.includes(picked) ? picked : (names.find((n) => n.endsWith('View') && ops.query(`SELECT 1 FROM "${n}" LIMIT 1`).length) ?? names[0]),
 	);
-	const columns = $derived(ops.query('SELECT name FROM pragma_table_info(?)', [name]).map((c) => c.name as string));
+	const columns = $derived(ops.query('SELECT name FROM pragma_table_info(?)', [name]).map((c) => c.name as string).filter((c) => !/(Key|Id)$|^id$/.test(c)));
 	const rows = $derived(ops.query(`SELECT * FROM "${name.replaceAll('"', '""')}"`));
 </script>
 

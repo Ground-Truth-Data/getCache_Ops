@@ -9,8 +9,16 @@
 </script>
 
 {#if report}
-	<a href="#/reports" class="text-sm text-muted hover:text-(--accent)">‹ All reports</a>
-	<h1 class="mt-2 font-display text-3xl text-(--accent)">{report.title}</h1>
+	<nav class="flex flex-wrap gap-2" data-picker>
+		{#each reports as r (r.slug)}
+			<a
+				href="#/reports/{r.slug}"
+				class="rounded-full border px-4 py-1 font-display {r.slug === slug ? 'border-(--accent) bg-(--accent) text-on-accent' : 'border-rule text-muted hover:border-(--accent) hover:bg-(--accent)/15 hover:text-ink'}"
+				>{r.title}</a
+			>
+		{/each}
+	</nav>
+	<h1 class="mt-6 font-display text-3xl text-(--accent)">{report.title}</h1>
 	<p class="mb-6 text-muted">{report.description}</p>
 	{#if ops}<DataTable {rows} columns={Object.keys(rows[0] ?? {})} name={report.title} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 {:else}
