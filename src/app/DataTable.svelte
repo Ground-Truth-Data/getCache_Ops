@@ -167,6 +167,7 @@ function tickAll() {
 		rowNumberOffset={rowOffset}
 		{totals}
 		totalLabel={matched.length.toLocaleString()}
+		pinSum
 		onPeek={peekCell}
 		render={cellText}
 		cellTitle={cellText}
