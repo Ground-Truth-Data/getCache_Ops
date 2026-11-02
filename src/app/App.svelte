@@ -11,10 +11,9 @@
 	let ops = $state<Ops>();
 	let error = $state<string>();
 	let source = $state('');
-	if (!location.hash) history.replaceState(null, '', '#/season');
 	let hash = $state(location.hash);
 
-	const pages = [['season', 'Season'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['advanced', 'Advanced']];
+	const pages = [['', 'Home'], ['season', 'Season'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['advanced', 'Advanced']];
 	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/')) ?? pages[0]);
 	const plugin = $derived(page[0] === 'season' ? season : customs.find((p) => page[0] === `p/${p.id}`));
@@ -67,8 +66,9 @@
 <div class="font-sans" style:--accent={brand.accent}>
 	<header class="sticky top-0 z-10 border-b border-rule bg-ground">
 		<nav class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
-			{#if brand.logo}<img src={brand.logo} alt="" class="mr-2 h-8" />{/if}
-			<span class="mr-4 font-display text-2xl text-(--accent)">{brand.name}</span>
+			<a href="#/" class="mr-4 flex items-center gap-2 font-display text-2xl text-(--accent)" data-home>
+				{#if brand.logo}<img src={brand.logo} alt="" class="h-8" />{/if}{brand.name}
+			</a>
 			{#each pages as [path, label] (path)}
 				<a
 					href="#/{path}"
@@ -94,7 +94,17 @@
 
 	<main class="mx-auto max-w-5xl px-6 py-6">
 		{#if error}<p class="mb-4 text-red-400" data-error>{error}</p>{/if}
-		{#if page[0] === 'reports'}
+		{#if page[0] === ''}
+			<h1 class="mb-6 font-display text-3xl text-(--accent)">Your season at a glance</h1>
+			<div class="grid gap-4 sm:grid-cols-3">
+				{#each [['season', 'Season', 'Charts of trees planted, blocks and seedlots'], ['reports', 'Reports', 'Five plain tables to sort, search and export'], ['advanced', 'Advanced', 'Raw tables and schema, for builders']] as [path, title, blurb] (path)}
+					<a href="#/{path}" class="rounded-2xl border border-rule p-6 hover:border-(--accent)" data-card={path}>
+						<span class="block font-display text-2xl text-(--accent)">{title}</span>
+						<span class="mt-2 block text-muted">{blurb}</span>
+					</a>
+				{/each}
+			</div>
+		{:else if page[0] === 'reports'}
 			<Reports {ops} slug={parts[1]} />
 		{:else}
 			<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[1]}</h1>
