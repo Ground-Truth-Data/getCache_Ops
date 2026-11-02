@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import type { Plugin } from './api';
-import { plugins, refusal } from './host';
+import { customs, refusal, season } from './host';
 
 const plugin = (p: Partial<Plugin>): Plugin => ({ id: 'x', name: 'X', api: 1, minSchema: 57, mount: () => () => {}, ...p });
 
@@ -17,6 +17,7 @@ test('a file older than the plugin understands is refused', () => {
 	expect(refusal(plugin({ minSchema: 58 }), 57)).toMatch(/schema 58/);
 });
 
-test('the built-ins load in order: season, tables, schema', () => {
-	expect(plugins.map((p) => p.id).slice(0, 3)).toEqual(['season', 'tables', 'schema']);
+test('Season is the one built-in plugin; every other plugin is a company tab', () => {
+	expect(season.id).toBe('season');
+	expect(customs.map((p) => p.id)).not.toContain('season');
 });
