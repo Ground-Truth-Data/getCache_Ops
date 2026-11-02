@@ -171,6 +171,18 @@ CREATE TABLE `deliveryTable` (
 	CONSTRAINT "deliveryTable_closeReason" CHECK("deliveryTable"."closeReason" = '' OR "deliveryTable"."kind" = 'closed')
 );
 CREATE INDEX `deliveryTable_live_idx` ON `deliveryTable` (`mapFeatureKey`,`boxKey`,`replacedAt`);
+CREATE TABLE `editNoteTable` (
+	`noteKey` text PRIMARY KEY NOT NULL,
+	`tableName` text NOT NULL,
+	`rowKey` text NOT NULL,
+	`reason` text NOT NULL,
+	`createdAt` text NOT NULL,
+	`createdByKey` text NOT NULL,
+	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
+	CONSTRAINT "editNoteTable_named" CHECK("editNoteTable"."tableName" <> '' AND "editNoteTable"."rowKey" <> ''),
+	CONSTRAINT "editNoteTable_reason" CHECK(trim("editNoteTable"."reason") <> '')
+);
+CREATE INDEX `editNoteTable_row_idx` ON `editNoteTable` (`rowKey`,`createdAt`);
 CREATE TABLE `mapEntity` (
 	`mapKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
