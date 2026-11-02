@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { brand } from '../brand';
-	import { askGetCache, type Reply } from '../data/bridge';
+	import { follow, signedIn } from '../data/cloud';
 	import { openDatabase } from '../data/db';
 	import type { Ops } from '../plugin/api';
 	import { makeOps, plugins, refusal } from '../plugin/host';
@@ -24,15 +24,19 @@
 
 	const trySample = async () => open(await (await fetch('sample.sqlite')).arrayBuffer(), 'the sample season');
 
-	const LIVE = 'your Get Cache data in this browser';
-	let reply = $state<Omit<Reply, 'bytes'>>({});
-	const { ask } = askGetCache(({ bytes, ...rest }) => {
-		if (source && source !== LIVE) return;
-		reply = rest;
-		open(bytes, LIVE);
-	});
-	const signedIn = $derived(source === LIVE && reply.signedIn === true);
-	const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+	const LIVE = 'your Get Cache account';
+	const account = signedIn();
+	let synced = $state<Date>();
+	if (account)
+		follow(
+			(bytes, syncedAt?: string) => {
+				if (source && source !== LIVE) return;
+				synced = syncedAt ? new Date(syncedAt) : undefined;
+				open(bytes, LIVE);
+			},
+			(e) => (error = e.message),
+		);
+	const live = $derived(source === LIVE);
 
 	async function openFile(file?: File) {
 		if (file) open(await file.arrayBuffer(), file.name);
@@ -52,7 +56,6 @@
 <svelte:head><title>{brand.name}</title>{#if brand.logo}<link rel="icon" href={brand.logo} />{/if}</svelte:head>
 
 <svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} />
-<svelte:document onvisibilitychange={() => document.visibilityState === 'visible' && ask()} />
 
 <main class="mx-auto max-w-4xl p-6 font-sans" style:--accent={brand.accent}>
 	<header class="mb-6 flex flex-wrap items-center gap-4">
@@ -63,9 +66,9 @@
 	</header>
 
 	{#if error}<p class="mb-4 text-red-400" data-error>{error}</p>{/if}
-	{#if ops && signedIn}
+	{#if account && (live || !ops)}
 		<p class="mb-4 text-sm text-muted" data-status>
-			Your Get Cache account, from this browser · {reply.syncedAt ? `last synced ${when(reply.syncedAt)}` : 'not synced yet'}
+			Your Get Cache account · {account.email} · {!ops ? 'fetching your data' : synced ? `last synced ${synced.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}` : 'not synced yet'}
 		</p>
 	{:else if ops}
 		<p class="mb-4 text-sm text-muted" data-status>
@@ -90,7 +93,7 @@
 				<div use:mount={[p, ops]}></div>
 			{/if}
 		{/each}
-	{:else}
+	{:else if !account}
 		<a href="/app/account" target="_blank" class="mb-6 block text-center font-display text-3xl text-(--accent) underline" data-signin>
 			Sign in to see your data automatically
 		</a>
