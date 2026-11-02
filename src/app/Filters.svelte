@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import type { ComponentProps } from 'svelte';
+	import DataTable from './DataTable.svelte';
 	import { apply, facets, type Filter } from './filters';
 
-	type Row = Record<string, unknown>;
-	let { rows, children }: { rows: Row[]; children: Snippet<[Row[]]> } = $props();
+	let { rows, ...table }: Omit<ComponentProps<typeof DataTable>, 'toggle' | 'panel'> = $props();
 	const { dateCol, sorts, picks } = $derived(facets(rows));
 	const fresh = (): Filter => ({ sort: facets(rows).sorts[0]?.[0], pick: {} });
 	let f = $state(fresh());
@@ -12,7 +12,7 @@
 	const shown = $derived(apply(rows, f, dateCol));
 	const active = $derived(Object.values(f.pick).some(Boolean) || !!f.days || !!f.from || !!f.to);
 	const seg = (on: boolean) => `rounded-full px-3 py-0.5 ${on ? 'bg-(--accent) text-on-accent' : 'text-muted hover:bg-(--accent)/15 hover:text-ink'}`;
-	const head = 'w-16 text-xs tracking-widest text-muted';
+	const head = 'w-24 text-xs tracking-widest text-muted';
 
 	function chip(days?: number) {
 		custom = !days;
@@ -20,7 +20,7 @@
 	}
 </script>
 
-<div class="mb-4">
+{#snippet toggle()}
 	<button
 		class="rounded-lg border p-2 {open || active ? 'border-(--accent) text-(--accent)' : 'border-rule text-muted'} hover:border-(--accent) hover:text-ink"
 		title="Filters"
@@ -31,8 +31,11 @@
 	>
 		<svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></svg>
 	</button>
+{/snippet}
+
+{#snippet panel()}
 	{#if open}
-		<div class="mt-2 flex flex-col gap-3 rounded-2xl border-2 border-(--accent) p-4" data-filters>
+		<div class="mb-4 flex flex-col gap-3 rounded-2xl border-2 border-(--accent) p-4" data-filters>
 			<div class="flex items-center justify-between">
 				<span class="text-xs tracking-widest text-(--accent)">FILTERS</span>
 				<button class="text-sm text-muted underline hover:text-(--accent)" onclick={() => ((f = fresh()), (custom = false))}>reset</button>
@@ -69,6 +72,7 @@
 			{/if}
 		</div>
 	{/if}
-</div>
+{/snippet}
 
-{@render children(shown)}
+<!-- A new filter starts the table over on page 1, whichever table is in. -->
+{#key JSON.stringify(f)}<DataTable rows={shown} {...table} {toggle} {panel} />{/key}
