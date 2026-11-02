@@ -15,7 +15,7 @@ test('the five reports, each with its own page', () => {
 });
 
 test.each([
-	['planting', ['date', 'block', 'piece', 'bag', 'time', 'planter', 'lot', 'trees', 'value', 'per tree', 'currency']],
+	['planting', ['date', 'block', 'piece', 'cache', 'bag', 'time', 'planter', 'lot', 'trees', 'value', 'per tree', 'currency']],
 	['trees', ['lot', 'trees/box', 'trees/bundle', 'per tree', 'trees', 'value', 'currency', 'days', 'blocks']],
 	['deliveries', ['cache', 'block', 'lot', 'boxes', 'trees/box', 'total', 'counted', 'counted by', 'delivery', 'delivered', 'delivered by']],
 	['allocation', ['block', 'allocated', 'calculated', 'delivered', 'planted', 'in caches', 'left to plant']],
@@ -32,6 +32,13 @@ test('the reports agree on the season’s trees', () => {
 	expect(total('allocation', 'planted')).toBe(planted);
 	expect(total('allocation', 'in caches')).toBe(total('deliveries', 'total'));
 	expect(total('allocation', 'delivered')).toBe(planted + total('allocation', 'in caches'));
+});
+
+test('a bag-up filed at a cache pin shows under cache, never under piece', () => {
+	const caches = new Set(query(`SELECT featureName FROM mapFeatureView WHERE pinIcon = 'cache'`).map((r) => r.featureName));
+	const planting = rows('planting');
+	expect(planting.some((r) => caches.has(r.cache))).toBe(true);
+	expect(planting.filter((r) => caches.has(r.piece))).toEqual([]);
 });
 
 test('quality pays on the 704 curve', () => {

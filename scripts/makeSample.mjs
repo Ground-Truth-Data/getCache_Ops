@@ -124,9 +124,14 @@ const blocks = Array.from({ length: 8 }, (_, i) => {
 	born('block', blockKey, SEASON_START, planter, {
 		blockName: name, allocatedQty: Math.round(areaHa * 1600), mapFeatureKey: polygonKey,
 	});
+	const cacheKey = key('pin');
+	born('mapFeature', cacheKey, SEASON_START, planter, {
+		featureName: `${name} cache`, featureType: 'point', pinIcon: 'cache', mapKey, linkedBlockKey: blockKey,
+		geometryJson: JSON.stringify({ type: 'Point', coordinates: toLngLat([0, 0], center) }),
+	});
 	const lots = [pick(seedlots.slice(0, 4)), pick(seedlots.slice(4))];
 	if (rand() < 0.4) lots.push(pick(seedlots.filter((s) => !lots.includes(s))));
-	return { name, blockKey, polygonKey, ring, center, areaHa, lots };
+	return { name, blockKey, polygonKey, cacheKey, ring, center, areaHa, lots };
 });
 
 // The season: mostly four on, one off — but crews slip to three, five or six on, and two off.
@@ -157,7 +162,8 @@ for (const [n, day] of days.entries()) {
 	for (let b = 0; b < bagUps; b++, minute += Math.round((9 * 60) / bagUps) + int(-8, 8)) {
 		const at = isoAt(day, minute);
 		const bagUpKey = key('bag');
-		born('bagUp', bagUpKey, at, planter, { plantedDt: day, blockKey: block.blockKey, mapFeatureKey: block.polygonKey });
+		// The first bag-up of the day is filed at the cache, the rest on the piece — the app lets a bag-up sit on either.
+		born('bagUp', bagUpKey, at, planter, { plantedDt: day, blockKey: block.blockKey, mapFeatureKey: b ? block.polygonKey : block.cacheKey });
 		const lots = rand() < 0.12 ? [pick(block.lots)] : block.lots.slice().sort(() => rand() - 0.5).slice(0, 2);
 		for (const lot of lots) {
 			const bundles = lots.length === 1 ? int(10, 14) : int(5, 7);
@@ -169,17 +175,12 @@ for (const [n, day] of days.entries()) {
 	}
 }
 
-// A cache per block: each lot allocated, delivered the first morning, and what's left counted the last evening.
+// Each block's cache: every lot allocated, delivered the first morning, and what's left counted the last evening.
 for (const block of blocks.filter((b) => daysOn.has(b))) {
 	const [first, last] = [daysOn.get(block)[0], daysOn.get(block).at(-1)];
-	const cacheKey = key('pin');
 	const [lng, lat] = toLngLat([0, 0], block.center);
-	born('mapFeature', cacheKey, isoAt(first, 6 * 60), planter, {
-		featureName: `${block.name} cache`, featureType: 'point', pinIcon: 'cache', mapKey, linkedBlockKey: block.blockKey,
-		geometryJson: JSON.stringify({ type: 'Point', coordinates: [lng, lat] }),
-	});
 	for (const [i, lot] of block.lots.entries()) {
-		const row = { mapFeatureKey: cacheKey, boxKey: lot.boxKey };
+		const row = { mapFeatureKey: block.cacheKey, boxKey: lot.boxKey };
 		insert('allocationTable', { versionKey: key('op'), blockKey: block.blockKey, boxKey: lot.boxKey, treesQty: Math.round((block.areaHa * 1600) / block.lots.length), sortOrder: i, createdAt: SEASON_START, allocatedByKey: checker });
 		insert('deliveryTable', { ...row, versionKey: key('op'), kind: 'delivered', lat, lng, accuracyM: int(3, 12), distanceM: int(0, 25), createdAt: isoAt(first, 6 * 60 + i), deliveredByKey: checker });
 		insert('stockTable', { ...row, versionKey: key('op'), boxQty: int(0, 4), createdAt: isoAt(last, 17 * 60 + i), countedByKey: planter });
