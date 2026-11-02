@@ -158,17 +158,22 @@ main:has(.admin-table) {
    copying scrollY lags a frame and jitters. From the wrapper's top crossing the
    viewport top to its bottom crossing it, the band slides down exactly as far
    as the page scrolls; `--adt-vh` is the wrapper's height, set by script.
-   No band cell wears a border: a collapsed border is painted by the table where
-   the row WAS, so the translated band leaves a see-through strip at the seam.
-   Rules and floors are inset shadows, which move with the cell. */
-.admin-table thead th {
-	position: sticky;
-	top: 0;
+   The WHOLE thead moves, one block, so no seam can open between its rows; it
+   is black underneath, so a subpixel gap shows black, never a row. Not
+   `position: sticky`: the wrapper's sideways overflow captures sticky, so it
+   could never reach the page. No band cell wears a border: a collapsed border
+   is painted where the row WAS, not where the band is. Rules and floors are
+   inset shadows, which move with the cell. */
+.admin-table thead {
+	position: relative;
 	z-index: 5;
-	box-shadow: var(--at-edge-hi), inset 0 0 0 100vmax var(--at-inset);
+	background: #000;
 	animation: admin-head-pin linear both;
 	animation-timeline: --admin-head;
 	animation-range: exit-crossing 0% exit-crossing 100%;
+}
+.admin-table thead th {
+	box-shadow: var(--at-edge-hi), inset 0 0 0 100vmax var(--at-inset);
 }
 @keyframes admin-head-pin {
 	to {
