@@ -15,11 +15,12 @@ import TableToolbar from "./table/TableToolbar.svelte";
 import { hiddenFromParams, hiddenToParams, visibleColumns } from "./table/columnPrefs";
 import { type SortState, sortRows } from "../plugin/sortRows";
 import { moneyIn } from "./money";
+import type { Snippet } from "svelte";
 
 type Row = Record<string, unknown>;
 
 // `money` columns show in each row's own currency, so `currency` leaves the screen but stays in exports.
-let { rows, columns, name, money = [] }: { rows: Row[]; columns: string[]; name: string; money?: string[] } = $props();
+let { rows, columns, name, money = [], toggle, panel }: { rows: Row[]; columns: string[]; name: string; money?: string[]; toggle?: Snippet; panel?: Snippet } = $props();
 const onScreen = $derived(money.length ? columns.filter((c) => c !== "currency") : columns);
 const price = $derived(moneyIn(rows));
 
@@ -68,7 +69,9 @@ const shown = $derived(matched.slice(rowOffset, rowOffset + pageSize));
 
 const pageHref = (n: number) => hrefWith((p) => (n <= 0 ? p.delete("page") : p.set("page", String(n))));
 
-// Page 3 of the table is not page 3 of the matches.
+// Page 3 of the table is not page 3 of the matches. Filters remounts the table on every change, and the page lives in the hash, so a mount under a panel starts on page 1.
+// svelte-ignore state_referenced_locally
+if (panel && pageIndex) setParams((p) => p.delete("page"));
 function onFilter(v: string) {
 	filter = v;
 	if (pageIndex) setParams((p) => p.delete("page"));
@@ -145,9 +148,11 @@ function tickAll() {
 			placeholder="Search any column"
 			oninput={(e) => onFilter(e.currentTarget.value)}
 		/>
+		{@render toggle?.()}
 		<ColumnPicker columns={onScreen} {hidden} onchange={(next) => setParams((p) => hiddenToParams(p, next, onScreen))} />
 		<span class="dt-meta">{countLine}</span>
 	</div>
+	{@render panel?.()}
 
 	<TableToolbar columns={exportCols} filteredRows={matched} selectedRows={tickedRows} tableName={name} />
 
