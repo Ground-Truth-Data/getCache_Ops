@@ -791,17 +791,13 @@ const barShare = (c: string, row: Record<string, unknown>) => {
 		box-shadow: inset 0 0 0 100vmax var(--at-bg);
 	}
 	/* THE HEAD BAND IS ONE PLANE, and a frozen header cell has to carry it too.
-	   The shared sheet gives the band `--at-lift-2` + `--at-edge-hi`, but a frozen
-	   cell declares its own `box-shadow` and that is ONE property with one winner
-	   — so without restating them the band's shadow visibly breaks over the frozen
-	   columns. The floor stays LAST: earlier layers paint on top, so the lit top
-	   edge has to sit above the opaque backing to be seen at all. The Σ row is
-	   excluded because it is not part of the band. */
+	   A frozen cell declares its own `box-shadow`, ONE property with one winner,
+	   so it restates the band's lit edge (header) or cast (Σ, the band's bottom).
+	   The floor stays LAST: earlier layers paint on top. */
 	.adt :global(thead tr:not(.subtotal) th.adt-frozen) {
 		z-index: 6;
 		background: var(--at-inset);
-		box-shadow: var(--at-lift-2), var(--at-edge-hi),
-			inset 0 0 0 100vmax var(--at-inset);
+		box-shadow: var(--at-edge-hi), inset 0 0 0 100vmax var(--at-inset);
 	}
 	/* --at-panel-2, matching the shared sheet's `tr.subtotal th`: the frozen and
 	   scrolling halves of one band have to be one colour. They were a step apart
@@ -809,7 +805,8 @@ const barShare = (c: string, row: Record<string, unknown>) => {
 	   sheet. */
 	.adt :global(tr.subtotal th.adt-frozen) {
 		background: var(--at-panel-2);
-		box-shadow: inset 0 0 0 100vmax var(--at-panel-2);
+		z-index: 6;
+		box-shadow: var(--at-lift-2), inset 0 0 0 100vmax var(--at-panel-2);
 	}
 	.adt :global(tbody tr:hover td.adt-frozen) {
 		background: var(--at-hover);
@@ -835,11 +832,10 @@ const barShare = (c: string, row: Record<string, unknown>) => {
 	/* Carries the band's plane as well as the seam — see the frozen header rule.
 	   Scoped past `.subtotal` so it still outranks it on an equal-specificity tie. */
 	.adt :global(thead tr:not(.subtotal) th.adt-seam) {
-		box-shadow: var(--at-lift-2), var(--at-edge-hi), var(--at-lift-1),
-			inset 0 0 0 100vmax var(--at-inset);
+		box-shadow: var(--at-edge-hi), var(--at-lift-1), inset 0 0 0 100vmax var(--at-inset);
 	}
 	.adt :global(tr.subtotal th.adt-seam) {
-		box-shadow: var(--at-lift-1), inset 0 0 0 100vmax var(--at-panel-2);
+		box-shadow: var(--at-lift-2), var(--at-lift-1), inset 0 0 0 100vmax var(--at-panel-2);
 	}
 	.adt :global(tbody tr:hover td.adt-seam) {
 		box-shadow: var(--at-lift-1), inset 0 0 0 100vmax var(--at-hover);
