@@ -10,7 +10,10 @@ export const reports = [
 		slug: 'planting',
 		title: 'Planting',
 		description: 'Every tally, as the Stats bags tab shows it.',
-		sql: `SELECT b.plantedDt AS "date", k.blockName AS "block", f.featureName AS "piece",
+		// A bag-up is filed on a piece (a polygon) or at a cache (a pin); Stats shows either in one slot, Ops names which.
+		sql: `SELECT b.plantedDt AS "date", k.blockName AS "block",
+				CASE WHEN json_extract(f.geometryJson, '$.type') <> 'Point' THEN f.featureName END AS "piece",
+				CASE WHEN json_extract(f.geometryJson, '$.type') = 'Point' THEN f.featureName END AS "cache",
 				'bag#' || dense_rank() OVER (PARTITION BY b.plantedDt, b.createdByKey ORDER BY b.createdAt, b.bagUpKey) AS "bag",
 				strftime('%H:%M', b.createdAt, 'localtime') AS "time", ${person('p')} AS "planter", ${lot('t')} AS "lot",
 				CAST(t.plantedQty AS INTEGER) AS "trees", round(t.plantedQty * t.pricePerTree, 2) AS "value", t.pricePerTree AS "per tree", t.currency AS "currency"
