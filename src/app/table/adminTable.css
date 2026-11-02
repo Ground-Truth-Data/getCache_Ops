@@ -118,6 +118,8 @@
 	overflow: auto hidden;
 	overscroll-behavior-x: contain; /* a sideways swipe stops at the table's edge instead of bubbling into the page's clipped (rubber-banding) x-axis */
 	view-timeline: --admin-head block;
+	/* The band pins under the site header, not at the viewport's top. */
+	view-timeline-inset: var(--site-head, 0px) 0px;
 }
 /* Page-level wrappers stay open — a page-scoped overflow here outranks the shared rule and reads as "sticky is broken". */
 .wrap:has(.admin-table),

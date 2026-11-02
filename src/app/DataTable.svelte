@@ -46,6 +46,16 @@ function setParams(edit: (p: URLSearchParams) => void) {
 	hash = location.hash;
 }
 
+// The site header wraps on a narrow screen, so its height is measured, not assumed.
+let section = $state<HTMLElement>();
+$effect(() => {
+	const head = document.querySelector("header");
+	if (!head || !section) return;
+	const ro = new ResizeObserver(() => section?.style.setProperty("--site-head", `${head.offsetHeight}px`));
+	ro.observe(head);
+	return () => ro.disconnect();
+});
+
 let filter = $state("");
 let sort = $state<SortState>({ col: "", asc: true });
 
@@ -138,7 +148,7 @@ function tickAll() {
 }
 </script>
 
-<section class="dt" data-table={name}>
+<section class="dt" data-table={name} bind:this={section}>
 	<div class="dt-head">
 		<input
 			class="dt-search"
