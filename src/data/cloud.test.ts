@@ -21,6 +21,11 @@ test('with no Supabase address set, as on a fork, nobody is signed in', () => {
 	vi.unstubAllEnvs();
 });
 
+test('a table Central lacks fails the whole pull, naming it', async () => {
+	const lacking = (path: string, range?: string) => (path.startsWith('tallyTable?') ? Promise.resolve(new Response('', { status: 404 })) : central(path, range));
+	await expect(build(lacking)).rejects.toThrow('Central has no tallyTable');
+});
+
 test("builds the Phone schema from Central's rows, and the reports read it", async () => {
 	// Pages of 100 against 926 tallies: the last short page ends each table.
 	await openDatabase(await build(central, 100));

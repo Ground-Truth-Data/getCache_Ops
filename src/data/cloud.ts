@@ -67,8 +67,8 @@ export async function build(read = rest, page = 1000): Promise<Uint8Array> {
 			try {
 				for (let from = 0; ; from += page) {
 					const res = await read(`${table}?select=${cols.map(encodeURIComponent).join(',')}`, `${from}-${from + page - 1}`);
-					// A Phone table Central does not mirror.
-					if (res.status === 404) break;
+					// Central mirrors every Phone table, so a missing one is a broken Central: the pull fails whole.
+					if (res.status === 404) throw new Error(`Central has no ${table}`);
 					if (!res.ok) throw new Error(`Central ${table}: HTTP ${res.status}`);
 					const rows: Record<string, unknown>[] = await res.json();
 					for (const row of rows)
@@ -102,7 +102,7 @@ const idb = <T>(run: (s: IDBObjectStore) => IDBRequest<T>, mode: IDBTransactionM
 
 /** Hands over the cached copy at once, then a fresh one whenever Central takes a phone upload:
  *  checked now, on focus, and every 30 s while visible. `at` is when Central took it. */
-export function follow(onBytes: (bytes: Uint8Array, at: string) => void, onError: (e: Error) => void = console.warn): () => void {
+export function follow(onBytes: (bytes: Uint8Array, at: string) => void, onError: (e: Error) => void): () => void {
 	const who = signedIn();
 	if (!who) return () => {};
 	let seen: string | undefined;
@@ -119,6 +119,7 @@ export function follow(onBytes: (bytes: Uint8Array, at: string) => void, onError
 				await idb((s) => s.put({ cursor: at, bytes }, who.authId), 'readwrite');
 			}
 		} catch (e) {
+			console.warn('[ops] pull failed; the last copy stays', e);
 			onError(e as Error);
 		} finally {
 			busy = false;
