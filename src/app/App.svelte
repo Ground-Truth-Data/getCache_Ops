@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { brand } from '../brand';
-	import { askGetCache } from '../data/bridge';
+	import { askGetCache, type Reply } from '../data/bridge';
 	import { openDatabase } from '../data/db';
 	import type { Ops } from '../plugin/api';
 	import { makeOps, plugins, refusal } from '../plugin/host';
@@ -25,7 +25,14 @@
 	const trySample = async () => open(await (await fetch('sample.sqlite')).arrayBuffer(), 'the sample season');
 
 	const LIVE = 'your Get Cache data in this browser';
-	const { ask } = askGetCache((bytes) => (!source || source === LIVE) && open(bytes, LIVE));
+	let reply = $state<Omit<Reply, 'bytes'>>({});
+	const { ask } = askGetCache(({ bytes, ...rest }) => {
+		if (source && source !== LIVE) return;
+		reply = rest;
+		open(bytes, LIVE);
+	});
+	const signedIn = $derived(source === LIVE && reply.signedIn === true);
+	const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 	async function openFile(file?: File) {
 		if (file) open(await file.arrayBuffer(), file.name);
@@ -56,8 +63,12 @@
 	</header>
 
 	{#if error}<p class="mb-4 text-red-400" data-error>{error}</p>{/if}
-	{#if ops}
-		<p class="mb-4 text-sm text-muted">
+	{#if ops && signedIn}
+		<p class="mb-4 text-sm text-muted" data-status>
+			Your Get Cache account, from this browser · {reply.syncedAt ? `last synced ${when(reply.syncedAt)}` : 'not synced yet'}
+		</p>
+	{:else if ops}
+		<p class="mb-4 text-sm text-muted" data-status>
 			Showing {source} · schema {ops.schemaVersion} · nothing leaves this computer · drop a file anywhere or
 			<label for="pick" class="cursor-pointer text-(--accent) underline">choose one</label>
 		</p>
@@ -80,14 +91,14 @@
 			{/if}
 		{/each}
 	{:else}
+		<a href="/app/account" target="_blank" class="mb-6 block text-center font-display text-3xl text-(--accent) underline" data-signin>
+			Sign in to see your data automatically
+		</a>
 		<label
 			for="pick"
-			class="flex min-h-[60vh] cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-(--accent) p-6 text-center font-display text-2xl text-(--accent) {over ? 'bg-(--accent)/10' : ''}"
+			class="flex min-h-[40vh] cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-rule p-6 text-center text-lg text-muted {over ? 'border-(--accent) bg-(--accent)/10' : ''}"
 			ondragenter={() => (over = true)}
 			ondragleave={() => (over = false)}
-			data-dropzone>Drop a Get Cache backup to see charts and tables</label>
-		<p class="mt-4 text-center text-sm text-muted">
-			Your own data shows here while <a href="/app/menu" target="_blank" class="text-(--accent) underline">Get Cache is open in another tab</a>
-		</p>
+			data-dropzone>Or: Get Cache → Account → Backup, then drop the file here</label>
 	{/if}
 </main>
