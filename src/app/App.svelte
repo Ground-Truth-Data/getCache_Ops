@@ -33,12 +33,19 @@
 	const SAMPLE = 'the sample season';
 	const trySample = async () => open(await (await fetch('sample.sqlite')).arrayBuffer(), SAMPLE);
 	const LIVE = 'your Get Cache account';
-	const account = signedIn();
-	if (account)
-		follow((bytes) => {
-			if (source && source !== LIVE) return;
-			open(bytes, LIVE);
-		});
+	let account = $state<ReturnType<typeof signedIn>>(null);
+	// Again on coming back from the app's tab, where the planter signed in or the app refreshed the token.
+	function watch() {
+		if (account || !(account = signedIn())) return;
+		follow(
+			(bytes) => {
+				if (source && source !== LIVE) return;
+				open(bytes, LIVE);
+			},
+			() => (account = null),
+		);
+	}
+	watch();
 	let pick = $state<HTMLInputElement>();
 
 	async function openFile(file?: File) {
@@ -57,7 +64,7 @@
 
 <svelte:head><title>{brand.name}</title>{#if brand.logo}<link rel="icon" href={brand.logo} />{/if}</svelte:head>
 
-<svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => (hash = location.hash)} />
+<svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => (hash = location.hash)} onfocus={watch} />
 
 <div class="font-sans" style:--accent={brand.accent}>
 	<header class="sticky top-0 z-10 border-b border-rule bg-ground">
@@ -110,7 +117,8 @@
 				<p class="mb-4 text-sm text-muted" data-warning>Raw tables change between versions. Reports are the stable way to build.</p>
 				{#if ops}<Advanced {ops} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if ops && plugin}
-				{#key plugin.id + source}
+				<!-- Each copy is a new ops: a live copy keeps one `source`, so keying on it froze the first. -->
+				{#key [plugin, ops]}
 					{@const why = refusal(plugin, ops.schemaVersion)}
 					{#if why}
 						<p class="text-muted" data-refused={plugin.id}>{why}</p>
