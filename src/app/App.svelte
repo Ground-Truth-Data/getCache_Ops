@@ -29,8 +29,9 @@
 		}
 	}
 
-	const trySample = async () => open(await (await fetch('sample.sqlite')).arrayBuffer(), 'the sample season');
 
+	const SAMPLE = 'the sample season';
+	const trySample = async () => open(await (await fetch('sample.sqlite')).arrayBuffer(), SAMPLE);
 	const LIVE = 'your Get Cache account';
 	const account = signedIn();
 	if (account)
@@ -68,10 +69,16 @@
 				<a
 					href="#/{path}"
 					aria-current={page[0] === path ? 'page' : undefined}
-					class="flex items-center gap-1.5 rounded-lg px-3 py-1 font-display text-lg {page[0] === path ? 'bg-(--accent) text-on-accent' : 'text-muted hover:text-ink'}"
+					class="flex items-center gap-1.5 rounded-lg px-3 py-1 font-display text-lg {page[0] === path ? 'bg-(--accent) text-on-accent' : 'text-muted hover:bg-(--accent)/15 hover:text-ink'}"
 					>{#if path === ''}<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 9.5V21h5v-6h4v6h5V9.5" /></svg>{/if}{label}</a>
 			{/each}
-			<button class="ml-auto rounded-lg p-2 text-muted hover:text-(--accent)" title="Import a backup" aria-label="Import a backup" onclick={() => pick?.click()} data-import>
+			{#if source !== SAMPLE}
+				<button class="ml-auto rounded-lg px-3 py-1 font-display text-lg text-muted hover:bg-(--accent)/15 hover:text-ink" onclick={trySample} data-sample>Sample</button>
+			{:else if account}
+				<!-- The account copy is cached, so a reload brings it straight back. -->
+				<button class="ml-auto rounded-lg px-3 py-1 font-display text-lg text-muted hover:bg-(--accent)/15 hover:text-ink" onclick={() => location.reload()} data-sample>My season</button>
+			{/if}
+			<button class="{source === SAMPLE && !account ? 'ml-auto' : ''} rounded-lg p-2 text-muted hover:bg-(--accent)/15 hover:text-(--accent)" title="Import a backup" aria-label="Import a backup" onclick={() => pick?.click()} data-import>
 				<svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" /></svg>
 			</button>
 			<input bind:this={pick} type="file" class="hidden" onchange={(e) => openFile(e.currentTarget.files?.[0])} />
@@ -84,13 +91,12 @@
 			<h1 class="mb-6 font-display text-3xl text-(--accent)">Your season at a glance</h1>
 			{#if !account}
 				<p class="-mt-4 mb-6 text-muted" data-signin>
-					<a href="/app/account" target="_blank" class="text-(--accent) underline">Sign in to see your data automatically</a>
-					· or <button class="text-(--accent) underline" onclick={trySample}>try the sample season</button>
+					<a href="/app/account" target="_blank" class="text-(--accent) underline hover:opacity-80">Sign in to see your data automatically</a>
 				</p>
 			{/if}
 			<div class="grid gap-4 sm:grid-cols-3">
 				{#each [['season', 'Season', 'Charts of trees planted, blocks and seedlots'], ['reports', 'Reports', 'Five plain tables to sort, search and export'], ['advanced', 'Advanced', 'Every raw table, for builders']] as [path, title, blurb] (path)}
-					<a href="#/{path}" class="rounded-2xl border border-rule p-6 hover:border-(--accent)" data-card={path}>
+					<a href="#/{path}" class="rounded-2xl border border-rule p-6 transition hover:-translate-y-0.5 hover:border-(--accent) hover:bg-(--accent)/10" data-card={path}>
 						<span class="block font-display text-2xl text-(--accent)">{title}</span>
 						<span class="mt-2 block text-muted">{blurb}</span>
 					</a>
