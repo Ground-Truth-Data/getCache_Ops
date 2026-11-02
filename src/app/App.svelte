@@ -41,7 +41,6 @@
 				synced = syncedAt ? new Date(syncedAt) : undefined;
 				open(bytes, LIVE);
 			},
-			(e) => (error = e.message),
 		);
 	const live = $derived(source === LIVE);
 
@@ -73,31 +72,37 @@
 				<a
 					href="#/{path}"
 					aria-current={page[0] === path ? 'page' : undefined}
-					class="rounded-lg px-3 py-1 font-display text-lg {page[0] === path ? 'bg-(--accent) text-on-accent' : 'text-muted hover:text-ink'}">{label}</a>
+					class="flex items-center gap-1.5 rounded-lg px-3 py-1 font-display text-lg {page[0] === path ? 'bg-(--accent) text-on-accent' : 'text-muted hover:text-ink'}"
+					>{#if path === ''}<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 9.5V21h5v-6h4v6h5V9.5" /></svg>{/if}{label}</a>
 			{/each}
 			<button class="ml-auto rounded-lg border border-(--accent) px-3 py-1 font-display text-(--accent)" onclick={trySample}>Try the sample season</button>
 			<input id="pick" type="file" class="hidden" onchange={(e) => openFile(e.currentTarget.files?.[0])} />
 		</nav>
-		<p class="mx-auto max-w-5xl px-6 pb-2 text-sm text-muted" data-status>
+		{#if page[0] !== ''}<p class="mx-auto max-w-5xl px-6 pb-2 text-sm text-muted" data-status>{@render status(false)}</p>{/if}
+	</header>
+
+	{#snippet status(full: boolean)}
 			{#if account && (live || !ops)}
 				Your Get Cache account · {account.email} · {!ops ? 'fetching your data' : synced ? `last synced ${synced.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}` : 'not synced yet'}
 			{:else if ops}
 				Showing {source} · schema {ops.schemaVersion} · nothing leaves this computer ·
 				<label for="pick" class="cursor-pointer text-(--accent) underline">open another file</label>
-			{:else}
+			{:else if full}
 				<a href="/app/account" target="_blank" class="text-(--accent) underline" data-signin>Sign in to see your data automatically</a>
 				· or <label for="pick" class="cursor-pointer text-(--accent) underline">drop a backup</label>
 				· or <button class="text-(--accent) underline" onclick={trySample}>try the sample season</button>
+			{:else}
+				No data loaded · <a href="#/" class="text-(--accent) underline">get started on Home</a>
 			{/if}
-		</p>
-	</header>
+	{/snippet}
 
 	<main class="mx-auto max-w-5xl px-6 py-6">
-		{#if error}<p class="mb-4 text-red-400" data-error>{error}</p>{/if}
+		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
 		{#if page[0] === ''}
-			<h1 class="mb-6 font-display text-3xl text-(--accent)">Your season at a glance</h1>
+			<h1 class="mb-2 font-display text-3xl text-(--accent)">Your season at a glance</h1>
+			<p class="mb-6 text-muted" data-status>{@render status(true)}</p>
 			<div class="grid gap-4 sm:grid-cols-3">
-				{#each [['season', 'Season', 'Charts of trees planted, blocks and seedlots'], ['reports', 'Reports', 'Five plain tables to sort, search and export'], ['advanced', 'Advanced', 'Raw tables and schema, for builders']] as [path, title, blurb] (path)}
+				{#each [['season', 'Season', 'Charts of trees planted, blocks and seedlots'], ['reports', 'Reports', 'Five plain tables to sort, search and export'], ['advanced', 'Advanced', 'Every raw table, for builders']] as [path, title, blurb] (path)}
 					<a href="#/{path}" class="rounded-2xl border border-rule p-6 hover:border-(--accent)" data-card={path}>
 						<span class="block font-display text-2xl text-(--accent)">{title}</span>
 						<span class="mt-2 block text-muted">{blurb}</span>
@@ -109,7 +114,7 @@
 		{:else}
 			<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[1]}</h1>
 			{#if page[0] === 'advanced'}
-				<p class="mb-4 rounded-xl border border-red-400/60 p-4 text-red-300" data-warning>Raw tables change between versions. Reports are the stable way to build.</p>
+				<p class="mb-4 text-sm text-muted" data-warning>Raw tables change between versions. Reports are the stable way to build.</p>
 				{#if ops}<Advanced {ops} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if ops && plugin}
 				{#key plugin.id + source}
