@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Ops } from '../plugin/api';
 	import { reports } from '../reports';
-	import DataTable from './DataTable.svelte';
 	import Filters from './Filters.svelte';
 
 	let { ops, slug }: { ops?: Ops; slug?: string } = $props();
@@ -23,9 +22,7 @@
 	<p class="mb-6 text-muted">{report.description}</p>
 	{#if ops}
 		{#key slug}
-			<Filters {rows}>
-				{#snippet children(shown)}<DataTable rows={shown} columns={Object.keys(rows[0] ?? {})} name={report.title} />{/snippet}
-			</Filters>
+			<Filters {rows} columns={Object.keys(rows[0] ?? {})} name={report.title} money={report.money} />
 		{/key}
 	{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 {:else}
