@@ -24,6 +24,7 @@ test('with no Supabase address set, as on a fork, nobody is signed in', () => {
 test("builds the Phone schema from Central's rows, and the reports read it", async () => {
 	// Pages of 100 against 926 tallies: the last short page ends each table.
 	await openDatabase(await build(central, 100));
+	expect(query('PRAGMA user_version')).toEqual([{ user_version: 57 }]);
 	expect(query(perDay)).toEqual(sample.prepare(perDay).all().map((r) => ({ ...r })));
 	expect(query('SELECT count(*) AS n FROM tallyTable')).toEqual([sample.prepare('SELECT count(*) AS n FROM tallyTable').get()].map((r) => ({ ...r })));
 });
