@@ -41,7 +41,6 @@
 				synced = syncedAt ? new Date(syncedAt) : undefined;
 				open(bytes, LIVE);
 			},
-			(e) => (error = e.message),
 		);
 	const live = $derived(source === LIVE);
 
@@ -93,11 +92,11 @@
 	</header>
 
 	<main class="mx-auto max-w-5xl px-6 py-6">
-		{#if error}<p class="mb-4 text-red-400" data-error>{error}</p>{/if}
+		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
 		{#if page[0] === ''}
 			<h1 class="mb-6 font-display text-3xl text-(--accent)">Your season at a glance</h1>
 			<div class="grid gap-4 sm:grid-cols-3">
-				{#each [['season', 'Season', 'Charts of trees planted, blocks and seedlots'], ['reports', 'Reports', 'Five plain tables to sort, search and export'], ['advanced', 'Advanced', 'Raw tables and schema, for builders']] as [path, title, blurb] (path)}
+				{#each [['season', 'Season', 'Charts of trees planted, blocks and seedlots'], ['reports', 'Reports', 'Five plain tables to sort, search and export'], ['advanced', 'Advanced', 'Every raw table, for builders']] as [path, title, blurb] (path)}
 					<a href="#/{path}" class="rounded-2xl border border-rule p-6 hover:border-(--accent)" data-card={path}>
 						<span class="block font-display text-2xl text-(--accent)">{title}</span>
 						<span class="mt-2 block text-muted">{blurb}</span>
@@ -109,7 +108,7 @@
 		{:else}
 			<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[1]}</h1>
 			{#if page[0] === 'advanced'}
-				<p class="mb-4 rounded-xl border border-red-400/60 p-4 text-red-300" data-warning>Raw tables change between versions. Reports are the stable way to build.</p>
+				<p class="mb-4 text-sm text-muted" data-warning>Raw tables change between versions. Reports are the stable way to build.</p>
 				{#if ops}<Advanced {ops} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if ops && plugin}
 				{#key plugin.id + source}

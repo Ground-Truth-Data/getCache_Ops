@@ -102,7 +102,7 @@ const idb = <T>(run: (s: IDBObjectStore) => IDBRequest<T>, mode: IDBTransactionM
 
 /** Hands over the cached copy at once, then a fresh one whenever Central takes a phone upload:
  *  checked now, on focus, and every 30 s while visible. `at` is when Central took it. */
-export function follow(onBytes: (bytes: Uint8Array, at: string) => void, onError: (e: Error) => void): () => void {
+export function follow(onBytes: (bytes: Uint8Array, at: string) => void): () => void {
 	const who = signedIn();
 	if (!who) return () => {};
 	let seen: string | undefined;
@@ -120,14 +120,13 @@ export function follow(onBytes: (bytes: Uint8Array, at: string) => void, onError
 			}
 		} catch (e) {
 			console.warn('[ops] pull failed; the last copy stays', e);
-			onError(e as Error);
 		} finally {
 			busy = false;
 		}
 	};
 	idb<Copy | undefined>((s) => s.get(who.authId))
 		.then((cached) => cached && ((seen = cached.cursor), onBytes(cached.bytes, cached.cursor)))
-		.catch(onError)
+		.catch((e) => console.warn('[ops] cached copy unreadable', e))
 		.finally(check);
 	const timer = setInterval(check, EVERY_MS);
 	addEventListener('visibilitychange', check);
