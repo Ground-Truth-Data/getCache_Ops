@@ -1,4 +1,5 @@
 #!/bin/sh
 set -e
+npm run check
 npx knip
 npm test
