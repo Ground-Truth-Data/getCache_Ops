@@ -17,7 +17,7 @@
 	<h1 class="mb-6 font-display text-3xl text-(--accent)">Reports</h1>
 	<div class="grid gap-4 sm:grid-cols-2">
 		{#each reports as r (r.slug)}
-			<a href="#/reports/{r.slug}" class="rounded-2xl border border-rule p-6 transition hover:border-(--accent)" data-report={r.slug}>
+			<a href="#/reports/{r.slug}" class="rounded-2xl border border-rule p-6 transition hover:-translate-y-0.5 hover:border-(--accent) hover:bg-(--accent)/10" data-report={r.slug}>
 				<h2 class="font-display text-2xl text-(--accent)">{r.title}</h2>
 				<p class="mt-1 text-muted">{r.description}</p>
 				{#if ops}<p class="mt-4 text-sm">{(ops.query(`SELECT count(*) AS n FROM (${r.sql})`)[0].n as number).toLocaleString()} rows</p>{/if}
