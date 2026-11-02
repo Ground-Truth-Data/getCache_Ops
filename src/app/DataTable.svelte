@@ -5,7 +5,6 @@
   two tables, so Copy link sends this exact view.
 -->
 <script lang="ts">
-import "./table/adminTable.css";
 import { SvelteSet } from "svelte/reactivity";
 import AdminDataTable from "./table/AdminDataTable.svelte";
 import AdminPager from "./table/AdminPager.svelte";
