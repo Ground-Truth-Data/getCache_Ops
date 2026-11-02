@@ -21,6 +21,7 @@ export const reports = [
 				LEFT JOIN mapFeatureView f ON f.mapFeatureKey = b.mapFeatureKey LEFT JOIN personView p ON p.personKey = b.createdByKey
 			ORDER BY b.plantedDt, b.createdAt, t.createdAt`,
 		money: ['value', 'per tree'],
+		noSum: ['per tree'],
 	},
 	{
 		slug: 'trees',
@@ -32,6 +33,7 @@ export const reports = [
 			FROM tallyView t JOIN bagUpView b USING (bagUpKey) LEFT JOIN boxView x USING (boxKey)
 			GROUP BY 1, t.currency ORDER BY "trees" DESC`,
 		money: ['per tree', 'value'],
+		noSum: ['trees/box', 'trees/bundle', 'per tree'],
 	},
 	{
 		slug: 'deliveries',
@@ -49,6 +51,7 @@ export const reports = [
 				LEFT JOIN d ON d.mapFeatureKey = pair.mapFeatureKey AND d.boxKey = pair.boxKey AND d.n = 1
 				LEFT JOIN personView sp ON sp.personKey = s.countedByKey LEFT JOIN personView dp ON dp.personKey = d.deliveredByKey
 			ORDER BY f.featureName, "lot"`,
+		noSum: ['trees/box'],
 	},
 	{
 		slug: 'allocation',
@@ -83,5 +86,6 @@ export const reports = [
 				round(v.pq, 1) AS "Quality", round(max(0, min(100, v.pq * 1.08 - (100 - v.pq * 1.08) * (100 - v.pq * 1.08) / 8)), 1) AS "Payment"
 			FROM v LEFT JOIN blockView k ON k.blockKey = v.blockKey
 			ORDER BY v.createdAt`,
+		noSum: ['stems/ha', 'Density', 'Quality', 'Payment'],
 	},
 ];

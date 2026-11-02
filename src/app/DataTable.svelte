@@ -19,7 +19,8 @@ import type { Snippet } from "svelte";
 type Row = Record<string, unknown>;
 
 // `money` columns show in each row's own currency, so `currency` leaves the screen but stays in exports.
-let { rows, columns, name, money = [], toggle, panel }: { rows: Row[]; columns: string[]; name: string; money?: string[]; toggle?: Snippet; panel?: Snippet } = $props();
+// `noSum` columns are rates: a Σ of per-tree prices means nothing.
+let { rows, columns, name, money = [], noSum = [], toggle, panel }: { rows: Row[]; columns: string[]; name: string; money?: string[]; noSum?: string[]; toggle?: Snippet; panel?: Snippet } = $props();
 const onScreen = $derived(money.length ? columns.filter((c) => c !== "currency") : columns);
 const price = $derived(moneyIn(rows));
 
@@ -79,6 +80,7 @@ function onFilter(v: string) {
 const totals = $derived.by(() => {
 	const out: Record<string, string> = {};
 	for (const c of cols) {
+		if (noSum.includes(c)) continue;
 		const vals = matched.map((r) => r[c]);
 		if (!vals.length || !vals.some((v) => typeof v === "number") || !vals.every((v) => v == null || typeof v === "number")) continue;
 		const sum = (vals as number[]).reduce((a, b) => a + (b ?? 0), 0);

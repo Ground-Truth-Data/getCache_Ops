@@ -21,6 +21,6 @@
 <p class="mb-6 text-muted">{report.description}</p>
 {#if ops}
 	{#key report}
-		<Filters {rows} columns={Object.keys(rows[0] ?? {})} name={report.title} money={report.money} />
+		<Filters {rows} columns={Object.keys(rows[0] ?? {})} name={report.title} money={report.money} noSum={report.noSum} />
 	{/key}
 {:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
