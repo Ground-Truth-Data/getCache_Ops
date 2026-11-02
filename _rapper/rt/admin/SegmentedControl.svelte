@@ -27,7 +27,7 @@ function pick(v: string) {
 
 <div class="seg" role="radiogroup" aria-label={label}>
 	{#each options as opt (opt.value)}
-		<label class="seg-item" class:fancy={value === opt.value}>
+		<label class="seg-item" class:rt-fancy-btn={value === opt.value}>
 			<input
 				type="radio"
 				{name}
@@ -60,10 +60,10 @@ function pick(v: string) {
 		user-select: none;
 		transition: background 120ms ease, color 120ms ease;
 	}
-	.seg-item:not(:global(.fancy)) {
+	.seg-item:not(.rt-fancy-btn) {
 		color: var(--at-muted, #8f8b80);
 	}
-	.seg-item:hover:not(:global(.fancy)) {
+	.seg-item:hover:not(.rt-fancy-btn) {
 		color: var(--at-fg, #f3f1e9);
 	}
 	/* Hidden with clip, not display:none, so it stays focusable and reachable. */

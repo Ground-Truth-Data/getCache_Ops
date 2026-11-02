@@ -5,6 +5,7 @@
 	import type { Ops, Plugin } from '../plugin/api';
 	import { customs, makeOps, refusal, season } from '../plugin/host';
 	import { VERSION } from '../version';
+	import Pill from '../../_rapper/rt/admin/Pill.svelte';
 	import Advanced from './Advanced.svelte';
 	import Reports from './Reports.svelte';
 
@@ -69,18 +70,14 @@
 <svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => (hash = location.hash)} onfocus={watch} />
 
 <!-- --site-head: where a table's frozen header row docks, flush under this header whatever its wrapped height. -->
-<div class="font-sans" style:--accent={brand.accent} style:--site-head="{headHeight}px">
+<div class="font-sans" style:--accent={brand.accent} style:--rt-yellow={brand.accent} style:--site-head="{headHeight}px">
 	<header class="sticky top-0 z-10 border-b border-rule bg-ground" bind:offsetHeight={headHeight}>
 		<nav class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
 			<a href="#/" class="mr-4 flex items-center gap-2 font-display text-2xl text-(--accent)" data-home>
 				{#if brand.logo}<img src={brand.logo} alt="" class="h-8" />{/if}{brand.name}
 			</a>
 			{#each pages as [path, label] (path)}
-				<a
-					href="#/{path}"
-					aria-current={page[0] === path ? 'page' : undefined}
-					class="flex items-center gap-1.5 rounded-lg px-3 py-1 font-display text-lg {page[0] === path ? 'fancy' : 'text-muted hover:bg-(--accent)/15 hover:text-ink'}"
-					>{#if path === ''}<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 9.5V21h5v-6h4v6h5V9.5" /></svg>{/if}{label}</a>
+				<Pill href="#/{path}" active={page[0] === path}>{label}</Pill>
 			{/each}
 			{#if source !== SAMPLE}
 				<button class="ml-auto rounded-lg px-3 py-1 font-display text-lg text-muted hover:bg-(--accent)/15 hover:text-ink" onclick={trySample} data-sample>Sample</button>

@@ -10,7 +10,7 @@
 	let custom = $state(false);
 	let open = $state(false);
 	const shown = $derived(apply(rows, f, dateCol));
-	const seg = (on: boolean) => `rounded-full px-3 py-0.5 ${on ? 'fancy' :'text-muted hover:bg-(--accent)/15 hover:text-ink'}`;
+	const seg = (on: boolean) => `rounded-full px-3 py-0.5 ${on ? 'rt-fancy-btn' :'text-muted hover:bg-(--accent)/15 hover:text-ink'}`;
 	const head = 'w-24 text-xs tracking-widest text-muted';
 
 	function chip(days?: number) {
@@ -21,7 +21,7 @@
 
 {#snippet toggle()}
 	<button
-		class="fancy rounded-lg p-2"
+		class="rt-fancy-btn rounded-lg p-2"
 		title="Filters"
 		aria-label="Filters"
 		aria-expanded={open}

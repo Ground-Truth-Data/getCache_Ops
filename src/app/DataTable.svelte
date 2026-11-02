@@ -6,13 +6,13 @@
 -->
 <script lang="ts">
 import { SvelteSet } from "svelte/reactivity";
-import AdminDataTable from "./table/AdminDataTable.svelte";
-import AdminPager from "./table/AdminPager.svelte";
-import ColumnPicker from "./table/ColumnPicker.svelte";
-import JsonPeek from "./table/JsonPeek.svelte";
-import TableToolbar from "./table/TableToolbar.svelte";
-import { hiddenFromParams, hiddenToParams, visibleColumns } from "./table/columnPrefs";
-import { type SortState, sortRows } from "../plugin/sortRows";
+import AdminDataTable from "../../_rapper/rt/admin/AdminDataTable.svelte";
+import AdminPager from "../../_rapper/rt/admin/AdminPager.svelte";
+import ColumnPicker from "../../_rapper/rt/admin/ColumnPicker.svelte";
+import JsonPeek from "../../_rapper/rt/admin/JsonPeek.svelte";
+import TableToolbar from "../../_rapper/rt/admin/TableToolbar.svelte";
+import { hiddenFromParams, hiddenToParams, visibleColumns } from "../../_rapper/rt/admin/columnPrefs";
+import { type SortState, sortRows } from "../../_rapper/rt/admin/sortRows";
 import { moneyIn } from "./money";
 import type { Snippet } from "svelte";
 

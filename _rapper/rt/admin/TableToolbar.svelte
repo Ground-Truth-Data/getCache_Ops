@@ -11,7 +11,6 @@ import {
     rowsToCsv,
     rowsToJson,
     rowsToMarkdown,
-    rowsToSql,
     type Row,
 } from "./exportRows";
 
@@ -61,15 +60,10 @@ async function doCopy(fmt: "json" | "csv" | "md") {
     closeMenu();
 }
 
-function doExport(fmt: "csv" | "json" | "sql") {
+function doExport(fmt: "csv" | "json") {
     const base = `${tableName || "table"}-${targetRows.length}rows`;
-    if (fmt === "csv") {
-        downloadText(`${base}.csv`, rowsToCsv(columns, targetRows), "text/csv");
-    } else if (fmt === "json") {
-        downloadText(`${base}.json`, rowsToJson(columns, targetRows), "application/json");
-    } else {
-        downloadText(`${base}.sql`, rowsToSql(tableName, columns, targetRows), "application/sql");
-    }
+    if (fmt === "csv") downloadText(`${base}.csv`, rowsToCsv(columns, targetRows), "text/csv");
+    else downloadText(`${base}.json`, rowsToJson(columns, targetRows), "application/json");
     flashLabel(`⬇ ${targetRows.length} rows`);
     closeMenu();
 }
@@ -92,7 +86,8 @@ const hinge = (_node: Element) => ({
     <div class="tt-btnwrap">
         <button
             type="button"
-            class="tt-btn fancy"
+            class="tt-btn"
+            class:open={openMenu === "copy"}
             onclick={(e) => { e.stopPropagation(); toggle("copy"); }}
         >
             Copy <span class="caret">▾</span>
@@ -109,7 +104,8 @@ const hinge = (_node: Element) => ({
     <div class="tt-btnwrap">
         <button
             type="button"
-            class="tt-btn fancy"
+            class="tt-btn"
+            class:open={openMenu === "export"}
             onclick={(e) => { e.stopPropagation(); toggle("export"); }}
         >
             Export <span class="caret">▾</span>
@@ -118,7 +114,6 @@ const hinge = (_node: Element) => ({
             <div class="tt-menu" role="menu" transition:hinge>
                 <button type="button" role="menuitem" onclick={(e) => { e.stopPropagation(); doExport("csv"); }}>Export CSV</button>
                 <button type="button" role="menuitem" onclick={(e) => { e.stopPropagation(); doExport("json"); }}>Export JSON</button>
-                <button type="button" role="menuitem" onclick={(e) => { e.stopPropagation(); doExport("sql"); }}>Export SQL (INSERTs)</button>
             </div>
         {/if}
     </div>
@@ -143,17 +138,21 @@ const hinge = (_node: Element) => ({
     .tt { display: inline-flex; align-items: center; gap: 0.5rem; }
     .tt-btnwrap { position: relative; }
     .tt-btn {
-        padding: 0.35rem 0.7rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
-        cursor: pointer; display: inline-flex; align-items: center; gap: 1ch;
+        background: #161616; border: 1px solid #333; color: #e8e8e8;
+        padding: 0.35rem 0.7rem; border-radius: 8px; font-size: 0.8rem;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;
         font-family: system-ui, sans-serif;
     }
+    .tt-btn:hover { border-color: #555; }
+    .tt-btn:active { background: #1f1f1f; }
+    .tt-btn.open { border-color: #7ba6d4; color: #bdd8f0; }
     .tt-btn:focus-visible,
     .tt-menu button:focus-visible,
     .tt-clear:focus-visible {
         outline: 1px solid var(--at-gold, #eab627);
         outline-offset: 1px;
     }
-    .caret { font-size: 0.7rem; }
+    .caret { color: #888; font-size: 0.7rem; }
 
     .tt-menu {
         position: absolute; top: calc(100% + 4px); left: 0; z-index: 40;

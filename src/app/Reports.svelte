@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Ops } from '../plugin/api';
 	import { reports } from '../reports';
+	import Pill from '../../_rapper/rt/admin/Pill.svelte';
 	import Filters from './Filters.svelte';
 
 	let { ops, slug }: { ops?: Ops; slug?: string } = $props();
@@ -10,11 +11,7 @@
 
 <nav class="flex flex-wrap gap-2" data-picker>
 	{#each reports as r (r.slug)}
-		<a
-			href="#/reports/{r.slug}"
-			class="rounded-full border px-4 py-1 font-display {r === report ? 'fancy' :'border-rule text-muted hover:border-(--accent) hover:bg-(--accent)/15 hover:text-ink'}"
-			>{r.title}</a
-		>
+		<Pill href="#/reports/{r.slug}" active={r === report}>{r.title}</Pill>
 	{/each}
 </nav>
 <h1 class="mt-6 font-display text-3xl text-(--accent)">{report.title}</h1>

@@ -8,15 +8,16 @@
   },
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
-    "pretest": "npm run sample",
+    "pretest": "npm run rapper && npm run sample",
     "test": "vitest run",
-    "predev": "npm run sample",
+    "predev": "npm run rapper && npm run sample",
     "dev": "vite",
-    "prebuild": "npm run sample",
+    "prebuild": "npm run rapper && npm run sample",
     "build": "vite build",
     "preview": "vite preview",
     "sample": "node scripts/makeSample.mjs",
-    "check": "svelte-check --threshold error"
+    "check": "svelte-check --threshold error",
+    "rapper": "node scripts/vendorRapper.mjs"
   },
   "devDependencies": {
     "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
@@ -33,5 +34,10 @@
   "version": "0.0.0",
   "dependencies": {
     "@observablehq/plot": "^0.6.17"
+  },
+  "knip": {
+    "ignore": [
+      "_rapper/**"
+    ]
   }
 }

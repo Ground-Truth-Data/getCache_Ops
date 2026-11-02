@@ -13,7 +13,7 @@ const hasStorage = () => typeof localStorage !== "undefined";
  * whole and scrolls.
  */
 export type FitMode = "comfort" | "fit" | "full";
-const FIT_MODES: readonly FitMode[] = ["comfort", "fit", "full"];
+export const FIT_MODES: readonly FitMode[] = ["comfort", "fit", "full"];
 /** A table nobody has touched behaves as it always did. */
 export const DEFAULT_FIT: FitMode = "comfort";
 

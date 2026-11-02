@@ -40,7 +40,9 @@ function toggle(col: string) {
 	onchange(toggleColumn(hidden, col));
 }
 
-const showAll = () => onchange([]);
+// One button, two ways: everything showing → Show none (all but the first, which keeps the header reachable).
+const allShown = $derived(hidden.length === 0);
+const flipAll = () => onchange(allShown ? columns.slice(1) : []);
 /** Everything off but this one — the fastest way to start a narrow report. */
 const only = (col: string) => onchange(columns.filter((c) => c !== col));
 
@@ -74,7 +76,8 @@ const hinge = (_node: Element) => ({
 <div class="colpick">
 	<button
 		type="button"
-		class="colpick-btn fancy"
+		class="colpick-btn"
+		class:on={open}
 		aria-expanded={open}
 		onclick={() => (open = !open)}
 	>
@@ -92,8 +95,8 @@ const hinge = (_node: Element) => ({
 		></div>
 		<div class="colpick-menu" transition:hinge>
 			<div class="colpick-head">
-				<button type="button" onclick={showAll} disabled={hidden.length === 0}>
-					Show all
+				<button type="button" onclick={flipAll}>
+					{allShown ? "Show none" : "Show all"}
 				</button>
 				<!-- The choice is in the address bar, so this is what turns a
 				     view into something you can send. -->
@@ -142,12 +145,21 @@ const hinge = (_node: Element) => ({
 	display: inline-block;
 }
 .colpick-btn {
+	border: 1px solid var(--admin-line, #3a3a3a);
+	background: transparent;
+	color: inherit;
 	border-radius: 6px;
 	padding: 0.28rem 0.6rem;
 	font-size: 0.78rem;
-	font-weight: 700;
 	cursor: pointer;
 	white-space: nowrap;
+}
+.colpick-btn.on,
+.colpick-btn:hover {
+	border-color: var(--palette-gold, #e0b050);
+}
+.colpick-btn:active {
+	background: rgb(255 255 255 / 7%);
 }
 .colpick-btn:focus-visible,
 .colpick-head button:focus-visible,
