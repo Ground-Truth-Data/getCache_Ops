@@ -28,7 +28,7 @@
 	/* Headers: white at rest (serious, plain), gold on hover (a control — clicking sorts). NOT rust, which belongs on meta/counts. */
 	--at-th: #f3f1e9;
 	--at-th-hover: #f5d565;
-	--at-th-arrow: rgba(255, 255, 255, 0.28); /* one per column, 35 of them at rest — an affordance, never a mark the eye has to skip */
+	--at-th-arrow: rgba(255, 255, 255, 0.85); /* Chris: the sort arrow should pop, not hide */
 
 	--at-fg: #f3f1e9;
 	/* The header's grey, mixed onto the panel so a band outside the header (the Foundr stepper) reads the same grey from one formula. */
@@ -189,8 +189,11 @@ main:has(.admin-table) {
 .admin-table th .arrow,
 .admin-table th .sort-ind {
 	color: var(--at-th-arrow);
-	font-size: 11px;
-	margin-left: 4px;
+	/* A mono header face without ↕ falls back to the emoji. */
+	font-family: system-ui, sans-serif;
+	font-size: 1em;
+	font-weight: 700;
+	margin-left: 0.3em;
 }
 .admin-table th[aria-sort] .arr,
 .admin-table th.sorted .arrow,

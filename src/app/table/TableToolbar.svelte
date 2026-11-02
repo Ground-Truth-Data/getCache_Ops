@@ -92,8 +92,7 @@ const hinge = (_node: Element) => ({
     <div class="tt-btnwrap">
         <button
             type="button"
-            class="tt-btn"
-            class:open={openMenu === "copy"}
+            class="tt-btn fancy"
             onclick={(e) => { e.stopPropagation(); toggle("copy"); }}
         >
             Copy <span class="caret">▾</span>
@@ -110,8 +109,7 @@ const hinge = (_node: Element) => ({
     <div class="tt-btnwrap">
         <button
             type="button"
-            class="tt-btn"
-            class:open={openMenu === "export"}
+            class="tt-btn fancy"
             onclick={(e) => { e.stopPropagation(); toggle("export"); }}
         >
             Export <span class="caret">▾</span>
@@ -145,21 +143,17 @@ const hinge = (_node: Element) => ({
     .tt { display: inline-flex; align-items: center; gap: 0.5rem; }
     .tt-btnwrap { position: relative; }
     .tt-btn {
-        background: #161616; border: 1px solid #333; color: #e8e8e8;
-        padding: 0.35rem 0.7rem; border-radius: 8px; font-size: 0.8rem;
-        cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.35rem 0.7rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 1ch;
         font-family: system-ui, sans-serif;
     }
-    .tt-btn:hover { border-color: #555; }
-    .tt-btn:active { background: #1f1f1f; }
-    .tt-btn.open { border-color: #7ba6d4; color: #bdd8f0; }
     .tt-btn:focus-visible,
     .tt-menu button:focus-visible,
     .tt-clear:focus-visible {
         outline: 1px solid var(--at-gold, #eab627);
         outline-offset: 1px;
     }
-    .caret { color: #888; font-size: 0.7rem; }
+    .caret { font-size: 0.7rem; }
 
     .tt-menu {
         position: absolute; top: calc(100% + 4px); left: 0; z-index: 40;

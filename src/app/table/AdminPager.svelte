@@ -71,7 +71,7 @@ const atStart = $derived(page === 0);
 {#if !atStart || hasMore || onPageSize || actions}
 	<nav class="admin-pager {klass}" aria-label="Table pages">
 		<a
-			class="pg-btn"
+			class="pg-btn fancy"
 			class:disabled={atStart}
 			aria-disabled={atStart}
 			tabindex={atStart ? -1 : undefined}
@@ -100,7 +100,7 @@ const atStart = $derived(page === 0);
 		</span>
 
 		<a
-			class="pg-btn"
+			class="pg-btn fancy"
 			class:disabled={!hasMore}
 			aria-disabled={!hasMore}
 			tabindex={!hasMore ? -1 : undefined}
@@ -125,17 +125,10 @@ const atStart = $derived(page === 0);
 	.pg-btn {
 		font-size: 12.5px;
 		font-weight: 600;
-		color: var(--at-fg, #fafafa);
-		background: var(--at-bg-2, #202020);
-		border: 1px solid var(--at-border, #3a3a44);
 		border-radius: 6px;
 		padding: 5px 11px;
 		text-decoration: none;
 		white-space: nowrap;
-	}
-	.pg-btn:hover:not(.disabled) {
-		border-color: var(--at-accent, #c97a4a);
-		color: var(--at-accent, #c97a4a);
 	}
 	/* Inert, not gone — `pointer-events` alone would still leave it keyboard-reachable, hence tabindex in markup. */
 	.pg-btn.disabled {

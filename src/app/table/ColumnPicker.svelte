@@ -74,8 +74,7 @@ const hinge = (_node: Element) => ({
 <div class="colpick">
 	<button
 		type="button"
-		class="colpick-btn"
-		class:on={open}
+		class="colpick-btn fancy"
 		aria-expanded={open}
 		onclick={() => (open = !open)}
 	>
@@ -143,21 +142,12 @@ const hinge = (_node: Element) => ({
 	display: inline-block;
 }
 .colpick-btn {
-	border: 1px solid var(--admin-line, #3a3a3a);
-	background: transparent;
-	color: inherit;
 	border-radius: 6px;
 	padding: 0.28rem 0.6rem;
 	font-size: 0.78rem;
+	font-weight: 700;
 	cursor: pointer;
 	white-space: nowrap;
-}
-.colpick-btn.on,
-.colpick-btn:hover {
-	border-color: var(--palette-gold, #e0b050);
-}
-.colpick-btn:active {
-	background: rgb(255 255 255 / 7%);
 }
 .colpick-btn:focus-visible,
 .colpick-head button:focus-visible,
