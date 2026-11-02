@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { expect, test, vi } from 'vitest';
-import { build, signedIn } from './cloud';
+import { build, follow, signedIn } from './cloud';
 import { openDatabase, query } from './db';
 
 const sample = new DatabaseSync(new URL('../../public/sample.sqlite', import.meta.url).pathname, { readOnly: true });
@@ -18,6 +18,53 @@ async function central(path: string, range = '0-999'): Promise<Response> {
 test('with no Supabase address set, as on a fork, nobody is signed in', () => {
 	vi.stubEnv('PUBLIC_GC_RT_supabase_address', '');
 	expect(signedIn()).toBeNull();
+	vi.unstubAllEnvs();
+});
+
+/** A browser signed in to Get Cache whose token expires `inSeconds` from now; Central answers with `answer`. */
+function browser(inSeconds: number, answer: (path: string) => Response) {
+	vi.stubEnv('PUBLIC_GC_RT_supabase_address', 'https://dev.supabase.co');
+	const session = { access_token: 't', expires_at: Math.floor(Date.now() / 1000) + inSeconds, user: { id: 'u1', email: 'p@x' } };
+	vi.stubGlobal('localStorage', { getItem: (k: string) => (k === 'sb-dev-auth-token' ? JSON.stringify(session) : null) });
+	vi.stubGlobal('document', { hidden: false });
+	vi.stubGlobal('addEventListener', () => {});
+	vi.stubGlobal('removeEventListener', () => {});
+	vi.stubGlobal('fetch', async (url: string) => answer(new URL(url).pathname.replace('/rest/v1/', '')));
+}
+const settle = () => new Promise((r) => setTimeout(r, 300));
+
+test('an expired token is signed out: Ops never refreshes it', () => {
+	browser(-60, () => Response.json([]));
+	expect(signedIn()).toBeNull();
+	browser(3600, () => Response.json([]));
+	expect(signedIn()).toEqual({ authId: 'u1', email: 'p@x' });
+	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
+});
+
+test('a first pull that fails, with nothing cached, hands over to the signed-out page instead of hanging', async () => {
+	browser(3600, () => new Response('', { status: 401 }));
+	const onBytes = vi.fn();
+	const onOut = vi.fn();
+	const stop = follow(onBytes, onOut);
+	await settle();
+	stop();
+	expect(onBytes).not.toHaveBeenCalled();
+	expect(onOut).toHaveBeenCalledOnce();
+	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
+});
+
+test('an account with no upload yet lands on its empty copy at once', async () => {
+	browser(3600, () => Response.json([]));
+	const onBytes = vi.fn();
+	const stop = follow(onBytes, () => {});
+	await settle();
+	stop();
+	expect(onBytes).toHaveBeenCalledOnce();
+	await openDatabase(onBytes.mock.calls[0][0]);
+	expect(query('SELECT count(*) AS n FROM tallyView')).toEqual([{ n: 0 }]);
+	vi.unstubAllGlobals();
 	vi.unstubAllEnvs();
 });
 

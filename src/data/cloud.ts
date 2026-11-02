@@ -8,19 +8,22 @@ import ddl from '../../schema/v57.sql?raw';
 const env = import.meta.env;
 const EVERY_MS = 30_000;
 
-type Session = { access_token: string; user: { id: string; email?: string } };
+type Session = { access_token: string; expires_at: number; user: { id: string; email?: string } };
 
+/** The app's session while its token is good. Only the app refreshes it: a second refresher would
+ *  spend the same single-use refresh token and sign the app out. */
 function session(): Session | null {
 	try {
 		// Unset on a fork's own domain, where there is no Get Cache session to share.
 		const ref = new URL(env.PUBLIC_GC_RT_supabase_address).hostname.split('.')[0];
-		return JSON.parse(localStorage.getItem(`sb-${ref}-auth-token`) ?? 'null');
+		const s: Session | null = JSON.parse(localStorage.getItem(`sb-${ref}-auth-token`) ?? 'null');
+		return s && s.expires_at * 1000 > Date.now() ? s : null;
 	} catch {
 		return null;
 	}
 }
 
-/** Who Get Cache is signed in as in this browser, or null. */
+/** Who Get Cache is signed in as in this browser, with a token still good, or null. */
 export function signedIn(): { authId: string; email: string } | null {
 	const s = session();
 	return s?.user?.id ? { authId: s.user.id, email: s.user.email ?? '' } : null;
@@ -100,13 +103,16 @@ const idb = <T>(run: (s: IDBObjectStore) => IDBRequest<T>, mode: IDBTransactionM
 		};
 	});
 
-/** Hands over the cached copy at once, then a fresh one whenever Central takes a phone upload:
- *  checked now, on focus, and every 30 s while visible. `at` is when Central took it. */
-export function follow(onBytes: (bytes: Uint8Array, at: string) => void): () => void {
+/** Hands over the cached copy, then a fresh one whenever Central takes a phone upload: checked
+ *  now, on focus, and every 30 s while visible. `at` is when Central took it. Calls `onOut` and
+ *  stops when the token lapses, or when the first pull fails with nothing to show: the page
+ *  lands on data or on signed out, never on a wait. */
+export function follow(onBytes: (bytes: Uint8Array, at: string) => void, onOut: () => void): () => void {
 	const who = signedIn();
-	if (!who) return () => {};
+	if (!who) return (onOut(), () => {});
 	let seen: string | undefined;
 	let busy = false;
+	const show = (bytes: Uint8Array, at: string) => ((seen = at), onBytes(bytes, at));
 	const check = async () => {
 		if (busy || document.hidden) return;
 		busy = true;
@@ -114,21 +120,23 @@ export function follow(onBytes: (bytes: Uint8Array, at: string) => void): () => 
 			const at = await cursor();
 			if (at !== seen) {
 				const bytes = await build();
-				seen = at;
-				onBytes(bytes, at);
-				await idb((s) => s.put({ cursor: at, bytes }, who.authId), 'readwrite');
+				show(bytes, at);
+				await idb((s) => s.put({ cursor: at, bytes }, who.authId), 'readwrite').catch((e) => console.warn('[ops] copy not cached', e));
 			}
 		} catch (e) {
-			console.warn('[ops] pull failed; the last copy stays', e);
+			console.warn('[ops] pull failed', e);
+			if (seen === undefined || !signedIn()) (stop(), onOut());
 		} finally {
 			busy = false;
 		}
 	};
+	// Not chained before the pull: a cache that never answers must not hold the page.
 	idb<Copy | undefined>((s) => s.get(who.authId))
-		.then((cached) => cached && ((seen = cached.cursor), onBytes(cached.bytes, cached.cursor)))
-		.catch((e) => console.warn('[ops] cached copy unreadable', e))
-		.finally(check);
+		.then((cached) => cached && seen === undefined && show(cached.bytes, cached.cursor))
+		.catch((e) => console.warn('[ops] cached copy unreadable', e));
+	check();
 	const timer = setInterval(check, EVERY_MS);
 	addEventListener('visibilitychange', check);
-	return () => (clearInterval(timer), removeEventListener('visibilitychange', check));
+	const stop = () => (clearInterval(timer), removeEventListener('visibilitychange', check));
+	return stop;
 }
