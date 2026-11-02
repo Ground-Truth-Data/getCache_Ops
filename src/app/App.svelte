@@ -48,6 +48,7 @@
 	}
 	watch();
 	let pick = $state<HTMLInputElement>();
+	let headHeight = $state(0);
 
 	async function openFile(file?: File) {
 		if (file) open(await file.arrayBuffer(), file.name);
@@ -67,8 +68,9 @@
 
 <svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => (hash = location.hash)} onfocus={watch} />
 
-<div class="font-sans" style:--accent={brand.accent}>
-	<header class="sticky top-0 z-10 border-b border-rule bg-ground">
+<!-- --site-head: where a table's frozen header row docks, flush under this header whatever its wrapped height. -->
+<div class="font-sans" style:--accent={brand.accent} style:--site-head="{headHeight}px">
+	<header class="sticky top-0 z-10 border-b border-rule bg-ground" bind:offsetHeight={headHeight}>
 		<nav class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
 			<a href="#/" class="mr-4 flex items-center gap-2 font-display text-2xl text-(--accent)" data-home>
 				{#if brand.logo}<img src={brand.logo} alt="" class="h-8" />{/if}{brand.name}
