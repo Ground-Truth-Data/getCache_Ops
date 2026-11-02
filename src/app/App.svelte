@@ -79,7 +79,7 @@
 				<a
 					href="#/{path}"
 					aria-current={page[0] === path ? 'page' : undefined}
-					class="flex items-center gap-1.5 rounded-lg px-3 py-1 font-display text-lg {page[0] === path ? 'bg-(--accent) text-on-accent' : 'text-muted hover:bg-(--accent)/15 hover:text-ink'}"
+					class="flex items-center gap-1.5 rounded-lg px-3 py-1 font-display text-lg {page[0] === path ? 'fancy' : 'text-muted hover:bg-(--accent)/15 hover:text-ink'}"
 					>{#if path === ''}<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 9.5V21h5v-6h4v6h5V9.5" /></svg>{/if}{label}</a>
 			{/each}
 			{#if source !== SAMPLE}

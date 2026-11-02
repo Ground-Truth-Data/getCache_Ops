@@ -56,7 +56,7 @@ body {
 	pointer-events: none;
 }
 @media (hover: hover) and (pointer: fine) {
-	.fancy:hover:not(:disabled, :active) {
+	.fancy:hover:not(:disabled, [aria-disabled='true'], :active) {
 		box-shadow:
 			inset 0 1px 0 rgba(255, 255, 255, 0.6),
 			0 2px 0 var(--fb-lip),
@@ -64,7 +64,7 @@ body {
 			0 0 22px 4px var(--fb-glow);
 	}
 }
-.fancy:active:not(:disabled) {
+.fancy:active:not(:disabled, [aria-disabled='true']) {
 	transform: translateY(2px);
 	filter: brightness(0.94);
 	text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
@@ -73,7 +73,7 @@ body {
 		0 0 0 var(--fb-lip),
 		0 2px 6px var(--fb-glow);
 }
-.fancy:disabled {
+.fancy:is(:disabled, [aria-disabled='true']) {
 	opacity: 0.55;
 	cursor: not-allowed;
 }

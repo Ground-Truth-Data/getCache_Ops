@@ -12,7 +12,7 @@
 	{#each reports as r (r.slug)}
 		<a
 			href="#/reports/{r.slug}"
-			class="rounded-full border px-4 py-1 font-display {r === report ? 'border-(--accent) bg-(--accent) text-on-accent' : 'border-rule text-muted hover:border-(--accent) hover:bg-(--accent)/15 hover:text-ink'}"
+			class="rounded-full border px-4 py-1 font-display {r === report ? 'fancy' :'border-rule text-muted hover:border-(--accent) hover:bg-(--accent)/15 hover:text-ink'}"
 			>{r.title}</a
 		>
 	{/each}

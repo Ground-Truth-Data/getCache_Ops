@@ -10,8 +10,7 @@
 	let custom = $state(false);
 	let open = $state(false);
 	const shown = $derived(apply(rows, f, dateCol));
-	const active = $derived(Object.values(f.pick).some(Boolean) || !!f.days || !!f.from || !!f.to);
-	const seg = (on: boolean) => `rounded-full px-3 py-0.5 ${on ? 'bg-(--accent) text-on-accent' : 'text-muted hover:bg-(--accent)/15 hover:text-ink'}`;
+	const seg = (on: boolean) => `rounded-full px-3 py-0.5 ${on ? 'fancy' :'text-muted hover:bg-(--accent)/15 hover:text-ink'}`;
 	const head = 'w-24 text-xs tracking-widest text-muted';
 
 	function chip(days?: number) {
@@ -22,7 +21,7 @@
 
 {#snippet toggle()}
 	<button
-		class="rounded-lg border p-2 {open || active ? 'border-(--accent) text-(--accent)' : 'border-rule text-muted'} hover:border-(--accent) hover:text-ink"
+		class="fancy rounded-lg p-2"
 		title="Filters"
 		aria-label="Filters"
 		aria-expanded={open}
