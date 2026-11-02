@@ -132,7 +132,6 @@ const atStart = $derived(page === 0);
 	}
 	/* Inert, not gone — `pointer-events` alone would still leave it keyboard-reachable, hence tabindex in markup. */
 	.pg-btn.disabled {
-		opacity: 0.38;
 		pointer-events: none;
 		cursor: default;
 	}
