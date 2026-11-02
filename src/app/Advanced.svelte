@@ -22,7 +22,6 @@
 	const rows = $derived(open ? ops.query(`SELECT * FROM "${name.replaceAll('"', '""')}"`) : []);
 </script>
 
-<p class="mb-4 rounded-xl border border-red-400/60 p-4 text-red-300" data-warning>Raw tables change between versions. Reports are the stable way to build.</p>
 <details class="rounded-xl border border-rule p-4" bind:open>
 	<summary class="cursor-pointer font-display text-xl text-muted">Raw tables and schema</summary>
 	{#if open}
