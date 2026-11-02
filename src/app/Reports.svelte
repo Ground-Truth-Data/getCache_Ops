@@ -2,6 +2,7 @@
 	import type { Ops } from '../plugin/api';
 	import { reports } from '../reports';
 	import DataTable from './DataTable.svelte';
+	import Filters from './Filters.svelte';
 
 	let { ops, slug }: { ops?: Ops; slug?: string } = $props();
 	const report = $derived(reports.find((r) => r.slug === slug));
@@ -20,7 +21,13 @@
 	</nav>
 	<h1 class="mt-6 font-display text-3xl text-(--accent)">{report.title}</h1>
 	<p class="mb-6 text-muted">{report.description}</p>
-	{#if ops}<DataTable {rows} columns={Object.keys(rows[0] ?? {})} name={report.title} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
+	{#if ops}
+		{#key slug}
+			<Filters {rows}>
+				{#snippet children(shown)}<DataTable rows={shown} columns={Object.keys(rows[0] ?? {})} name={report.title} />{/snippet}
+			</Filters>
+		{/key}
+	{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 {:else}
 	<h1 class="mb-6 font-display text-3xl text-(--accent)">Reports</h1>
 	<div class="grid gap-4 sm:grid-cols-2">
