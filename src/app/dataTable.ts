@@ -20,3 +20,17 @@ export function view(rows: Row[], q: string, sort: SortState, page: number) {
 	const shown = hits.slice(p * PAGE, (p + 1) * PAGE);
 	return { hits, rows: shown, page: p, last, label: `rows ${shown.length && p * PAGE + 1}–${p * PAGE + shown.length} of ${hits.length.toLocaleString()}` };
 }
+
+/** The Σ row: each all-number column's sum; a money column only when every row shares one currency, never a made-up total. */
+export function totals(rows: Row[], columns: string[], money: string[]) {
+	const currencies = new Set(rows.map((r) => r.currency));
+	const out: Record<string, number | { sum: number; currency: string }> = {};
+	for (const c of columns) {
+		const vals = rows.map((r) => r[c]).filter((v) => v != null);
+		if (!vals.length || !vals.every((v) => typeof v === 'number')) continue;
+		const sum = Math.round((vals as number[]).reduce((a, b) => a + b, 0) * 1e4) / 1e4;
+		if (!money.includes(c)) out[c] = sum;
+		else if (currencies.size === 1 && typeof rows[0].currency === 'string') out[c] = { sum, currency: rows[0].currency };
+	}
+	return out;
+}

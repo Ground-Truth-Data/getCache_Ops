@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { csv, view } from './dataTable';
+import { csv, totals, view } from './dataTable';
 
 const rows = Array.from({ length: 450 }, (_, i) => ({ n: i, name: i % 2 ? `odd ${i}` : `even ${i}`, note: i === 7 ? null : 'x' }));
 const none = { col: '', asc: true };
@@ -28,4 +28,15 @@ test('csv writes the given columns, quoting only cells that need it', () => {
 		'a,b,c\r\n1,"x,y",\r\n2,"say ""hi""","line\nbreak"\r\n',
 	);
 	expect(csv([], ['a'])).toBe('a\r\n');
+});
+
+test('totals sums number columns, and money only when one currency', () => {
+	const cad = [
+		{ block: 'B1', trees: 100, value: 15.1, currency: 'CAD' },
+		{ block: 'B2', trees: 140, value: 25.2, currency: 'CAD' },
+	];
+	expect(totals(cad, ['block', 'trees', 'value'], ['value'])).toEqual({ trees: 240, value: { sum: 40.3, currency: 'CAD' } });
+	const mixed = [...cad, { block: 'B3', trees: 10, value: 1, currency: 'USD' }];
+	expect(totals(mixed, ['block', 'trees', 'value'], ['value'])).toEqual({ trees: 250 });
+	expect(totals([{ d: '2026-05-01', n: null }], ['d', 'n'], [])).toEqual({});
 });
