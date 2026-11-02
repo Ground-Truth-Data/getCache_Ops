@@ -167,6 +167,23 @@ for (const [n, day] of days.entries()) {
 	}
 }
 
+// A cache per block: each lot allocated, delivered the first morning, and what's left counted the last evening.
+for (const block of blocks.filter((b) => daysOn.has(b))) {
+	const [first, last] = [daysOn.get(block)[0], daysOn.get(block).at(-1)];
+	const cacheKey = key('pin');
+	const [lng, lat] = toLngLat([0, 0], block.center);
+	born('mapFeature', cacheKey, isoAt(first, 6 * 60), planter, {
+		featureName: `${block.name} cache`, featureType: 'point', pinIcon: 'cache', mapKey, linkedBlockKey: block.blockKey,
+		geometryJson: JSON.stringify({ type: 'Point', coordinates: [lng, lat] }),
+	});
+	for (const [i, lot] of block.lots.entries()) {
+		const row = { mapFeatureKey: cacheKey, boxKey: lot.boxKey };
+		insert('allocationTable', { versionKey: key('op'), blockKey: block.blockKey, boxKey: lot.boxKey, treesQty: Math.round((block.areaHa * 1600) / block.lots.length), sortOrder: i, createdAt: SEASON_START, allocatedByKey: checker });
+		insert('deliveryTable', { ...row, versionKey: key('op'), kind: 'delivered', lat, lng, accuracyM: int(3, 12), distanceM: int(0, 25), createdAt: isoAt(first, 6 * 60 + i), deliveredByKey: checker });
+		insert('stockTable', { ...row, versionKey: key('op'), boxQty: int(0, 4), createdAt: isoAt(last, 17 * 60 + i), countedByKey: planter });
+	}
+}
+
 // Pay plots: the checker lays one per hectare on a 100 m grid, the day after the planter leaves the block.
 for (const block of blocks.filter((b) => daysOn.has(b))) {
 	const lastDay = daysOn.get(block).at(-1);

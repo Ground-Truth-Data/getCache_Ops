@@ -7,20 +7,36 @@ beforeAll(async () => {
 	await openDatabase(readFileSync(new URL('../public/sample.sqlite', import.meta.url)));
 });
 
+const rows = (slug: string) => query(reports.find((r) => r.slug === slug)!.sql);
+const total = (slug: string, col: string) => rows(slug).reduce((n, r) => n + ((r[col] as number) ?? 0), 0);
+
 test('the five reports, each with its own page', () => {
 	expect(reports.map((r) => r.slug)).toEqual(['planting', 'trees', 'deliveries', 'allocation', 'quality']);
 });
 
-test.each(reports)('$title runs on the sample and shows no ids, keys or JSON', ({ sql }) => {
-	const cols = query(`SELECT * FROM (${sql}) LIMIT 1`).flatMap(Object.keys);
-	expect(cols.filter((c) => /key|json|\bid\b/i.test(c))).toEqual([]);
+test.each([
+	['planting', ['date', 'block', 'piece', 'bag', 'time', 'planter', 'lot', 'trees', 'value', '~/tree', 'currency']],
+	['trees', ['lot', 'trees/box', 'trees/bundle', '~/tree', 'trees', 'value', 'currency', 'days', 'blocks']],
+	['deliveries', ['cache', 'block', 'lot', 'boxes', 'trees/box', 'total', 'counted', 'counted by', 'delivery', 'delivered', 'delivered by']],
+	['allocation', ['block', 'allocated', 'calculated', 'delivered', 'planted', 'in caches', 'left to plant']],
+	['quality', ['survey', 'block', 'date', 'stems/ha', 'total ha', 'plots', 'trees planted', 'faults', 'missed', 'excess', 'Density', 'Quality', 'Payment']],
+])('%s has rows on the sample and the app’s columns, in its order, with no ids, keys or JSON', (slug, cols) => {
+	const r = rows(slug);
+	expect(r.length).toBeGreaterThan(0);
+	expect(Object.keys(r[0])).toEqual(cols);
 });
 
-test('the sample season fills planting, trees, allocation and quality', () => {
-	const rows = (slug: string) => query(reports.find((r) => r.slug === slug)!.sql);
-	expect(rows('planting')[0]).toEqual({ Date: '2026-05-04', Block: expect.any(String), 'Trees planted': expect.any(Number), 'Bag-ups': expect.any(Number) });
-	const total = (slug: string, col: string) => rows(slug).reduce((n, r) => n + (r[col] as number), 0);
-	expect(total('trees', 'Trees planted')).toBe(total('planting', 'Trees planted'));
-	expect(total('allocation', 'Planted')).toBe(total('planting', 'Trees planted'));
-	expect(rows('quality').length).toBeGreaterThan(0);
+test('the reports agree on the season’s trees', () => {
+	const planted = total('planting', 'trees');
+	expect(total('trees', 'trees')).toBe(planted);
+	expect(total('allocation', 'planted')).toBe(planted);
+	expect(total('allocation', 'in caches')).toBe(total('deliveries', 'total'));
+	expect(total('allocation', 'delivered')).toBe(planted + total('allocation', 'in caches'));
+});
+
+test('quality pays on the 704 curve', () => {
+	for (const { Quality, Payment } of rows('quality').filter((r) => r.Quality != null)) {
+		const a = (Quality as number) * 1.08;
+		expect(Payment).toBeCloseTo(Math.max(0, Math.min(100, a - (100 - a) ** 2 / 8)), 0);
+	}
 });
