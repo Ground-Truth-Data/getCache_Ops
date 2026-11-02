@@ -1,10 +1,11 @@
-// The signed-in planter's data, read the way Get Cache pulls its own: the account's
-// current.sqlite, downloaded again only when its sha256 changes. Read-only by
-// construction: plain GETs and a signed URL, no auth client, so nothing here can
-// refresh a token, sign out or write. Contract: getCache/src/lib/docs/OPS_READ.md.
+// The signed-in planter's rows, read from Central (Postgres schema getCacheMobile) with
+// their own token: SELECT only, row-level security decides what comes back. Nothing here
+// can refresh a token, sign out or write. Contract: getCache/src/lib/docs/OPS_READ.md.
+
+import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
+import ddl from '../../schema/v57.sql?raw';
 
 const env = import.meta.env;
-const BUCKET = 'mobile-SQLites';
 const EVERY_MS = 30_000;
 
 type Session = { access_token: string; user: { id: string; email?: string } };
@@ -24,49 +25,64 @@ export function signedIn(): { authId: string; email: string } | null {
 	return s?.user?.id ? { authId: s.user.id, email: s.user.email ?? '' } : null;
 }
 
-/** Storage's folder spelling, from getCache's supabase/functions/_shared/backupPath.ts. */
-const folders = (authId: string, email: string) => [
-	`${email.trim().toLowerCase().replace(/[^a-z0-9@._+-]/g, '-') || 'no-email'}/${authId}`,
-	authId,
-];
-
-async function storage(path: string, init?: RequestInit): Promise<Response> {
+async function rest(path: string, range?: string): Promise<Response> {
 	const s = session();
 	if (!s) throw new Error('signed out of Get Cache');
-	return fetch(`${env.PUBLIC_GC_RT_supabase_address}/storage/v1/${path}`, {
-		...init,
-		headers: { apikey: env.PUBLIC_GC_RT_supabase_key, authorization: `Bearer ${s.access_token}`, 'content-type': 'application/json' },
+	const res = await fetch(`${env.PUBLIC_GC_RT_supabase_address}/rest/v1/${path}`, {
+		headers: {
+			apikey: env.PUBLIC_GC_RT_supabase_key,
+			authorization: `Bearer ${s.access_token}`,
+			'accept-profile': 'getCacheMobile',
+			...(range ? { range } : {}),
+		},
 	});
+	if (res.status === 401) throw new Error('your sign-in has expired: open Get Cache to refresh it');
+	return res;
 }
 
-/** RTK1 + 12-byte IV + AES-GCM(gzip(sqlite)), sealed with Get Cache's shared app key. */
-export async function unwrapCloud(wrapped: Uint8Array, hex = env.PUBLIC_SHARED_ENCRYPT_KEY): Promise<Uint8Array> {
-	if (new TextDecoder().decode(wrapped.subarray(0, 4)) !== 'RTK1') throw new Error('the cloud copy is not RTK1');
-	const key = await crypto.subtle.importKey('raw', Uint8Array.from(hex.match(/../g), (h: string) => parseInt(h, 16)), 'AES-GCM', false, ['decrypt']);
-	const zipped = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: wrapped.subarray(4, 16) }, key, wrapped.subarray(16));
-	return new Uint8Array(await new Response(new Blob([zipped]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+/** When Central last took a phone upload for this account: it moves exactly when the rows do. */
+async function cursor(): Promise<string> {
+	const res = await rest('snapshot?select=superCruddedAt&status=eq.success&order=superCruddedAt.desc&limit=1');
+	if (!res.ok) throw new Error(`Central: HTTP ${res.status}`);
+	return (await res.json())[0]?.superCruddedAt ?? '';
 }
 
-type Copy = { sha: string; bytes: Uint8Array };
-
-/** The account's copy, or null when it is still `sha`. */
-async function pull(authId: string, email: string, sha: string): Promise<Copy | null> {
-	for (const folder of folders(authId, email)) {
-		const path = `${BUCKET}/${folder}/current.sqlite`;
-		const info = await storage(`object/info/${path}`);
-		if (info.status === 400 || info.status === 404) continue;
-		if (!info.ok) throw new Error(`Get Cache's cloud copy: HTTP ${info.status}`);
-		const now = String((await info.json()).metadata?.sha256 ?? '');
-		if (now && now === sha) return null;
-		// Signed, as Get Cache does: the CDN serves an upserted object's old bytes on the authenticated path.
-		const signed = await storage(`object/sign/${path}`, { method: 'POST', body: JSON.stringify({ expiresIn: 60 }) });
-		if (!signed.ok) throw new Error(`Get Cache's cloud copy: HTTP ${signed.status}`);
-		const res = await fetch(`${env.PUBLIC_GC_RT_supabase_address}/storage/v1${(await signed.json()).signedURL}`);
-		if (!res.ok) throw new Error(`Get Cache's cloud copy: HTTP ${res.status}`);
-		return { sha: now, bytes: await unwrapCloud(new Uint8Array(await res.arrayBuffer())) };
+/** Every Central row this planter may read, in the Phone schema the reports query. */
+export async function build(read = rest, page = 1000): Promise<Uint8Array> {
+	const sqlite3 = await sqlite3InitModule();
+	const db = new sqlite3.oo1.DB();
+	try {
+		db.exec(ddl);
+		// A read copy of rows the phone already checked: the write guards only get in the way.
+		for (const { name } of db.exec({ sql: "SELECT name FROM sqlite_schema WHERE type = 'trigger'", rowMode: 'object', returnValue: 'resultRows' }))
+			db.exec(`DROP TRIGGER "${name}"`);
+		db.exec('PRAGMA foreign_keys = OFF');
+		const tables = db.exec({ sql: "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'", rowMode: 'array', returnValue: 'resultRows' }).map((r) => String(r[0]));
+		for (const table of tables) {
+			const cols = db.exec({ sql: 'SELECT name FROM pragma_table_info(?)', bind: [table], rowMode: 'array', returnValue: 'resultRows' }).map((r) => String(r[0]));
+			const insert = db.prepare(`INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(',')}) VALUES (${cols.map(() => '?').join(',')})`);
+			try {
+				for (let from = 0; ; from += page) {
+					const res = await read(`${table}?select=${cols.map(encodeURIComponent).join(',')}`, `${from}-${from + page - 1}`);
+					// A Phone table Central does not mirror.
+					if (res.status === 404) break;
+					if (!res.ok) throw new Error(`Central ${table}: HTTP ${res.status}`);
+					const rows: Record<string, unknown>[] = await res.json();
+					for (const row of rows)
+						insert.bind(cols.map((c) => (row[c] !== null && typeof row[c] === 'object' ? JSON.stringify(row[c]) : row[c]) as never)).stepReset();
+					if (rows.length < page) break;
+				}
+			} finally {
+				insert.finalize();
+			}
+		}
+		return sqlite3.capi.sqlite3_js_db_export(db.pointer!);
+	} finally {
+		db.close();
 	}
-	throw new Error('this account has no cloud copy yet: open Get Cache once while signed in');
 }
+
+type Copy = { cursor: string; bytes: Uint8Array };
 
 // Ops' own cache, never Get Cache's database. Get Cache's sign-out wipe deletes it with the rest.
 const idb = <T>(run: (s: IDBObjectStore) => IDBRequest<T>, mode: IDBTransactionMode = 'readonly') =>
@@ -81,21 +97,23 @@ const idb = <T>(run: (s: IDBObjectStore) => IDBRequest<T>, mode: IDBTransactionM
 		};
 	});
 
-/** Hands over the cached copy at once, then each newer one: now, on focus, and every 30 s while visible. */
-export function follow(onBytes: (bytes: Uint8Array) => void, onError: (e: Error) => void = console.warn): () => void {
+/** Hands over the cached copy at once, then a fresh one whenever Central takes a phone upload:
+ *  checked now, on focus, and every 30 s while visible. `at` is when Central took it. */
+export function follow(onBytes: (bytes: Uint8Array, at: string) => void, onError: (e: Error) => void = console.warn): () => void {
 	const who = signedIn();
 	if (!who) return () => {};
-	let sha = '';
+	let seen: string | undefined;
 	let busy = false;
 	const check = async () => {
 		if (busy || document.hidden) return;
 		busy = true;
 		try {
-			const copy = await pull(who.authId, who.email, sha);
-			if (copy) {
-				sha = copy.sha;
-				onBytes(copy.bytes);
-				await idb((s) => s.put(copy, who.authId), 'readwrite');
+			const at = await cursor();
+			if (at !== seen) {
+				const bytes = await build();
+				seen = at;
+				onBytes(bytes, at);
+				await idb((s) => s.put({ cursor: at, bytes }, who.authId), 'readwrite');
 			}
 		} catch (e) {
 			onError(e as Error);
@@ -104,7 +122,7 @@ export function follow(onBytes: (bytes: Uint8Array) => void, onError: (e: Error)
 		}
 	};
 	idb<Copy | undefined>((s) => s.get(who.authId))
-		.then((cached) => cached && ((sha = cached.sha), onBytes(cached.bytes)))
+		.then((cached) => cached && ((seen = cached.cursor), onBytes(cached.bytes, cached.cursor)))
 		.catch(onError)
 		.finally(check);
 	const timer = setInterval(check, EVERY_MS);

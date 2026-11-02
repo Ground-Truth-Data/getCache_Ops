@@ -1,16 +1,23 @@
-import { readFileSync } from 'node:fs';
-import { gzipSync } from 'node:zlib';
+import { DatabaseSync } from 'node:sqlite';
 import { expect, test } from 'vitest';
-import { unwrapCloud } from './cloud';
+import { build } from './cloud';
+import { openDatabase, query } from './db';
 
-const sample = readFileSync(new URL('../../public/sample.sqlite', import.meta.url));
+const sample = new DatabaseSync(new URL('../../public/sample.sqlite', import.meta.url).pathname, { readOnly: true });
+const perDay = 'SELECT b.plantedDt, sum(t.plantedQty) AS trees FROM bagUpView b JOIN tallyView t USING (bagUpKey) GROUP BY 1 ORDER BY 1';
 
-test("opens Get Cache's cloud copy: RTK1, IV, AES-GCM over gzip", async () => {
-	const hex = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('hex');
-	const key = await crypto.subtle.importKey('raw', Buffer.from(hex, 'hex'), 'AES-GCM', false, ['encrypt']);
-	const iv = crypto.getRandomValues(new Uint8Array(12));
-	const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, gzipSync(sample)));
-	const wrapped = Buffer.concat([Buffer.from('RTK1'), iv, sealed]);
-	expect(Buffer.from(await unwrapCloud(wrapped, hex)).equals(sample)).toBe(true);
-	await expect(unwrapCloud(sample, hex)).rejects.toThrow('not RTK1');
+/** PostgREST over the sample season, `select` and `range` honoured. */
+async function central(path: string, range = '0-999'): Promise<Response> {
+	const [table, q] = path.split('?');
+	const cols = decodeURIComponent(q.replace('select=', '')).split(',');
+	const [from, to] = range.split('-').map(Number);
+	const rows = sample.prepare(`SELECT ${cols.map((c) => `"${c}"`).join(',')} FROM "${table}" LIMIT ? OFFSET ?`).all(to - from + 1, from);
+	return Response.json(rows);
+}
+
+test("builds the Phone schema from Central's rows, and the reports read it", async () => {
+	// Pages of 100 against 926 tallies: the last short page ends each table.
+	await openDatabase(await build(central, 100));
+	expect(query(perDay)).toEqual(sample.prepare(perDay).all().map((r) => ({ ...r })));
+	expect(query('SELECT count(*) AS n FROM tallyTable')).toEqual([sample.prepare('SELECT count(*) AS n FROM tallyTable').get()].map((r) => ({ ...r })));
 });
