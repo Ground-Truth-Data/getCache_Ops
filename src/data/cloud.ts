@@ -11,8 +11,9 @@ const EVERY_MS = 30_000;
 type Session = { access_token: string; user: { id: string; email?: string } };
 
 function session(): Session | null {
-	const ref = new URL(env.PUBLIC_GC_RT_supabase_address).hostname.split('.')[0];
 	try {
+		// Unset on a fork's own domain, where there is no Get Cache session to share.
+		const ref = new URL(env.PUBLIC_GC_RT_supabase_address).hostname.split('.')[0];
 		return JSON.parse(localStorage.getItem(`sb-${ref}-auth-token`) ?? 'null');
 	} catch {
 		return null;
