@@ -13,7 +13,8 @@
 	let source = $state('');
 	let hash = $state(location.hash);
 
-	const pages = [['', 'Home'], ['season', 'Season'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['advanced', 'Advanced']];
+	// Home is the reports: #/reports/<slug> falls through to it.
+	const pages = [['', 'Home'], ['season', 'Season'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['advanced', 'Advanced']];
 	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/')) ?? pages[0]);
 	const plugin = $derived(page[0] === 'season' ? season : customs.find((p) => page[0] === `p/${p.id}`));
@@ -95,22 +96,12 @@
 	<main class="mx-auto max-w-5xl px-6 py-6">
 		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
 		{#if page[0] === ''}
-			<h1 class="mb-6 font-display text-3xl text-(--accent)">Your season at a glance</h1>
 			{#if !account}
-				<p class="-mt-4 mb-6 text-muted" data-signin>
+				<p class="mb-6 text-muted" data-signin>
 					<a href="/app/account" target="_blank" class="text-(--accent) underline hover:opacity-80">Sign in to see your data automatically</a>
 				</p>
 			{/if}
-			<div class="grid gap-4 sm:grid-cols-3">
-				{#each [['season', 'Season', 'Charts of trees planted, blocks and seedlots'], ['reports', 'Reports', 'Five plain tables to sort, search and export'], ['advanced', 'Advanced', 'Every raw table, for builders']] as [path, title, blurb] (path)}
-					<a href="#/{path}" class="rounded-2xl border border-rule p-6 transition hover:-translate-y-0.5 hover:border-(--accent) hover:bg-(--accent)/10" data-card={path}>
-						<span class="block font-display text-2xl text-(--accent)">{title}</span>
-						<span class="mt-2 block text-muted">{blurb}</span>
-					</a>
-				{/each}
-			</div>
-		{:else if page[0] === 'reports'}
-			<Reports {ops} slug={parts[1]} />
+			<Reports {ops} slug={parts[0] === 'reports' ? parts[1] : undefined} />
 		{:else}
 			<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[1]}</h1>
 			{#if page[0] === 'advanced'}
