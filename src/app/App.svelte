@@ -48,6 +48,13 @@
 		);
 	}
 	watch();
+	// Only Get Cache's own site can read the planter's file and sign-in: a popup there sends a copy here.
+	const HOME = location.hostname.endsWith('localhost') ? location.origin : 'https://getcache.org';
+	const PHONE = 'your Get Cache data';
+	const askHome = () => window.open(`${HOME}/share?to=${encodeURIComponent(location.origin)}`, 'getcache', 'popup,width=420,height=640');
+	function received(e: MessageEvent) {
+		if (e.origin === HOME && e.data?.getcache) open(e.data.getcache, PHONE);
+	}
 	let pick = $state<HTMLInputElement>();
 	let headHeight = $state(0);
 
@@ -67,7 +74,7 @@
 
 <svelte:head><title>{brand.name}</title><link rel="icon" type="image/png" href={brand.icon} /></svelte:head>
 
-<svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => (hash = location.hash)} onfocus={watch} />
+<svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => (hash = location.hash)} onfocus={watch} onmessage={received} />
 
 <!-- --site-head: where a table's frozen header row docks, flush under this header whatever its wrapped height. -->
 <div class="font-sans" style:--accent={brand.accent} style:--rt-yellow={brand.accent} style:--site-head="{headHeight}px">
@@ -95,9 +102,9 @@
 	<main class="mx-auto max-w-5xl px-6 py-6">
 		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
 		{#if page[0] === ''}
-			{#if !account}
+			{#if !account && source !== PHONE}
 				<p class="mb-6 text-muted" data-signin>
-					<a href="/app/account" target="_blank" class="text-(--accent) underline hover:opacity-80">Sign in to see your data automatically</a>
+					<button class="text-(--accent) underline hover:opacity-80" onclick={askHome}>Get my data from Get Cache</button>
 				</p>
 			{/if}
 			<Reports {ops} slug={parts[0] === 'reports' ? parts[1] : undefined} />
