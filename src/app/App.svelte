@@ -65,7 +65,7 @@
 	}
 </script>
 
-<svelte:head><title>{brand.name}</title>{#if brand.logo}<link rel="icon" href={brand.logo} />{/if}</svelte:head>
+<svelte:head><title>{brand.name}</title><link rel="icon" type="image/png" href={brand.icon} /></svelte:head>
 
 <svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => (hash = location.hash)} onfocus={watch} />
 
