@@ -15,8 +15,8 @@ test('the five reports, each with its own page', () => {
 });
 
 test.each([
-	['planting', ['date', 'block', 'piece', 'bag', 'time', 'planter', 'lot', 'trees', 'value', '~/tree', 'currency']],
-	['trees', ['lot', 'trees/box', 'trees/bundle', '~/tree', 'trees', 'value', 'currency', 'days', 'blocks']],
+	['planting', ['date', 'block', 'piece', 'bag', 'time', 'planter', 'lot', 'trees', 'value', 'per tree', 'currency']],
+	['trees', ['lot', 'trees/box', 'trees/bundle', 'per tree', 'trees', 'value', 'currency', 'days', 'blocks']],
 	['deliveries', ['cache', 'block', 'lot', 'boxes', 'trees/box', 'total', 'counted', 'counted by', 'delivery', 'delivered', 'delivered by']],
 	['allocation', ['block', 'allocated', 'calculated', 'delivered', 'planted', 'in caches', 'left to plant']],
 	['quality', ['survey', 'block', 'date', 'stems/ha', 'total ha', 'plots', 'trees planted', 'faults', 'missed', 'excess', 'Density', 'Quality', 'Payment']],

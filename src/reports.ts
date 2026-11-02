@@ -13,20 +13,22 @@ export const reports = [
 		sql: `SELECT b.plantedDt AS "date", k.blockName AS "block", f.featureName AS "piece",
 				'bag#' || dense_rank() OVER (PARTITION BY b.plantedDt, b.createdByKey ORDER BY b.createdAt, b.bagUpKey) AS "bag",
 				strftime('%H:%M', b.createdAt, 'localtime') AS "time", ${person('p')} AS "planter", ${lot('t')} AS "lot",
-				CAST(t.plantedQty AS INTEGER) AS "trees", round(t.plantedQty * t.pricePerTree, 2) AS "value", t.pricePerTree AS "~/tree", t.currency AS "currency"
+				CAST(t.plantedQty AS INTEGER) AS "trees", round(t.plantedQty * t.pricePerTree, 2) AS "value", t.pricePerTree AS "per tree", t.currency AS "currency"
 			FROM bagUpView b JOIN tallyView t USING (bagUpKey) LEFT JOIN blockView k USING (blockKey)
 				LEFT JOIN mapFeatureView f ON f.mapFeatureKey = b.mapFeatureKey LEFT JOIN personView p ON p.personKey = b.createdByKey
 			ORDER BY b.plantedDt, b.createdAt, t.createdAt`,
+		money: ['value', 'per tree'],
 	},
 	{
 		slug: 'trees',
 		title: 'Trees',
 		description: 'Trees planted from each box, as the bags screen lists them.',
 		sql: `SELECT ${lot('t')} AS "lot", CAST(max(x.boxSizeQty) AS INTEGER) AS "trees/box", CAST(max(x.bundleSizeQty) AS INTEGER) AS "trees/bundle",
-				max(t.pricePerTree) AS "~/tree", CAST(sum(t.plantedQty) AS INTEGER) AS "trees", round(sum(t.plantedQty * t.pricePerTree), 2) AS "value",
-				max(t.currency) AS "currency", count(DISTINCT b.plantedDt) AS "days", count(DISTINCT b.blockKey) AS "blocks"
+				max(t.pricePerTree) AS "per tree", CAST(sum(t.plantedQty) AS INTEGER) AS "trees", round(sum(t.plantedQty * t.pricePerTree), 2) AS "value",
+				t.currency AS "currency", count(DISTINCT b.plantedDt) AS "days", count(DISTINCT b.blockKey) AS "blocks"
 			FROM tallyView t JOIN bagUpView b USING (bagUpKey) LEFT JOIN boxView x USING (boxKey)
-			GROUP BY 1 ORDER BY "trees" DESC`,
+			GROUP BY 1, t.currency ORDER BY "trees" DESC`,
+		money: ['per tree', 'value'],
 	},
 	{
 		slug: 'deliveries',

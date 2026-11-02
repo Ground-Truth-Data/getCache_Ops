@@ -75,11 +75,13 @@ const seedlots = [
 ].map(([speciesCode, seedlot], i) => {
 	const boxKey = key('box');
 	const bagKey = key();
+	// The fir is a cross-border lot paid in US dollars, so CAD and USD sit side by side.
+	const [price, currency] = speciesCode === 'FDI' ? [0.15, 'USD'] : [PRICE, 'CAD'];
 	born('box', boxKey, SEASON_START, planter, { boxTag: seedlot, speciesCode, seedlot, boxSizeQty: 400, bundleSizeQty: 20 });
 	born('bag', bagKey, SEASON_START, planter, {
-		boxKey, isBox: 0, pricePerTree: PRICE, currency: 'CAD', sortOrder: `a${i}`,
+		boxKey, isBox: 0, pricePerTree: price, currency, sortOrder: `a${i}`,
 	});
-	return { boxKey, bagKey, speciesCode, seedlot };
+	return { boxKey, bagKey, speciesCode, seedlot, price, currency };
 });
 
 // Blocks: ~30 ha irregular polygons near Vanderhoof, BC, strung along a haul road.
@@ -161,7 +163,7 @@ for (const [n, day] of days.entries()) {
 			const bundles = lots.length === 1 ? int(10, 14) : int(5, 7);
 			born('tally', key('tly'), at, planter, {
 				bagUpKey, bagKey: lot.bagKey, boxKey: lot.boxKey, boxTag: lot.seedlot, speciesCode: lot.speciesCode,
-				plantedQty: bundles * 20, pricePerTree: PRICE, currency: 'CAD',
+				plantedQty: bundles * 20, pricePerTree: lot.price, currency: lot.currency,
 			});
 		}
 	}

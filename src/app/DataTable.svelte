@@ -14,10 +14,14 @@ import JsonPeek from "./table/JsonPeek.svelte";
 import TableToolbar from "./table/TableToolbar.svelte";
 import { hiddenFromParams, hiddenToParams, visibleColumns } from "./table/columnPrefs";
 import { type SortState, sortRows } from "../plugin/sortRows";
+import { moneyIn } from "./money";
 
 type Row = Record<string, unknown>;
 
-let { rows, columns, name }: { rows: Row[]; columns: string[]; name: string } = $props();
+// `money` columns show in each row's own currency, so `currency` leaves the screen but stays in exports.
+let { rows, columns, name, money = [] }: { rows: Row[]; columns: string[]; name: string; money?: string[] } = $props();
+const onScreen = $derived(money.length ? columns.filter((c) => c !== "currency") : columns);
+const price = $derived(moneyIn(rows));
 
 let hash = $state(location.hash);
 $effect(() => {
@@ -45,8 +49,9 @@ function setParams(edit: (p: URLSearchParams) => void) {
 let filter = $state("");
 let sort = $state<SortState>({ col: "", asc: true });
 
-const hidden = $derived(hiddenFromParams(params, columns));
-const cols = $derived(visibleColumns(columns, hidden));
+const hidden = $derived(hiddenFromParams(params, onScreen));
+const cols = $derived(visibleColumns(onScreen, hidden));
+const exportCols = $derived(onScreen === columns ? cols : [...cols, "currency"]);
 
 const matched = $derived.by(() => {
 	const q = filter.trim().toLowerCase();
@@ -73,11 +78,18 @@ const totals = $derived.by(() => {
 	const out: Record<string, string> = {};
 	for (const c of cols) {
 		const vals = matched.map((r) => r[c]);
-		if (vals.length && vals.every((v) => typeof v === "number"))
-			out[c] = (vals as number[]).reduce((a, b) => a + b, 0).toLocaleString();
+		if (!vals.length || !vals.some((v) => typeof v === "number") || !vals.every((v) => v == null || typeof v === "number")) continue;
+		const sum = (vals as number[]).reduce((a, b) => a + (b ?? 0), 0);
+		if (!money.includes(c)) out[c] = sum.toLocaleString();
+		else {
+			// Dollars and euros don't add up, so a mixed-currency column gets no Σ.
+			const codes = new Set(matched.map((r) => r.currency));
+			if (codes.size === 1) out[c] = price(sum, [...codes][0]);
+		}
 	}
 	return out;
 });
+const cellText = (c: string, r: Row) => (money.includes(c) ? price(r[c], r.currency) : fmt(r[c]));
 
 const countLine = $derived(
 	filter.trim()
@@ -133,11 +145,11 @@ function tickAll() {
 			placeholder="Search any column"
 			oninput={(e) => onFilter(e.currentTarget.value)}
 		/>
-		<ColumnPicker {columns} {hidden} onchange={(next) => setParams((p) => hiddenToParams(p, next, columns))} />
+		<ColumnPicker columns={onScreen} {hidden} onchange={(next) => setParams((p) => hiddenToParams(p, next, onScreen))} />
 		<span class="dt-meta">{countLine}</span>
 	</div>
 
-	<TableToolbar columns={cols} filteredRows={matched} selectedRows={tickedRows} tableName={name} />
+	<TableToolbar columns={exportCols} filteredRows={matched} selectedRows={tickedRows} tableName={name} />
 
 	<AdminDataTable
 		columns={cols}
@@ -150,8 +162,8 @@ function tickAll() {
 		{totals}
 		totalLabel={matched.length.toLocaleString()}
 		onPeek={peekCell}
-		render={(c, r) => fmt(r[c])}
-		cellTitle={(c, r) => fmt(r[c])}
+		render={cellText}
+		cellTitle={cellText}
 		rowClass={(r) => (ticked.has(rowKey(r)) ? "row-selected" : "")}
 		prefsKey={name}
 	>
