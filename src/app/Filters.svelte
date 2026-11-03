@@ -5,7 +5,8 @@
 
 	let { rows, ...table }: Omit<ComponentProps<typeof DataTable>, 'toggle' | 'panel'> = $props();
 	const { dateCol, sorts, picks } = $derived(facets(rows));
-	const fresh = (): Filter => ({ sort: facets(rows).sorts[0]?.[0], pick: {} });
+	// Newest first is the one default; any other report keeps its SQL's order (the 704 sheet's, for quality).
+	const fresh = (): Filter => ({ sort: facets(rows).sorts.find(([c]) => c === 'date')?.[0], pick: {} });
 	let f = $state(fresh());
 	let custom = $state(false);
 	let open = $state(false);
