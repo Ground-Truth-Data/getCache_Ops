@@ -112,15 +112,8 @@ export const reports = [
 /** The Reports page: each bound to ?1, the first planted date it counts ('' for all). */
 export const seasonReports = [
 	{
-		slug: 'days',
-		title: 'Trees per day',
-		description: 'Trees planted and bag-ups filed each day.',
-		sql: `SELECT b.plantedDt AS "date", CAST(sum(t.plantedQty) AS INTEGER) AS "trees", count(DISTINCT b.bagUpKey) AS "bag-ups"
-			FROM bagUpView b JOIN tallyView t USING (bagUpKey) WHERE b.plantedDt >= ?1 GROUP BY b.plantedDt ORDER BY b.plantedDt`,
-	},
-	{
 		slug: 'block-totals',
-		title: 'Totals per block',
+		title: 'trees/block',
 		description: 'Trees planted against the allocation, block by block.',
 		sql: `SELECT k.blockName AS "block", CAST(k.allocatedQty AS INTEGER) AS "allocated", CAST(coalesce(sum(t.plantedQty), 0) AS INTEGER) AS "trees",
 				count(DISTINCT b.plantedDt) AS "days"
@@ -129,11 +122,27 @@ export const seasonReports = [
 		noSum: ['days'],
 	},
 	{
+		slug: 'days',
+		title: 'trees/day',
+		description: 'Trees planted and bag-ups filed each day.',
+		sql: `SELECT b.plantedDt AS "date", CAST(sum(t.plantedQty) AS INTEGER) AS "trees", count(DISTINCT b.bagUpKey) AS "bag-ups"
+			FROM bagUpView b JOIN tallyView t USING (bagUpKey) WHERE b.plantedDt >= ?1 GROUP BY b.plantedDt ORDER BY b.plantedDt`,
+	},
+	{
 		slug: 'seedlots',
-		title: 'Trees per seedlot',
-		description: 'Trees planted from each seedlot.',
-		sql: `SELECT t.boxTag AS "seedlot", t.speciesCode AS "species", CAST(sum(t.plantedQty) AS INTEGER) AS "trees", count(DISTINCT b.plantedDt) AS "days"
-			FROM tallyView t JOIN bagUpView b USING (bagUpKey) WHERE b.plantedDt >= ?1 GROUP BY t.boxTag, t.speciesCode ORDER BY "trees" DESC`,
+		title: 'seedlots',
+		description: 'Each seedlot (box tag): delivered, planted, and still in the caches.',
+		// Delivered = in caches + planted, as Blocks counts it; the caches hold what is there now, whatever the season.
+		sql: `SELECT "seedlot", "species", "in caches" + "planted" AS "delivered", "planted", "in caches", "days"
+			FROM (SELECT x.boxTag AS "seedlot", x.speciesCode AS "species",
+				(SELECT CAST(coalesce(sum(t.plantedQty), 0) AS INTEGER) FROM tallyView t JOIN bagUpView b USING (bagUpKey)
+					WHERE t.boxKey IN (SELECT boxKey FROM boxView y WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AND b.plantedDt >= ?1) AS "planted",
+				(SELECT CAST(coalesce(sum(${counted('s', 'y')}), 0) AS INTEGER) FROM stockView s JOIN boxView y USING (boxKey)
+					WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AS "in caches",
+				(SELECT count(DISTINCT b.plantedDt) FROM tallyView t JOIN bagUpView b USING (bagUpKey)
+					WHERE t.boxKey IN (SELECT boxKey FROM boxView y WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AND b.plantedDt >= ?1) AS "days"
+				FROM boxView x GROUP BY x.boxTag, x.speciesCode)
+			WHERE "delivered" > 0 ORDER BY "delivered" DESC`,
 		noSum: ['days'],
 	},
 ];

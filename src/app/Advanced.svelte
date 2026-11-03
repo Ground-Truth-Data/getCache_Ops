@@ -85,10 +85,10 @@
 {/if}
 {#if current?.description}<p class="-mt-3 mb-6 text-muted" data-saved-description>{current.description}</p>{/if}
 <ol class="mb-4 list-inside list-decimal text-muted">
-	<li>Ask for a report here.</li>
-	<li>Copy the prompt to an LLM of your choice, like Claude or ChatGPT.</li>
-	<li>Paste the SQL query below and run it.</li>
-	<li>Save the report if you like it.</li>
+	<li>Ask for a report here then</li>
+	<li>Copy prompt to an LLM of your choice like (Claude, ChatGPT)</li>
+	<li>paste the SQL query</li>
+	<li>save the report if you like it.</li>
 </ol>
 <div class="mb-6 flex gap-2">
 	<input class={box} bind:value={request} oninput={() => (copied = false)} placeholder="Give me the top biggest tree planting days this season." data-request />

@@ -15,7 +15,7 @@ const total = (slug: string, col: string, from?: string) => rows(slug, from).red
 
 test('Home’s tables and the Reports page’s season views, one per pill', () => {
 	expect(reports.map((r) => r.slug)).toEqual(['planting', 'trees', 'caches', 'blocks', 'quality', 'surveys']);
-	expect(seasonReports.map((r) => r.slug)).toEqual(['days', 'block-totals', 'seedlots']);
+	expect(seasonReports.map((r) => r.slug)).toEqual(['block-totals', 'days', 'seedlots']);
 });
 
 test.each([
@@ -24,7 +24,7 @@ test.each([
 	['caches', ['cache', 'block', 'lot', 'boxes', 'trees/box', 'total', 'counted', 'counted by', 'delivery', 'delivered', 'delivered by']],
 	['days', ['date', 'trees', 'bag-ups']],
 	['block-totals', ['block', 'allocated', 'trees', 'days']],
-	['seedlots', ['seedlot', 'species', 'trees', 'days']],
+	['seedlots', ['seedlot', 'species', 'delivered', 'planted', 'in caches', 'days']],
 	['blocks', ['block', 'allocated', 'calculated', 'delivered', 'planted', 'in caches', 'left to plant']],
 	['surveys', ['survey', 'block', 'date', 'stems/ha', 'total ha', 'plots', 'occupied', 'trees planted', 'faults', 'missed', 'excess', 'Density', 'Quality', 'Payment']],
 	['quality', ['plot no.', 'plot ID', 'survey', 'block', 'trees planted', 'plantable spots', 'excess', 'credit', 'unsatisfactory', 'comments', 'faults', 'time', 'Open LoCode', 'surveyor', 'occupied']],
@@ -37,7 +37,9 @@ test.each([
 test('the reports agree on the season’s trees', () => {
 	const planted = total('planting', 'trees');
 	expect(total('trees', 'trees')).toBe(planted);
-	for (const slug of ['days', 'block-totals', 'seedlots']) expect(total(slug, 'trees')).toBe(planted);
+	for (const slug of ['days', 'block-totals']) expect(total(slug, 'trees')).toBe(planted);
+	expect(total('seedlots', 'planted')).toBe(planted);
+	expect(total('seedlots', 'in caches')).toBe(total('caches', 'total'));
 	expect(total('blocks', 'planted')).toBe(planted);
 	expect(total('blocks', 'in caches')).toBe(total('caches', 'total'));
 	expect(total('blocks', 'delivered')).toBe(planted + total('blocks', 'in caches'));
@@ -45,7 +47,8 @@ test('the reports agree on the season’s trees', () => {
 
 test('a season view counts only trees planted on or after its start', () => {
 	const late = query(`SELECT CAST(sum(t.plantedQty) AS INTEGER) AS n FROM bagUpView b JOIN tallyView t USING (bagUpKey) WHERE b.plantedDt >= '2026-06-01'`)[0].n;
-	for (const slug of ['days', 'block-totals', 'seedlots']) expect(total(slug, 'trees', '2026-06-01')).toBe(late);
+	for (const slug of ['days', 'block-totals']) expect(total(slug, 'trees', '2026-06-01')).toBe(late);
+	expect(total('seedlots', 'planted', '2026-06-01')).toBe(late);
 	expect(total('days', 'trees', '2027-01-01')).toBe(0);
 });
 
