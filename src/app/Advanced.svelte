@@ -94,7 +94,7 @@
 	<input class={box} bind:value={request} oninput={() => (copied = false)} placeholder="Give me the top biggest tree planting days this season." data-request />
 	<button class="{btn} shrink-0" onclick={copy} data-copy-prompt>{copied ? 'Copied' : 'Copy prompt'}</button>
 </div>
-<textarea class="{box} font-mono text-sm" rows="8" bind:value={sql} placeholder="SELECT …" data-sql></textarea>
+<textarea class="{box} font-mono text-sm" rows="8" bind:value={sql} placeholder={'Paste SQL output from LLM like Gemini\nSELECT ...'} data-sql></textarea>
 <div class="my-3 flex gap-2">
 	<button class={btn} onclick={run} data-run>Run</button>
 	{#if result && 'rows' in result && !current && !naming}
