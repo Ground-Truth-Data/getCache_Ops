@@ -96,7 +96,7 @@
 <!-- --site-head: where a table's frozen header row docks, flush under this header whatever its wrapped height. -->
 <div class="font-sans" style:--accent={brand.accent} style:--rt-yellow={brand.accent} style:--site-head="{headHeight}px">
 	<header class="sticky top-0 z-10 border-b border-rule bg-ground" bind:offsetHeight={headHeight}>
-		<nav class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
+		<nav class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
 			<a href="#/" class="mr-4 flex items-center gap-2 font-display text-2xl text-(--accent)" data-home>
 				{#each brand.logos as src, i (src)}<img {src} alt={i ? '' : brand.name} class="h-10" />{:else}{brand.name}{/each}
 			</a>
@@ -117,7 +117,7 @@
 		</nav>
 	</header>
 
-	<main class="mx-auto max-w-5xl px-6 py-6">
+	<main class="mx-auto max-w-7xl px-6 py-6">
 		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
 		{#if why}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
 		{#if page[0] === 'home' || page[0] === 'reports'}

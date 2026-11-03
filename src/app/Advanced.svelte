@@ -108,6 +108,12 @@
 			<input class={box} bind:value={request} oninput={() => (copied = false)} placeholder="Give me the top 10 tree planting days of this season." data-request />
 			<button class="{btn} shrink-0" onclick={copy} data-copy-prompt>{copied ? 'Copied' : 'Copy prompt'}</button>
 		</div>
+		<div class="-mt-2 mb-4 flex items-center justify-end gap-2 text-xs text-muted" data-llms>
+			paste it into
+			{#each [['Claude', 'https://claude.ai/new'], ['ChatGPT', 'https://chatgpt.com/']] as [name, href] (name)}
+				<a {href} target="_blank" rel="noopener" class="rounded-full border border-rule px-2.5 py-0.5 hover:border-muted hover:text-ink">{name} ↗</a>
+			{/each}
+		</div>
 		<textarea class="{box} font-mono text-sm" rows="8" bind:value={sql} placeholder={'Paste SQL output from LLM like Gemini\nSELECT ...'} data-sql></textarea>
 		<div class="my-3 flex gap-2">
 			<button class={btn} onclick={run} data-run>Run</button>
