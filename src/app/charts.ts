@@ -15,10 +15,11 @@ export const charts: Record<string, (rows: Row[], el: HTMLElement) => Element> =
 	'block-totals'(rows, el) {
 		const { accent, ...f } = frame(el);
 		return Plot.plot({
-			...f, marginLeft: 120, x: { grid: true, label: 'Trees' }, y: { label: null },
+			...f, marginLeft: 70, marginBottom: 110, y: { grid: true, label: 'Trees' }, x: { label: null, tickRotate: -45 },
 			marks: [
-				Plot.barX(rows, { y: 'block', x: 'allocated', fill: 'var(--color-rule)' }),
-				Plot.barX(rows, { y: 'block', x: 'trees', fill: accent, insetTop: 6, insetBottom: 6, tip: true }),
+				Plot.barY(rows, { x: 'block', y: 'allocated', fill: accent, fillOpacity: 0.3 }),
+				Plot.barY(rows, { x: 'block', y: 'trees', fill: accent, insetLeft: 4, insetRight: 4, tip: true }),
+				Plot.ruleY([0]),
 			],
 		});
 	},
