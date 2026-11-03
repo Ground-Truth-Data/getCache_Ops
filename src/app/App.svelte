@@ -97,13 +97,13 @@
 <div class="font-sans" style:--accent={brand.accent} style:--rt-yellow={brand.accent} style:--site-head="{headHeight}px">
 	<header class="sticky top-0 z-10 border-b border-rule bg-surface" bind:offsetHeight={headHeight}>
 		<nav class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
-			<a href="#/" class="mr-4 flex items-center gap-2 font-display text-2xl text-(--accent)" data-home>
-				{#each brand.logos as src, i (src)}<img {src} alt={i ? '' : brand.name} class="h-10" />{:else}{brand.name}{/each}
+			<a href="#/" class="mr-2 flex sm:mr-4 items-center gap-2 font-display text-2xl text-(--accent)" data-home>
+				{#each brand.logos as src, i (src)}<img {src} alt={i ? '' : brand.name} class="h-7 sm:h-10" />{:else}{brand.name}{/each}
 			</a>
 			{#each pages as [path, label] (path)}
 				<Pill href="#/{path}" active={page[0] === path}>{label}</Pill>
 			{/each}
-			<button class="rt-fancy-btn ml-auto rounded-lg px-3 py-1 font-display text-lg" onclick={askHome} data-ask><img src="sync.webp" alt="" class="-my-2 mr-0.5 inline h-8 align-middle brightness-0" />Sync Get Cache</button>
+			<button class="rt-fancy-btn ml-auto rounded-lg px-3 py-1 font-display text-lg" onclick={askHome} data-ask><img src="sync.webp" alt="" class="-my-2 mr-0.5 inline h-8 align-middle brightness-0" />Sync<span class="max-sm:hidden"> Get Cache</span></button>
 			{#if source !== SAMPLE}
 				<button class="rounded-lg px-3 py-1 font-display text-lg text-muted hover:bg-(--accent)/15 hover:text-ink" onclick={trySample} data-sample>Sample</button>
 			{:else if account}
