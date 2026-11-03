@@ -81,7 +81,7 @@ export const reports = [
 					100.0 * sum(p.planted - max(0, p.planted - p.spots) - p.unsat) / nullif(sum(p.spots), 0) AS pq
 				FROM qaSurveyView s LEFT JOIN p USING (qaSurveyKey) GROUP BY s.qaSurveyKey)
 			SELECT v.surveyName AS "survey", k.blockName AS "block", date(v.createdAt) AS "date", CAST(coalesce(nullif(v.treesPerHa, 0), 1800) AS INTEGER) AS "stems/ha",
-				v.areaHa AS "total ha", v.plots AS "plots", v.confirmed AS "◆ occupied", CAST(v.planted AS INTEGER) AS "trees planted", v.unsat AS "faults", CAST(v.missed AS INTEGER) AS "missed",
+				v.areaHa AS "total ha", v.plots AS "plots", v.confirmed AS "occupied", CAST(v.planted AS INTEGER) AS "trees planted", v.unsat AS "faults", CAST(v.missed AS INTEGER) AS "missed",
 				CAST(v.excess AS INTEGER) AS "excess",
 				round(100.0 * v.planted / nullif(v.plots, 0) * ${PLOTS_PER_HA} / coalesce(nullif(v.treesPerHa, 0), 1800)) AS "Density",
 				round(v.pq, 1) AS "Quality", round(max(0, min(100, v.pq * 1.08 - (100 - v.pq * 1.08) * (100 - v.pq * 1.08) / 8)), 1) AS "Payment"
