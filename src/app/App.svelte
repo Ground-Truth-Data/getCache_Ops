@@ -123,12 +123,12 @@
 		{#if page[0] === 'home' || page[0] === 'reports'}
 			{#key page[0]}<Reports {ops} page={page[0]} slug={parts[1]} />{/key}
 		{:else}
-			<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[0] === 'advanced' ? 'SQL Queries' : page[1]}</h1>
+			{#if page[0] !== 'advanced'}<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[1]}</h1>{/if}
 			{#if page[0] === 'custom'}
 				<p class="mb-4 text-sm text-muted" data-warning>Raw tables change between versions. Reports are the stable way to build.</p>
 				{#if ops}<Custom {ops} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if page[0] === 'advanced'}
-				{#if ops}<Advanced {ops} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
+				{#if ops}<Advanced {ops} />{:else}<h1 class="mb-6 font-display text-3xl text-(--accent)">SQL Queries</h1><p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if ops && plugin}
 				<!-- Each copy is a new ops: a live copy keeps one `source`, so keying on it froze the first. -->
 				{#key [plugin, ops]}

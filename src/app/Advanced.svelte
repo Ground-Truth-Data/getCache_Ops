@@ -17,7 +17,7 @@
 	const box = 'w-full rounded-lg border border-rule bg-ground px-3 py-2 hover:border-(--accent)';
 	const btn = 'rt-fancy-btn rounded-lg px-3 py-1 font-display text-lg';
 	const current = $derived(saved.find((s) => s.sql === sql.trim()));
-	let naming = $state<{ name: string; description: string }>();
+	let naming = $state<{ name: string; description: string; missing?: boolean }>();
 
 	function load(): Saved[] {
 		try {
@@ -59,7 +59,8 @@
 	}
 
 	function save() {
-		if (!naming?.name.trim()) return;
+		if (!naming) return;
+		if (!naming.name.trim()) return void (naming.missing = true);
 		keep([...saved, { name: naming.name.trim(), description: naming.description.trim(), sql: sql.trim() }]);
 		naming = undefined;
 	}
@@ -83,36 +84,54 @@
 		{/each}
 	</nav>
 {/if}
-{#if current?.description}<p class="-mt-3 mb-6 text-muted" data-saved-description>{current.description}</p>{/if}
-<ol class="mb-4 list-inside list-decimal text-muted">
-	<li>Ask for a report here then</li>
-	<li>Copy prompt to an LLM of your choice like (Claude, ChatGPT)</li>
-	<li>paste the SQL query</li>
-	<li>save the report if you like it.</li>
-</ol>
-<div class="mb-6 flex gap-2">
-	<input class={box} bind:value={request} oninput={() => (copied = false)} placeholder="Give me the top 10 tree planting days of this season." data-request />
-	<button class="{btn} shrink-0" onclick={copy} data-copy-prompt>{copied ? 'Copied' : 'Copy prompt'}</button>
-</div>
-<textarea class="{box} font-mono text-sm" rows="8" bind:value={sql} placeholder={'Paste SQL output from LLM like Gemini\nSELECT ...'} data-sql></textarea>
-<div class="my-3 flex gap-2">
-	<button class={btn} onclick={run} data-run>Run</button>
-	{#if result && 'rows' in result && !current && !naming}
-		<button class={btn} onclick={() => (naming = { name: '', description: request.trim() })} data-save>Save report</button>
-	{/if}
-</div>
-{#if naming}
-	<div class="mb-6 flex flex-col gap-2" data-naming>
-		<input class={box} bind:value={naming.name} placeholder="Pill name, like Big days" data-save-name />
-		<textarea class={box} rows="2" bind:value={naming.description} placeholder="What this report shows" data-save-description></textarea>
-		<div class="flex gap-2">
-			<button class={btn} onclick={save} disabled={!naming.name.trim()} data-save-confirm>Save</button>
-			<button class="px-3 text-muted hover:text-ink" onclick={() => (naming = undefined)}>Cancel</button>
+{#if result}
+	<section class="mb-10" data-result>
+		<h2 class="font-display text-3xl text-(--accent)" data-result-title>{current?.name ?? 'Result'}</h2>
+		{#if current?.description}<p class="mb-4 text-muted" data-saved-description>{current.description}</p>{/if}
+		{#if 'error' in result}
+			<p class="mt-2 text-muted" data-sql-error>{result.error}</p>
+		{:else}
+			{#key result}<DataTable rows={result.rows} columns={Object.keys(result.rows[0] ?? {})} name={current?.name ?? 'Query'} />{/key}
+		{/if}
+	</section>
+{/if}
+<h1 class="mb-6 font-display text-3xl text-(--accent)">SQL Queries</h1>
+<div class="flex flex-col gap-6 md:flex-row">
+	<ol class="shrink-0 list-inside list-decimal rounded-lg border border-rule p-4 text-sm text-muted md:w-56 md:self-start" data-explainer>
+		<li>Ask for a report here then</li>
+		<li>Copy prompt to an LLM of your choice like (Claude, ChatGPT)</li>
+		<li>paste the SQL query</li>
+		<li>save the report if you like it.</li>
+	</ol>
+	<div class="min-w-0 flex-1">
+		<div class="mb-4 flex gap-2">
+			<input class={box} bind:value={request} oninput={() => (copied = false)} placeholder="Give me the top 10 tree planting days of this season." data-request />
+			<button class="{btn} shrink-0" onclick={copy} data-copy-prompt>{copied ? 'Copied' : 'Copy prompt'}</button>
 		</div>
+		<textarea class="{box} font-mono text-sm" rows="8" bind:value={sql} placeholder={'Paste SQL output from LLM like Gemini\nSELECT ...'} data-sql></textarea>
+		<div class="my-3 flex gap-2">
+			<button class={btn} onclick={run} data-run>Run</button>
+			{#if result && 'rows' in result && !current && !naming}
+				<button class={btn} onclick={() => (naming = { name: '', description: request.trim() })} data-save>Save report</button>
+			{/if}
+		</div>
+		{#if naming}
+			<div class="flex flex-col gap-2" data-naming>
+				<input
+					class="{box} {naming.missing ? 'border-red-500!' : ''}"
+					bind:value={naming.name}
+					oninput={() => naming && (naming.missing = false)}
+					placeholder="Report name (required), like Big days"
+					aria-invalid={naming.missing}
+					data-save-name
+				/>
+				{#if naming.missing}<p class="text-sm text-red-500" data-save-name-missing>Name the report to save it.</p>{/if}
+				<textarea class={box} rows="2" bind:value={naming.description} placeholder="What this report shows" data-save-description></textarea>
+				<div class="flex gap-2">
+					<button class={btn} onclick={save} data-save-confirm>Save</button>
+					<button class="px-3 text-muted hover:text-ink" onclick={() => (naming = undefined)}>Cancel</button>
+				</div>
+			</div>
+		{/if}
 	</div>
-{/if}
-{#if result && 'error' in result}
-	<p class="text-muted" data-sql-error>{result.error}</p>
-{:else if result}
-	{#key result}<DataTable rows={result.rows} columns={Object.keys(result.rows[0] ?? {})} name="Query" />{/key}
-{/if}
+</div>
