@@ -89,4 +89,22 @@ export const reports = [
 			ORDER BY v.createdAt`,
 		noSum: ['stems/ha', 'Density', 'Quality', 'Payment'],
 	},
+	{
+		slug: 'plots',
+		title: 'Plots',
+		description: 'Every Quality 704 plot, in the printed sheet’s columns and order.',
+		// Plot ID, Open LoCode and planter are left off: the app derives them, nothing stores them.
+		sql: `WITH p AS (SELECT q.*, e.plotNo, s.surveyName, s.createdAt AS surveyAt, json_array_length(coalesce(q.faultsJson, '[]')) AS unsat,
+					coalesce(q.plantableSpotsOverrideQty, q.plantableSpotsQty, round(coalesce(nullif(s.treesPerHa, 0), 1800) / ${PLOTS_PER_HA})) AS spots
+				FROM qaPlotView q JOIN qaPlotEntity e USING (qaPlotKey) JOIN qaSurveyView s USING (qaSurveyKey) WHERE q.plantedQty >= 0)
+			SELECT p.surveyName AS "survey", p.plotNo AS "plot no.", CAST(p.plantedQty AS INTEGER) AS "trees planted", CAST(p.spots AS INTEGER) AS "plantable spots",
+				CAST(max(0, p.plantedQty - p.spots) AS INTEGER) AS "excess", CAST(min(p.plantedQty, p.spots) - p.unsat AS INTEGER) AS "credit",
+				p.unsat AS "unsatisfactory", p.plotDesc AS "comments",
+				(SELECT group_concat(f.value, ' ') FROM json_each(coalesce(p.faultsJson, '[]')) f) AS "faults",
+				strftime('%Y-%m-%d %H:%M', p.createdAt, 'localtime') AS "time", ${person('w')} AS "surveyor",
+				CASE WHEN p.isOccupied = 1 AND p.mapFeatureKey IS NOT NULL THEN 'yes' ELSE '' END AS "occupied"
+			FROM p LEFT JOIN personView w ON w.personKey = p.createdByKey
+			ORDER BY p.surveyAt, p.plotNo DESC`,
+		noSum: ['plot no.'],
+	},
 ];

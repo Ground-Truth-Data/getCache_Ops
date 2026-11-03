@@ -11,7 +11,7 @@ const rows = (slug: string) => query(reports.find((r) => r.slug === slug)!.sql);
 const total = (slug: string, col: string) => rows(slug).reduce((n, r) => n + ((r[col] as number) ?? 0), 0);
 
 test('the five reports, each with its own page', () => {
-	expect(reports.map((r) => r.slug)).toEqual(['planting', 'trees', 'deliveries', 'allocation', 'quality']);
+	expect(reports.map((r) => r.slug)).toEqual(['planting', 'trees', 'deliveries', 'allocation', 'quality', 'plots']);
 });
 
 test.each([
@@ -20,6 +20,7 @@ test.each([
 	['deliveries', ['cache', 'block', 'lot', 'boxes', 'trees/box', 'total', 'counted', 'counted by', 'delivery', 'delivered', 'delivered by']],
 	['allocation', ['block', 'allocated', 'calculated', 'delivered', 'planted', 'in caches', 'left to plant']],
 	['quality', ['survey', 'block', 'date', 'stems/ha', 'total ha', 'plots', 'occupied', 'trees planted', 'faults', 'missed', 'excess', 'Density', 'Quality', 'Payment']],
+	['plots', ['survey', 'plot no.', 'trees planted', 'plantable spots', 'excess', 'credit', 'unsatisfactory', 'comments', 'faults', 'time', 'surveyor', 'occupied']],
 ])('%s has rows on the sample and the app’s columns, in its order, with no ids, keys or JSON', (slug, cols) => {
 	const r = rows(slug);
 	expect(r.length).toBeGreaterThan(0);
@@ -32,6 +33,12 @@ test('the reports agree on the season’s trees', () => {
 	expect(total('allocation', 'planted')).toBe(planted);
 	expect(total('allocation', 'in caches')).toBe(total('deliveries', 'total'));
 	expect(total('allocation', 'delivered')).toBe(planted + total('allocation', 'in caches'));
+});
+
+test('the plots add up to their surveys', () => {
+	expect(total('plots', 'trees planted')).toBe(total('quality', 'trees planted'));
+	expect(total('plots', 'unsatisfactory')).toBe(total('quality', 'faults'));
+	expect(rows('plots').filter((r) => r.occupied === 'yes').length).toBe(total('quality', 'occupied'));
 });
 
 test('a bag-up filed at a cache pin shows under cache, never under piece', () => {
