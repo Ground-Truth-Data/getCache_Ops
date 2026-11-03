@@ -205,6 +205,7 @@ function tickAll() {
 <style>
 .dt { margin-bottom: 2rem; }
 .dt-head { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
-.dt-search { flex: 1; padding: 0.3rem 0.6rem; border: 1px solid #3a3a3a; border-radius: 6px; background: transparent; color: inherit; }
+.dt-search { flex: 1; padding: 0.3rem 0.6rem; border: 1px solid #3a3a3a; border-radius: 6px; background: var(--color-field); color: inherit; }
+.dt-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
 .dt-meta { color: #8f8a76; font-size: 0.8rem; }
 </style>

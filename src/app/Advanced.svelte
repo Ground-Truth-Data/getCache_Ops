@@ -14,7 +14,7 @@
 	let result = $state<{ rows: Record<string, unknown>[] } | { error: string }>();
 	// This browser only: Ops never writes the planter's file.
 	let saved = $state<Saved[]>(load());
-	const box = 'w-full rounded-lg border border-rule bg-ground px-3 py-2 hover:border-(--accent)';
+	const box = 'w-full rounded-lg border border-rule bg-field px-3 py-2 outline-none hover:border-(--accent) focus:border-(--accent) focus:ring-2 focus:ring-(--accent)/30';
 	const btn = 'rt-fancy-btn rounded-lg px-3 py-1 font-display text-lg';
 	const current = $derived(saved.find((s) => s.sql === sql.trim()));
 	let naming = $state<{ name: string; description: string; missing?: boolean }>();
@@ -97,7 +97,7 @@
 {/if}
 <h1 class="mb-6 font-display text-3xl text-(--accent)">SQL Queries</h1>
 <div class="flex flex-col gap-6 md:flex-row">
-	<ol class="shrink-0 list-inside list-decimal rounded-lg border border-rule p-4 text-sm text-muted md:w-56 md:self-start" data-explainer>
+	<ol class="shrink-0 list-inside list-decimal rounded-lg border border-rule bg-surface p-4 text-sm text-muted md:w-56 md:self-start" data-explainer>
 		<li>Ask for a report here then</li>
 		<li>Copy prompt to an LLM of your choice like (Claude, ChatGPT)</li>
 		<li>paste the SQL query</li>

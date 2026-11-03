@@ -12,7 +12,10 @@
 
 @theme {
 	--font-display: 'Retreever', sans-serif;
-	--color-ground: #1a1a1a;
+	/* The admin depth stack, darkest at back: page, then header and cards, then fields. One surface each, or inputs vanish into the page. */
+	--color-ground: var(--at-bg);
+	--color-surface: var(--at-panel);
+	--color-field: var(--at-panel-2);
 	--color-ink: #fafafa;
 	--color-muted: #838963;
 	--color-heading: #b36940;

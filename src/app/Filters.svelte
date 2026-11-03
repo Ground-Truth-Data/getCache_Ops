@@ -67,7 +67,7 @@
 			{#each picks as [c, values] (c)}
 				<label class="flex items-center gap-3">
 					<span class={head}>{c.toUpperCase()}</span>
-					<select class="rounded-lg border border-rule bg-ground px-2 py-1 hover:border-(--accent)" value={f.pick[c] ?? ''} onchange={(e) => (f.pick[c] = e.currentTarget.value)} data-pick={c}>
+					<select class="rounded-lg border border-rule bg-field px-2 py-1 hover:border-(--accent)" value={f.pick[c] ?? ''} onchange={(e) => (f.pick[c] = e.currentTarget.value)} data-pick={c}>
 						<option value="">all</option>
 						{#each values as v (v)}<option>{v}</option>{/each}
 					</select>
@@ -80,8 +80,8 @@
 						<button class={seg(custom)} onclick={() => chip()}>custom</button>
 					</div>
 					{#if custom}
-						<input type="date" class="rounded-lg border border-rule bg-ground px-2 py-1 hover:border-(--accent)" bind:value={f.from} aria-label="From" />
-						<input type="date" class="rounded-lg border border-rule bg-ground px-2 py-1 hover:border-(--accent)" bind:value={f.to} aria-label="To" />
+						<input type="date" class="rounded-lg border border-rule bg-field px-2 py-1 hover:border-(--accent)" bind:value={f.from} aria-label="From" />
+						<input type="date" class="rounded-lg border border-rule bg-field px-2 py-1 hover:border-(--accent)" bind:value={f.to} aria-label="To" />
 					{/if}
 				</div>
 			{/if}

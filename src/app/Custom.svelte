@@ -16,7 +16,7 @@
 	const rows = $derived(ops.query(`SELECT * FROM "${name.replaceAll('"', '""')}"`));
 </script>
 
-<select name="table" class="mb-4 rounded-lg border border-rule bg-ground px-2 py-1" value={name} onchange={(e) => (picked = e.currentTarget.value)}>
+<select name="table" class="mb-4 rounded-lg border border-rule bg-field px-2 py-1" value={name} onchange={(e) => (picked = e.currentTarget.value)}>
 	{#each names as n (n)}<option>{n}</option>{/each}
 </select>
 {#key name}
