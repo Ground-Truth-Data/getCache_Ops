@@ -3,10 +3,11 @@
 	import { follow, signedIn } from '../data/cloud';
 	import { openDatabase } from '../data/db';
 	import type { Ops, Plugin } from '../plugin/api';
-	import { customs, makeOps, refusal, season } from '../plugin/host';
+	import { customs, makeOps, refusal } from '../plugin/host';
 	import { VERSION } from '../version';
 	import Pill from '../../_rapper/rt/admin/Pill.svelte';
 	import Advanced from './Advanced.svelte';
+	import Custom from './Custom.svelte';
 	import Reports from './Reports.svelte';
 
 	let ops = $state<Ops>();
@@ -14,11 +15,11 @@
 	let source = $state('');
 	let hash = $state(location.hash);
 
-	// Home is the reports: #/reports/<slug> falls through to it.
-	const pages = [['', 'Home'], ['season', 'Season'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['advanced', 'Advanced']];
+	// Home is the reports.
+	const pages = [['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
 	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/')) ?? pages[0]);
-	const plugin = $derived(page[0] === 'season' ? season : customs.find((p) => page[0] === `p/${p.id}`));
+	const plugin = $derived(customs.find((p) => page[0] === `p/${p.id}`));
 
 	async function open(bytes: ArrayBuffer | Uint8Array, name: string) {
 		try {
@@ -120,12 +121,14 @@
 	<main class="mx-auto max-w-5xl px-6 py-6">
 		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
 		{#if why}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
-		{#if page[0] === ''}
-			<Reports {ops} slug={parts[0] === 'reports' ? parts[1] : undefined} />
+		{#if page[0] === 'reports'}
+			<Reports {ops} slug={parts[1]} />
 		{:else}
-			<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[1]}</h1>
-			{#if page[0] === 'advanced'}
+			<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[0] === 'advanced' ? 'Write SQL queries' : page[1]}</h1>
+			{#if page[0] === 'custom'}
 				<p class="mb-4 text-sm text-muted" data-warning>Raw tables change between versions. Reports are the stable way to build.</p>
+				{#if ops}<Custom {ops} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
+			{:else if page[0] === 'advanced'}
 				{#if ops}<Advanced {ops} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if ops && plugin}
 				<!-- Each copy is a new ops: a live copy keeps one `source`, so keying on it froze the first. -->

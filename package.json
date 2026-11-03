@@ -37,7 +37,8 @@
   },
   "knip": {
     "ignore": [
-      "_rapper/**"
+      "_rapper/**",
+      "src/plugin/table.ts"
     ]
   }
 }

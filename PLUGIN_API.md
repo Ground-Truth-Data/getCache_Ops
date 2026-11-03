@@ -1,7 +1,6 @@
 # Plugin API
 
-A plugin is one tab: a file in `custom/plugins/`. The built-in tabs in
-`src/plugins/` use the same API.
+A plugin is one tab: a file in `custom/plugins/`.
 
 ```ts
 import type { Plugin } from '../../src/plugin/api';

@@ -3,10 +3,11 @@
 	import DataTable from './DataTable.svelte';
 	import { apply, facets, type Filter } from './filters';
 
-	let { rows, ...table }: Omit<ComponentProps<typeof DataTable>, 'toggle' | 'panel'> = $props();
+	let { rows, chart, ...table }: Omit<ComponentProps<typeof DataTable>, 'toggle' | 'panel'> & { chart?: (rows: Record<string, unknown>[], el: HTMLElement) => Element } =
+		$props();
 	const { dateCol, sorts, picks } = $derived(facets(rows));
 	// Newest first is the one default; any other report keeps its SQL's order (the 704 sheet's, for quality).
-	const fresh = (): Filter => ({ sort: facets(rows).sorts.find(([c]) => c === 'date')?.[0], pick: {} });
+	const fresh = (): Filter => ({ sort: facets(rows).sorts.find(([c]) => c === 'date')?.[0], pick: {}, season: true });
 	let f = $state(fresh());
 	let custom = $state(false);
 	let open = $state(false);
@@ -61,6 +62,7 @@
 				<div class="flex flex-wrap items-center gap-3">
 					<span class={head}>{dateCol.toUpperCase()}</span>
 					<div class="inline-flex rounded-full border border-rule p-0.5" data-days>
+						<button class={seg(!!f.season)} onclick={() => (f.season = !f.season)} data-season>this season</button>
 						{#each [1, 7, 30] as d (d)}<button class={seg(f.days === d)} onclick={() => chip(f.days === d ? undefined : d)}>{d} {d === 1 ? 'day' : 'days'}</button>{/each}
 						<button class={seg(custom)} onclick={() => chip()}>custom</button>
 					</div>
@@ -74,5 +76,8 @@
 	{/if}
 {/snippet}
 
+{#if chart && shown.length}
+	<div class="mb-8" {@attach (el) => (el.append(chart(shown, el)), () => el.replaceChildren())} data-chart></div>
+{/if}
 <!-- A new filter starts the table over on page 1, whichever table is in. -->
 {#key JSON.stringify(f)}<DataTable rows={shown} {...table} {toggle} {panel} />{/key}

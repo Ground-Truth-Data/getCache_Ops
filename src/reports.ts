@@ -24,6 +24,13 @@ export const reports = [
 		noSum: ['per tree'],
 	},
 	{
+		slug: 'days',
+		title: 'Trees per day',
+		description: 'Trees planted and bag-ups filed each day.',
+		sql: `SELECT b.plantedDt AS "date", CAST(sum(t.plantedQty) AS INTEGER) AS "trees", count(DISTINCT b.bagUpKey) AS "bag-ups"
+			FROM bagUpView b JOIN tallyView t USING (bagUpKey) GROUP BY b.plantedDt ORDER BY b.plantedDt`,
+	},
+	{
 		slug: 'trees',
 		title: 'Trees',
 		description: 'Trees planted from each box, as the bags screen lists them.',
@@ -54,8 +61,8 @@ export const reports = [
 		noSum: ['trees/box'],
 	},
 	{
-		slug: 'allocation',
-		title: 'Allocation',
+		slug: 'blocks',
+		title: 'Blocks',
 		description: 'Each block: allocated, delivered, planted, as the blocks tab shows it.',
 		sql: `SELECT "block", "allocated", "calculated", "in caches" + "planted" AS "delivered", "planted", "in caches",
 				coalesce("allocated", "calculated") - "planted" AS "left to plant"

@@ -1,14 +1,9 @@
 import { describe, listTables, query } from '../data/db';
 import { PLUGIN_API_VERSION, type Ops, type Plugin } from './api';
 
-const modules = import.meta.glob<{ default: Plugin }>(['../plugins/*.ts', '../../custom/plugins/*.ts', '!**/*.test.ts'], {
-	eager: true,
-});
-const plugins = Object.values(modules).map((m) => m.default);
-
-export const season = plugins.find((p) => p.id === 'season')!;
-/** The company's custom/plugins, each a page between Reports and Advanced. */
-export const customs = plugins.filter((p) => p !== season);
+const modules = import.meta.glob<{ default: Plugin }>(['../../custom/plugins/*.ts', '!**/*.test.ts'], { eager: true });
+/** The company's custom/plugins, each a page between Reports and Custom. */
+export const customs = Object.values(modules).map((m) => m.default);
 
 /** Why this plugin can't run on this file, or undefined when it can. */
 export function refusal(plugin: Plugin, schemaVersion: number): string | undefined {

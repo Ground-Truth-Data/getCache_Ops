@@ -10,15 +10,16 @@ beforeAll(async () => {
 const rows = (slug: string) => query(reports.find((r) => r.slug === slug)!.sql);
 const total = (slug: string, col: string) => rows(slug).reduce((n, r) => n + ((r[col] as number) ?? 0), 0);
 
-test('the five reports, each with its own page', () => {
-	expect(reports.map((r) => r.slug)).toEqual(['planting', 'trees', 'deliveries', 'allocation', 'quality', 'surveys']);
+test('one report per pill', () => {
+	expect(reports.map((r) => r.slug)).toEqual(['planting', 'days', 'trees', 'deliveries', 'blocks', 'quality', 'surveys']);
 });
 
 test.each([
 	['planting', ['date', 'block', 'piece', 'cache', 'bag', 'time', 'planter', 'lot', 'trees', 'value', 'per tree', 'currency']],
 	['trees', ['lot', 'trees/box', 'trees/bundle', 'per tree', 'trees', 'value', 'currency', 'days', 'blocks']],
 	['deliveries', ['cache', 'block', 'lot', 'boxes', 'trees/box', 'total', 'counted', 'counted by', 'delivery', 'delivered', 'delivered by']],
-	['allocation', ['block', 'allocated', 'calculated', 'delivered', 'planted', 'in caches', 'left to plant']],
+	['days', ['date', 'trees', 'bag-ups']],
+	['blocks', ['block', 'allocated', 'calculated', 'delivered', 'planted', 'in caches', 'left to plant']],
 	['surveys', ['survey', 'block', 'date', 'stems/ha', 'total ha', 'plots', 'occupied', 'trees planted', 'faults', 'missed', 'excess', 'Density', 'Quality', 'Payment']],
 	['quality', ['plot no.', 'plot ID', 'survey', 'block', 'trees planted', 'plantable spots', 'excess', 'credit', 'unsatisfactory', 'comments', 'faults', 'time', 'Open LoCode', 'surveyor', 'occupied']],
 ])('%s has rows on the sample and the app’s columns, in its order, with no ids, keys or JSON', (slug, cols) => {
@@ -30,9 +31,10 @@ test.each([
 test('the reports agree on the season’s trees', () => {
 	const planted = total('planting', 'trees');
 	expect(total('trees', 'trees')).toBe(planted);
-	expect(total('allocation', 'planted')).toBe(planted);
-	expect(total('allocation', 'in caches')).toBe(total('deliveries', 'total'));
-	expect(total('allocation', 'delivered')).toBe(planted + total('allocation', 'in caches'));
+	expect(total('days', 'trees')).toBe(planted);
+	expect(total('blocks', 'planted')).toBe(planted);
+	expect(total('blocks', 'in caches')).toBe(total('deliveries', 'total'));
+	expect(total('blocks', 'delivered')).toBe(planted + total('blocks', 'in caches'));
 });
 
 test('the plots add up to their surveys', () => {

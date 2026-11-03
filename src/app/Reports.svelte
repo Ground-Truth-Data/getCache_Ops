@@ -3,6 +3,7 @@
 	import { reports } from '../reports';
 	import Pill from '../../_rapper/rt/admin/Pill.svelte';
 	import Filters from './Filters.svelte';
+	import { charts } from './charts';
 
 	let { ops, slug }: { ops?: Ops; slug?: string } = $props();
 	const report = $derived(reports.find((r) => r.slug === slug) ?? reports[0]);
@@ -18,6 +19,6 @@
 <p class="mb-6 text-muted">{report.description}</p>
 {#if ops}
 	{#key report}
-		<Filters {rows} columns={Object.keys(rows[0] ?? {})} name={report.title} money={report.money} noSum={report.noSum} />
+		<Filters {rows} columns={Object.keys(rows[0] ?? {})} name={report.title} money={report.money} noSum={report.noSum} chart={charts[report.slug]} />
 	{/key}
 {:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
