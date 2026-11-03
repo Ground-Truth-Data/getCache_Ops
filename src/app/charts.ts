@@ -12,13 +12,13 @@ export const charts: Record<string, (rows: Row[], el: HTMLElement) => Element> =
 			marks: [Plot.rectY(rows, { x: (d) => new Date(d.date), y: 'trees', interval: 'day', fill: accent, tip: true }), Plot.ruleY([0])],
 		});
 	},
-	blocks(rows, el) {
+	'block-totals'(rows, el) {
 		const { accent, ...f } = frame(el);
 		return Plot.plot({
 			...f, marginLeft: 120, x: { grid: true, label: 'Trees' }, y: { label: null },
 			marks: [
-				Plot.barX(rows, { y: 'block', x: (d) => d.allocated ?? d.calculated, fill: 'var(--color-rule)' }),
-				Plot.barX(rows, { y: 'block', x: 'planted', fill: accent, insetTop: 6, insetBottom: 6, tip: true }),
+				Plot.barX(rows, { y: 'block', x: 'allocated', fill: 'var(--color-rule)' }),
+				Plot.barX(rows, { y: 'block', x: 'trees', fill: accent, insetTop: 6, insetBottom: 6, tip: true }),
 			],
 		});
 	},

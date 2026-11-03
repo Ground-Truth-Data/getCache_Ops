@@ -15,8 +15,7 @@
 	let source = $state('');
 	let hash = $state(location.hash);
 
-	// Home is the reports.
-	const pages = [['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
+	const pages = [['home', 'Home'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
 	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/')) ?? pages[0]);
 	const plugin = $derived(customs.find((p) => page[0] === `p/${p.id}`));
@@ -121,8 +120,8 @@
 	<main class="mx-auto max-w-5xl px-6 py-6">
 		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
 		{#if why}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
-		{#if page[0] === 'reports'}
-			<Reports {ops} slug={parts[1]} />
+		{#if page[0] === 'home' || page[0] === 'reports'}
+			{#key page[0]}<Reports {ops} page={page[0]} slug={parts[1]} />{/key}
 		{:else}
 			<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[0] === 'advanced' ? 'Write SQL queries' : page[1]}</h1>
 			{#if page[0] === 'custom'}

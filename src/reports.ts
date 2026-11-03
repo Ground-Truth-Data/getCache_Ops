@@ -24,13 +24,6 @@ export const reports = [
 		noSum: ['per tree'],
 	},
 	{
-		slug: 'days',
-		title: 'Trees per day',
-		description: 'Trees planted and bag-ups filed each day.',
-		sql: `SELECT b.plantedDt AS "date", CAST(sum(t.plantedQty) AS INTEGER) AS "trees", count(DISTINCT b.bagUpKey) AS "bag-ups"
-			FROM bagUpView b JOIN tallyView t USING (bagUpKey) GROUP BY b.plantedDt ORDER BY b.plantedDt`,
-	},
-	{
 		slug: 'trees',
 		title: 'Trees',
 		description: 'Trees planted from each box, as the bags screen lists them.',
@@ -43,8 +36,8 @@ export const reports = [
 		noSum: ['trees/box', 'trees/bundle', 'per tree'],
 	},
 	{
-		slug: 'deliveries',
-		title: 'Deliveries',
+		slug: 'caches',
+		title: 'Caches',
 		description: 'Each box at each cache: the last count, and the last delivery or close-out.',
 		sql: `WITH d AS (SELECT *, row_number() OVER (PARTITION BY mapFeatureKey, boxKey ORDER BY createdAt DESC) AS n FROM deliveryView),
 				pair AS (SELECT mapFeatureKey, boxKey FROM stockView UNION SELECT mapFeatureKey, boxKey FROM deliveryView)
@@ -113,5 +106,34 @@ export const reports = [
 			FROM v LEFT JOIN blockView k ON k.blockKey = v.blockKey
 			ORDER BY v.createdAt`,
 		noSum: ['stems/ha', 'Density', 'Quality', 'Payment'],
+	},
+];
+
+/** The Reports page: each bound to ?1, the first planted date it counts ('' for all). */
+export const seasonReports = [
+	{
+		slug: 'days',
+		title: 'Trees per day',
+		description: 'Trees planted and bag-ups filed each day.',
+		sql: `SELECT b.plantedDt AS "date", CAST(sum(t.plantedQty) AS INTEGER) AS "trees", count(DISTINCT b.bagUpKey) AS "bag-ups"
+			FROM bagUpView b JOIN tallyView t USING (bagUpKey) WHERE b.plantedDt >= ?1 GROUP BY b.plantedDt ORDER BY b.plantedDt`,
+	},
+	{
+		slug: 'block-totals',
+		title: 'Totals per block',
+		description: 'Trees planted against the allocation, block by block.',
+		sql: `SELECT k.blockName AS "block", CAST(k.allocatedQty AS INTEGER) AS "allocated", CAST(coalesce(sum(t.plantedQty), 0) AS INTEGER) AS "trees",
+				count(DISTINCT b.plantedDt) AS "days"
+			FROM blockView k LEFT JOIN bagUpView b ON b.blockKey = k.blockKey AND b.plantedDt >= ?1 LEFT JOIN tallyView t USING (bagUpKey)
+			GROUP BY k.blockKey ORDER BY k.blockName`,
+		noSum: ['days'],
+	},
+	{
+		slug: 'seedlots',
+		title: 'Trees per seedlot',
+		description: 'Trees planted from each seedlot.',
+		sql: `SELECT t.boxTag AS "seedlot", t.speciesCode AS "species", CAST(sum(t.plantedQty) AS INTEGER) AS "trees", count(DISTINCT b.plantedDt) AS "days"
+			FROM tallyView t JOIN bagUpView b USING (bagUpKey) WHERE b.plantedDt >= ?1 GROUP BY t.boxTag, t.speciesCode ORDER BY "trees" DESC`,
+		noSum: ['days'],
 	},
 ];

@@ -1,24 +1,30 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, expect, test } from 'vitest';
 import { openDatabase, query } from './data/db';
-import { reports } from './reports';
+import { reports, seasonReports } from './reports';
 
 beforeAll(async () => {
 	await openDatabase(readFileSync(new URL('../public/sample.sqlite', import.meta.url)));
 });
 
-const rows = (slug: string) => query(reports.find((r) => r.slug === slug)!.sql);
-const total = (slug: string, col: string) => rows(slug).reduce((n, r) => n + ((r[col] as number) ?? 0), 0);
+const rows = (slug: string, from = '') => {
+	const season = seasonReports.find((r) => r.slug === slug);
+	return season ? query(season.sql, [from]) : query(reports.find((r) => r.slug === slug)!.sql);
+};
+const total = (slug: string, col: string, from?: string) => rows(slug, from).reduce((n, r) => n + ((r[col] as number) ?? 0), 0);
 
-test('one report per pill', () => {
-	expect(reports.map((r) => r.slug)).toEqual(['planting', 'days', 'trees', 'deliveries', 'blocks', 'quality', 'surveys']);
+test('Home’s tables and the Reports page’s season views, one per pill', () => {
+	expect(reports.map((r) => r.slug)).toEqual(['planting', 'trees', 'caches', 'blocks', 'quality', 'surveys']);
+	expect(seasonReports.map((r) => r.slug)).toEqual(['days', 'block-totals', 'seedlots']);
 });
 
 test.each([
 	['planting', ['date', 'block', 'piece', 'cache', 'bag', 'time', 'planter', 'lot', 'trees', 'value', 'per tree', 'currency']],
 	['trees', ['lot', 'trees/box', 'trees/bundle', 'per tree', 'trees', 'value', 'currency', 'days', 'blocks']],
-	['deliveries', ['cache', 'block', 'lot', 'boxes', 'trees/box', 'total', 'counted', 'counted by', 'delivery', 'delivered', 'delivered by']],
+	['caches', ['cache', 'block', 'lot', 'boxes', 'trees/box', 'total', 'counted', 'counted by', 'delivery', 'delivered', 'delivered by']],
 	['days', ['date', 'trees', 'bag-ups']],
+	['block-totals', ['block', 'allocated', 'trees', 'days']],
+	['seedlots', ['seedlot', 'species', 'trees', 'days']],
 	['blocks', ['block', 'allocated', 'calculated', 'delivered', 'planted', 'in caches', 'left to plant']],
 	['surveys', ['survey', 'block', 'date', 'stems/ha', 'total ha', 'plots', 'occupied', 'trees planted', 'faults', 'missed', 'excess', 'Density', 'Quality', 'Payment']],
 	['quality', ['plot no.', 'plot ID', 'survey', 'block', 'trees planted', 'plantable spots', 'excess', 'credit', 'unsatisfactory', 'comments', 'faults', 'time', 'Open LoCode', 'surveyor', 'occupied']],
@@ -31,10 +37,16 @@ test.each([
 test('the reports agree on the season’s trees', () => {
 	const planted = total('planting', 'trees');
 	expect(total('trees', 'trees')).toBe(planted);
-	expect(total('days', 'trees')).toBe(planted);
+	for (const slug of ['days', 'block-totals', 'seedlots']) expect(total(slug, 'trees')).toBe(planted);
 	expect(total('blocks', 'planted')).toBe(planted);
-	expect(total('blocks', 'in caches')).toBe(total('deliveries', 'total'));
+	expect(total('blocks', 'in caches')).toBe(total('caches', 'total'));
 	expect(total('blocks', 'delivered')).toBe(planted + total('blocks', 'in caches'));
+});
+
+test('a season view counts only trees planted on or after its start', () => {
+	const late = query(`SELECT CAST(sum(t.plantedQty) AS INTEGER) AS n FROM bagUpView b JOIN tallyView t USING (bagUpKey) WHERE b.plantedDt >= '2026-06-01'`)[0].n;
+	for (const slug of ['days', 'block-totals', 'seedlots']) expect(total(slug, 'trees', '2026-06-01')).toBe(late);
+	expect(total('days', 'trees', '2027-01-01')).toBe(0);
 });
 
 test('the plots add up to their surveys', () => {

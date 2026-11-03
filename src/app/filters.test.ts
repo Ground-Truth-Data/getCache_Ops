@@ -23,12 +23,6 @@ test('days count back from the newest row, the newest day included', () => {
 	expect(apply(rows, { pick: {}, from: '2026-05-02', to: '2026-05-09' }, 'date').map((r) => r.trees)).toEqual([200]);
 });
 
-test('this season keeps the newest row’s calendar year', () => {
-	const years = [{ date: '2025-06-01', trees: 1 }, ...rows];
-	expect(apply(years, { pick: {}, season: true }, 'date').map((r) => r.trees)).toEqual([100, 200, 300]);
-	expect(apply(years, { pick: {} }, 'date')).toHaveLength(4);
-});
-
 test('a pick keeps only its value; newest sorts the date column descending', () => {
 	expect(apply(rows, { pick: { planter: 'Ann' }, sort: 'date' }, 'date').map((r) => r.trees)).toEqual([300, 100]);
 	expect(apply(rows, { pick: {}, sort: 'block' }, 'date').map((r) => r.block)).toEqual(['B1', 'B1', 'B2']);

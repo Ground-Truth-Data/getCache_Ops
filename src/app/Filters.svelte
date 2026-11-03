@@ -3,11 +3,20 @@
 	import DataTable from './DataTable.svelte';
 	import { apply, facets, type Filter } from './filters';
 
-	let { rows, chart, ...table }: Omit<ComponentProps<typeof DataTable>, 'toggle' | 'panel'> & { chart?: (rows: Record<string, unknown>[], el: HTMLElement) => Element } =
-		$props();
+	let {
+		rows,
+		chart,
+		season,
+		onseason,
+		...table
+	}: Omit<ComponentProps<typeof DataTable>, 'toggle' | 'panel'> & {
+		chart?: (rows: Record<string, unknown>[], el: HTMLElement) => Element;
+		season?: boolean;
+		onseason?: (on: boolean) => void;
+	} = $props();
 	const { dateCol, sorts, picks } = $derived(facets(rows));
 	// Newest first is the one default; any other report keeps its SQL's order (the 704 sheet's, for quality).
-	const fresh = (): Filter => ({ sort: facets(rows).sorts.find(([c]) => c === 'date')?.[0], pick: {}, season: true });
+	const fresh = (): Filter => ({ sort: facets(rows).sorts.find(([c]) => c === 'date')?.[0], pick: {} });
 	let f = $state(fresh());
 	let custom = $state(false);
 	let open = $state(false);
@@ -39,8 +48,14 @@
 		<div class="mb-4 flex flex-col gap-3 rounded-2xl border-2 border-(--accent) p-4" data-filters>
 			<div class="flex items-center justify-between">
 				<span class="text-xs tracking-widest text-(--accent)">FILTERS</span>
-				<button class="text-sm text-muted underline hover:text-(--accent)" onclick={() => ((f = fresh()), (custom = false))}>reset</button>
+				<button class="text-sm text-muted underline hover:text-(--accent)" onclick={() => ((f = fresh()), (custom = false), onseason?.(true))}>reset</button>
 			</div>
+			{#if season !== undefined}
+				<div class="flex items-center gap-3">
+					<span class={head}>SEASON</span>
+					<button class={seg(season)} onclick={() => onseason?.(!season)} data-season>this season</button>
+				</div>
+			{/if}
 			{#if sorts.length > 1}
 				<div class="flex items-center gap-3">
 					<span class={head}>SORT</span>
@@ -61,9 +76,7 @@
 			{#if dateCol}
 				<div class="flex flex-wrap items-center gap-3">
 					<span class={head}>{dateCol.toUpperCase()}</span>
-					<div class="inline-flex rounded-full border border-rule p-0.5" data-days>
-						<button class={seg(!!f.season)} onclick={() => (f.season = !f.season)} data-season>this season</button>
-						{#each [1, 7, 30] as d (d)}<button class={seg(f.days === d)} onclick={() => chip(f.days === d ? undefined : d)}>{d} {d === 1 ? 'day' : 'days'}</button>{/each}
+					<div class="inline-flex rounded-full border border-rule p-0.5" data-days>						{#each [1, 7, 30] as d (d)}<button class={seg(f.days === d)} onclick={() => chip(f.days === d ? undefined : d)}>{d} {d === 1 ? 'day' : 'days'}</button>{/each}
 						<button class={seg(custom)} onclick={() => chip()}>custom</button>
 					</div>
 					{#if custom}
