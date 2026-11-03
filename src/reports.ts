@@ -74,7 +74,7 @@ export const reports = [
 		description: 'Each Quality 704 survey: its plots, density, quality and payment.',
 		sql: `WITH p AS (SELECT q.qaSurveyKey, q.plantedQty AS planted, json_array_length(coalesce(q.faultsJson, '[]')) AS unsat,
 					coalesce(q.plantableSpotsOverrideQty, q.plantableSpotsQty, round(coalesce(nullif(s.treesPerHa, 0), 1800) / ${PLOTS_PER_HA})) AS spots,
-					q.isAtUserLocation = 1 AND q.mapFeatureKey IS NOT NULL AS confirmed
+					q.isOccupied = 1 AND q.mapFeatureKey IS NOT NULL AS confirmed
 				FROM qaPlotView q JOIN qaSurveyView s USING (qaSurveyKey) WHERE q.plantedQty IS NOT NULL),
 				v AS (SELECT s.*, count(p.planted) AS plots, coalesce(sum(p.confirmed), 0) AS confirmed, sum(p.planted) AS planted, sum(p.unsat) AS unsat,
 					sum(max(0, p.spots - min(p.planted, p.spots))) AS missed, sum(max(0, p.planted - p.spots)) AS excess,

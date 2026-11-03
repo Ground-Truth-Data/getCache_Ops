@@ -372,7 +372,7 @@ CREATE TABLE `qaPlotTable` (
 	`faultsJson` text DEFAULT '' NOT NULL,
 	`splitPlantJson` text DEFAULT '' NOT NULL,
 	`plotDesc` text DEFAULT '' NOT NULL,
-	`isAtUserLocation` integer DEFAULT 0 NOT NULL,
+	`isOccupied` integer DEFAULT 0 NOT NULL,
 	`qaSurveyKey` text NOT NULL,
 	`mapFeatureKey` text,
 	`createdAt` text DEFAULT '' NOT NULL,
@@ -630,11 +630,11 @@ CREATE VIEW `qaPlotFlagView` AS WITH line AS (SELECT v.qaPlotKey, v.plantedQty, 
 		       TRIM(CASE WHEN n.nPlanted >= 5 AND n.madPlanted > 0 AND abs(0.6745 * (l.plantedQty - n.normPlanted) / n.madPlanted) > 3.5 THEN 'plot ' || rtrim(rtrim(printf('%.2f', l.plantedQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normPlanted), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
 		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day
 /* qaPlotFlagView(qaPlotKey,plantedQty,personKey,unit,day,normPlanted,madPlanted,nPlanted,flag) */;
-CREATE VIEW `qaPlotView` AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plantableSpotsQty, v.plantableSpotsOverrideQty, v.faultsJson, v.splitPlantJson, v.plotDesc, v.isAtUserLocation, v.qaSurveyKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
+CREATE VIEW `qaPlotView` AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plantableSpotsQty, v.plantableSpotsOverrideQty, v.faultsJson, v.splitPlantJson, v.plotDesc, v.isOccupied, v.qaSurveyKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
 		   FROM qaPlotTable v JOIN qaPlotEntity e USING (qaPlotKey)
 		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM qaPlotTable w WHERE w.qaPlotKey = v.qaPlotKey
 	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* qaPlotView(versionKey,qaPlotKey,plantedQty,plantableSpotsQty,plantableSpotsOverrideQty,faultsJson,splitPlantJson,plotDesc,isAtUserLocation,qaSurveyKey,mapFeatureKey,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
+/* qaPlotView(versionKey,qaPlotKey,plantedQty,plantableSpotsQty,plantableSpotsOverrideQty,faultsJson,splitPlantJson,plotDesc,isOccupied,qaSurveyKey,mapFeatureKey,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
 CREATE VIEW `qaSurveyView` AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.areaHa, v.treesPerHa, v.pricePerTree, v.currency, v.speciesChoicesJson, v.mapKey, v.blockKey, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
 		   FROM qaSurveyTable v JOIN qaSurveyEntity e USING (qaSurveyKey)
 		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM qaSurveyTable w WHERE w.qaSurveyKey = v.qaSurveyKey
