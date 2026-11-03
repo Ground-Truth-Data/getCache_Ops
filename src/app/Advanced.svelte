@@ -91,7 +91,7 @@
 	<li>save the report if you like it.</li>
 </ol>
 <div class="mb-6 flex gap-2">
-	<input class={box} bind:value={request} oninput={() => (copied = false)} placeholder="Give me the top biggest tree planting days this season." data-request />
+	<input class={box} bind:value={request} oninput={() => (copied = false)} placeholder="Give me the top 10 tree planting days of this season." data-request />
 	<button class="{btn} shrink-0" onclick={copy} data-copy-prompt>{copied ? 'Copied' : 'Copy prompt'}</button>
 </div>
 <textarea class="{box} font-mono text-sm" rows="8" bind:value={sql} placeholder={'Paste SQL output from LLM like Gemini\nSELECT ...'} data-sql></textarea>

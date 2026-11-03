@@ -3,7 +3,9 @@ type Query = (sql: string) => Record<string, unknown>[];
 // What the views can't say about tree planting. A number with no "whose" or "over how many" misleads.
 const DOMAIN = `How tree planting works in this file:
 - One file can hold one planter's work or a whole crew's (a foreman's). A bag-up is one planter's load for one day: bagUpView.createdByKey is the planter, plantedDt the day, workMode planting/fruit/cones/seeds, blockKey the block. A tally is trees of one box planted from that bag-up, so a tally's planter is its bag-up's createdByKey.
-- Every figure must say whose it is. Unless the request names one person or says everyone, break it down by planter. When it totals more than one person, add a "Planters" column (COUNT DISTINCT planters) so a crew's day is never read as one person's.
+- Requests are usually loose ("the top 10 planting days this season"): they rarely say whose tallies, or whether money matters. Never pick one reading silently; answer so every reading can be read off the result, and put each choice in a column name, e.g. "Trees (everyone)".
+- Every figure must say whose it is. "My", "mine" or "I" means the file's owner only. Otherwise count everyone, and add a "Planters" column (COUNT DISTINCT planters) so a crew's day is never read as one person's. When it counts more than one planter, also add a "Top planter" and "Their trees" column, so the planter asking can find their own day in it.
+- Trees are the measure unless money is asked for, but an "Earnings" column beside trees costs nothing and answers the next question.
 - The file's owner ("me", "my") is personIdTable.personKey where personId = (SELECT personId FROM userProfile WHERE userProfileId = 'singleton').
 - A person's name is COALESCE(NULLIF(username, ''), alias) in personView; follow sameAsKey when set (that person turned out to be another one).
 - Blocks: blockView.blockName via blockKey. A per-day or per-planter figure gets a "Blocks" column (COUNT DISTINCT blockKey). allocatedQty is the trees a block was given; compare it with trees planted.
