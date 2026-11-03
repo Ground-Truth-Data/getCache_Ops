@@ -103,7 +103,7 @@
 			{#each pages as [path, label] (path)}
 				<Pill href="#/{path}" active={page[0] === path}>{label}</Pill>
 			{/each}
-			<button class="rt-fancy-btn ml-auto rounded-lg px-3 py-1 font-display text-lg" onclick={askHome} data-ask><img src="sync.webp" alt="" class="mr-2 inline h-6 w-6 align-middle brightness-0" />Sync Get Cache</button>
+			<button class="rt-fancy-btn ml-auto rounded-lg px-3 py-1 font-display text-lg" onclick={askHome} data-ask><img src="sync.webp" alt="" class="-my-2 mr-1.5 inline h-8 align-middle brightness-0" />Sync Get Cache</button>
 			{#if source !== SAMPLE}
 				<button class="rounded-lg px-3 py-1 font-display text-lg text-muted hover:bg-(--accent)/15 hover:text-ink" onclick={trySample} data-sample>Sample</button>
 			{:else if account}
