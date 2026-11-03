@@ -69,7 +69,7 @@
 	let tried = $state(false);
 	local().finally(() => ((tried = true), watch()));
 	const why = $derived(
-		ops || !tried || account ? '' : location.origin === HOME ? "No Get Cache data in this browser yet, and no Get Cache sign-in here." : 'No data yet: use Get my data from Get Cache, or drop a backup file.',
+		ops || !tried || account ? '' : location.origin === HOME ? "No Get Cache data in this browser yet, and no Get Cache sign-in here." : 'No data yet: use Sync Get Cache, or drop a backup file.',
 	);
 	const focused = () => (watch(), source === LOCAL && local());
 	let pick = $state<HTMLInputElement>();
@@ -98,12 +98,12 @@
 	<header class="sticky top-0 z-10 border-b border-rule bg-ground" bind:offsetHeight={headHeight}>
 		<nav class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
 			<a href="#/" class="mr-4 flex items-center gap-2 font-display text-2xl text-(--accent)" data-home>
-				{#if brand.logo}<img src={brand.logo} alt="" class="h-8" />{/if}{brand.name}
+				{#each brand.logos as src, i (src)}<img {src} alt={i ? '' : brand.name} class="h-10" />{:else}{brand.name}{/each}
 			</a>
 			{#each pages as [path, label] (path)}
 				<Pill href="#/{path}" active={page[0] === path}>{label}</Pill>
 			{/each}
-			<button class="rt-fancy-btn ml-auto rounded-lg px-3 py-1 font-display text-lg" onclick={askHome} data-ask>Get my data from Get Cache</button>
+			<button class="rt-fancy-btn ml-auto rounded-lg px-3 py-1 font-display text-lg" onclick={askHome} data-ask><img src="sync.webp" alt="" class="mr-2 inline h-6 w-6 align-middle brightness-0" />Sync Get Cache</button>
 			{#if source !== SAMPLE}
 				<button class="rounded-lg px-3 py-1 font-display text-lg text-muted hover:bg-(--accent)/15 hover:text-ink" onclick={trySample} data-sample>Sample</button>
 			{:else if account}

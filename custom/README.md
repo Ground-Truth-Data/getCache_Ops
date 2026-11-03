@@ -7,7 +7,7 @@ Everything your company adds lives here; upstream never edits it.
 ```ts
 import logo from './jrp-logo.svg'; // the image sits beside this file
 
-export default { name: 'JRP Ops', logo, accent: '#b5462c' };
+export default { name: 'JRP Ops', logos: [logo], accent: '#b5462c' };
 ```
 
 Any field left out keeps the default.

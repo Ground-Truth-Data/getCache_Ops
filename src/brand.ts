@@ -1,13 +1,13 @@
 export interface Brand {
 	name: string;
-	/** An image URL; custom/brand.ts imports its own file. */
-	logo?: string;
+	/** Image URLs shown in place of the name; custom/brand.ts imports its own files. */
+	logos: string[];
 	/** The browser tab's icon. */
 	icon: string;
 	accent: string;
 }
 
-const defaults: Brand = { name: 'Get Cache Ops', logo: 'logo.webp', icon: 'favicon.png', accent: '#ffd700' };
+const defaults: Brand = { name: 'Get Cache Ops', logos: ['wordmark.webp', 'ops.webp'], icon: 'favicon.png', accent: '#ffd700' };
 
 const custom = Object.values(import.meta.glob<{ default: Partial<Brand> }>('../custom/brand.ts', { eager: true }))[0];
 
