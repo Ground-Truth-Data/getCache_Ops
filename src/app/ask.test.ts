@@ -12,6 +12,7 @@ test('the prompt carries every view with its columns, and the request', () => {
 	expect(p).toMatch(/tallyView\(.*plantedQty/);
 	expect(p).toContain('bagUpView(');
 	expect(p).not.toMatch(/Entity\(/);
+	expect(p).toContain('"Planters" column');
 	expect(p.endsWith('Request: group by block, sum trees')).toBe(true);
 });
 

@@ -28,7 +28,7 @@
 
 <p class="mb-2 text-muted">Say what you want, copy the prompt into any AI, paste its SQL below.</p>
 <div class="mb-6 flex gap-2">
-	<input class={box} bind:value={request} oninput={() => (copied = false)} placeholder="trees per planter per day, sorted by most trees" data-request />
+	<input class={box} bind:value={request} oninput={() => (copied = false)} placeholder="Give me the top biggest tree planting days this season." data-request />
 	<button class="{btn} shrink-0" onclick={copy} data-copy-prompt>{copied ? 'Copied' : 'Copy prompt'}</button>
 </div>
 <textarea class="{box} font-mono text-sm" rows="8" bind:value={sql} placeholder="SELECT …" data-sql></textarea>

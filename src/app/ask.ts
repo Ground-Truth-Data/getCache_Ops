@@ -1,6 +1,18 @@
 type Query = (sql: string) => Record<string, unknown>[];
 
-/** The prompt an AI needs to write one Ops query: the rules, the open file's …View views, and the request. */
+// What the views can't say about tree planting. A number with no "whose" or "over how many" misleads.
+const DOMAIN = `How tree planting works in this file:
+- One file can hold one planter's work or a whole crew's (a foreman's). A bag-up is one planter's load for one day: bagUpView.createdByKey is the planter, plantedDt the day, workMode planting/fruit/cones/seeds, blockKey the block. A tally is trees of one box planted from that bag-up, so a tally's planter is its bag-up's createdByKey.
+- Every figure must say whose it is. Unless the request names one person or says everyone, break it down by planter. When it totals more than one person, add a "Planters" column (COUNT DISTINCT planters) so a crew's day is never read as one person's.
+- The file's owner ("me", "my") is personIdTable.personKey where personId = (SELECT personId FROM userProfile WHERE userProfileId = 'singleton').
+- A person's name is COALESCE(NULLIF(username, ''), alias) in personView; follow sameAsKey when set (that person turned out to be another one).
+- Blocks: blockView.blockName via blockKey. A per-day or per-planter figure gets a "Blocks" column (COUNT DISTINCT blockKey). allocatedQty is the trees a block was given; compare it with trees planted.
+- Money: earnings are plantedQty × pricePerTree in that tally's currency. Never add across currencies: group by currency instead.
+- Quality: a survey (qaSurveyView) checks one block; its plots are qaPlotView rows by qaSurveyKey; the checker is the survey's createdByKey. Every quality figure says which block and survey it covers, with "Surveys" and "Plots" count columns when it covers more than one.
+- "This season" is the calendar year of the newest plantedDt in the file, never today's date: an old file still shows its own season.
+- The views show live rows only: edits and deletes are already applied.`;
+
+/** The prompt an AI needs to write one Ops query: the rules, the domain, the open file's …View views, and the request. */
 export function prompt(query: Query, request: string) {
 	const views = query(
 		`SELECT m.name, group_concat(p.name, ', ') AS cols FROM sqlite_schema m JOIN pragma_table_info(m.name) p
@@ -8,6 +20,7 @@ export function prompt(query: Query, request: string) {
 	);
 	return [
 		'You write one SQLite SELECT for Get Cache Ops. Read only the …View views below. Use readable column aliases in the app’s words. Return only the SQL.',
+		DOMAIN,
 		views.map((v) => `${v.name}(${v.cols})`).join('\n'),
 		`Request: ${request}`,
 	].join('\n\n');
