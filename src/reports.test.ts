@@ -19,7 +19,7 @@ test.each([
 	['trees', ['lot', 'trees/box', 'trees/bundle', 'per tree', 'trees', 'value', 'currency', 'days', 'blocks']],
 	['deliveries', ['cache', 'block', 'lot', 'boxes', 'trees/box', 'total', 'counted', 'counted by', 'delivery', 'delivered', 'delivered by']],
 	['allocation', ['block', 'allocated', 'calculated', 'delivered', 'planted', 'in caches', 'left to plant']],
-	['quality', ['survey', 'block', 'date', 'stems/ha', 'total ha', 'plots', '◆', 'trees planted', 'faults', 'missed', 'excess', 'Density', 'Quality', 'Payment']],
+	['quality', ['survey', 'block', 'date', 'stems/ha', 'total ha', 'plots', '◆ occupied', 'trees planted', 'faults', 'missed', 'excess', 'Density', 'Quality', 'Payment']],
 ])('%s has rows on the sample and the app’s columns, in its order, with no ids, keys or JSON', (slug, cols) => {
 	const r = rows(slug);
 	expect(r.length).toBeGreaterThan(0);
