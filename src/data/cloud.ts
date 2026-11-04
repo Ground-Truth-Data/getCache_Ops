@@ -70,8 +70,11 @@ export async function build(read = rest, page = 1000): Promise<Uint8Array> {
 			try {
 				for (let from = 0; ; from += page) {
 					const res = await read(`${table}?select=${cols.map(encodeURIComponent).join(',')}`, `${from}-${from + page - 1}`);
-					// Central mirrors every Phone table, so a missing one is a broken Central: the pull fails whole.
-					if (res.status === 404) throw new Error(`Central has no ${table}`);
+					// Ops' schema runs ahead of prod Central (editNoteTable, Nov 2026): a table not migrated there yet reads as empty.
+					if (res.status === 404) {
+						console.warn(`[ops] Central has no ${table}`);
+						break;
+					}
 					if (!res.ok) throw new Error(`Central ${table}: HTTP ${res.status}`);
 					const rows: Record<string, unknown>[] = await res.json();
 					for (const row of rows)

@@ -68,9 +68,11 @@ test('an account with no upload yet lands on its empty copy at once', async () =
 	vi.unstubAllEnvs();
 });
 
-test('a table Central lacks fails the whole pull, naming it', async () => {
-	const lacking = (path: string, range?: string) => (path.startsWith('tallyTable?') ? Promise.resolve(new Response('', { status: 404 })) : central(path, range));
-	await expect(build(lacking)).rejects.toThrow('Central has no tallyTable');
+test('a table Central lacks comes back empty, and the rest still loads', async () => {
+	const lacking = (path: string, range?: string) => (path.startsWith('editNoteTable?') ? Promise.resolve(new Response('', { status: 404 })) : central(path, range));
+	await openDatabase(await build(lacking));
+	expect(query('SELECT count(*) AS n FROM editNoteTable')).toEqual([{ n: 0 }]);
+	expect(query(perDay)).toEqual(sample.prepare(perDay).all().map((r) => ({ ...r })));
 });
 
 test("builds the Phone schema from Central's rows, and the reports read it", async () => {

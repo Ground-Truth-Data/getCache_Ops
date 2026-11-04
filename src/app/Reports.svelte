@@ -12,7 +12,15 @@
 	let season = $state(true);
 	// The season is the newest planted date's calendar year, as the app's inbox counts it.
 	const from = $derived(season && ops ? `${ops.query('SELECT substr(max(plantedDt), 1, 4) AS y FROM bagUpView')[0]?.y}-01-01` : '');
-	const rows = $derived(ops ? ops.query(report.sql, seasonal ? [from] : undefined) : []);
+	// A file from before a table existed (editNoteTable, Nov 2026) shows that table empty.
+	const rows = $derived.by(() => {
+		try {
+			return ops ? ops.query(report.sql, seasonal ? [from] : undefined) : [];
+		} catch (e) {
+			console.warn(`[ops] ${report.title}`, e);
+			return [];
+		}
+	});
 </script>
 
 <nav class="flex flex-wrap gap-2" data-picker>
