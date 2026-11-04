@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { brand } from '../brand';
+	import { fresh, ownSignIn, space } from '../data/auth';
 	import { follow, signedIn } from '../data/cloud';
+	import Approve from '../company/Approve.svelte';
+	import { logoUrl, space as spaceOf, type Space as SpaceRow } from '../company/central';
+	import Companies from '../company/Companies.svelte';
+	import Space from '../company/Space.svelte';
 	import { openDatabase } from '../data/db';
 	import type { Ops, Plugin } from '../plugin/api';
 	import { customs, makeOps, refusal } from '../plugin/host';
@@ -15,7 +20,7 @@
 	let source = $state('');
 	let hash = $state(location.hash);
 
-	const pages = [['home', 'Home'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
+	const pages = [...(space ? [['company', 'Company']] : []), ['home', 'Home'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced'], ['companies', 'Companies']];
 	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/')) ?? pages[0]);
 	const plugin = $derived(customs.find((p) => page[0] === `p/${p.id}`));
@@ -37,7 +42,8 @@
 	const LIVE = 'your Get Cache account';
 	let account = $state<ReturnType<typeof signedIn>>(null);
 	// Again on coming back from the app's tab, where the planter signed in or the app refreshed the token.
-	function watch() {
+	async function watch() {
+		if (ownSignIn) await fresh();
 		if (account || !(account = signedIn())) return;
 		follow(
 			(bytes) => {
@@ -67,7 +73,7 @@
 		if (ops && !ops.query(`SELECT ${WORK.map((t) => `(SELECT count(*) FROM ${t})`).join(' + ')} AS n`)[0]?.n) ((ops = undefined), (source = ''));
 	}
 	let tried = $state(false);
-	local().finally(() => ((tried = true), watch()));
+	local().finally(() => ((tried = true), signedInNow()));
 	const why = $derived(
 		ops || !tried || account ? '' : location.origin === HOME ? "No Get Cache data in this browser yet, and no Get Cache sign-in here." : 'No data yet: use Sync Get Cache, or drop a backup file.',
 	);
@@ -75,6 +81,12 @@
 	let pick = $state<HTMLInputElement>();
 	let headHeight = $state(0);
 
+	// A company's own address: its name heads the page, or "not found".
+	let company = $state<SpaceRow | null>();
+	const loadSpace = async () => {
+		if (space) company = (await spaceOf(space).catch((e) => (console.warn('[ops] company', e), undefined))) ?? null;
+	};
+	const signedInNow = () => watch().then(loadSpace);
 	async function openFile(file?: File) {
 		if (file) open(await file.arrayBuffer(), file.name);
 	}
@@ -98,7 +110,11 @@
 	<header class="sticky top-0 z-10 border-b border-rule bg-surface" bind:offsetHeight={headHeight}>
 		<nav class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
 			<a href="#/" class="mr-2 flex sm:mr-4 items-center gap-2 font-display text-2xl text-(--accent)" data-home>
-				{#each brand.logos as src, i (src)}<img {src} alt={i ? '' : brand.name} class="h-7 sm:h-10" />{:else}{brand.name}{/each}
+				{#if space}
+					{#if company?.logo}<img src={logoUrl(company)} alt="" class="h-7 sm:h-10" />{/if}<span data-company-head>Get Cache{company ? ` · ${company.name}` : ''}</span>
+				{:else}
+					{#each brand.logos as src, i (src)}<img {src} alt={i ? '' : brand.name} class="h-7 sm:h-10" />{:else}{brand.name}{/each}
+				{/if}
 			</a>
 			{#each pages as [path, label] (path)}
 				<Pill href="#/{path}" active={page[0] === path}>{label}</Pill>
@@ -119,8 +135,14 @@
 
 	<main class="mx-auto max-w-7xl px-6 py-6">
 		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
-		{#if why}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
-		{#if page[0] === 'home' || page[0] === 'reports'}
+		{#if why && page[0] !== 'company' && page[0] !== 'companies' && parts[0] !== 'approve'}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
+		{#if parts[0] === 'approve'}
+			<Approve />
+		{:else if page[0] === 'company'}
+			<Space slug={space!} {company} me={account} token={parts[0] === 'join' ? parts[1] : undefined} reload={loadSpace} {signedInNow} />
+		{:else if page[0] === 'companies'}
+			<Companies me={account} {signedInNow} />
+		{:else if page[0] === 'home' || page[0] === 'reports'}
 			{#key page[0]}<Reports {ops} page={page[0]} slug={parts[1]} />{/key}
 		{:else}
 			{#if page[0] !== 'advanced'}<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[1]}</h1>{/if}
@@ -136,7 +158,8 @@
 					{#if why}
 						<p class="text-muted" data-refused={plugin.id}>{why}</p>
 					{:else}
-						<div use:mount={[plugin, ops]}></div>
+						<!-- contain: paint clips a plugin to its box, so nothing it draws can cover Ops' header. -->
+						<div class="[contain:paint]" use:mount={[plugin, ops]}></div>
 					{/if}
 				{/key}
 			{:else}

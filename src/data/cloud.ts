@@ -4,24 +4,10 @@
 
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import ddl from '../../schema/v57.sql?raw';
+import { session } from './auth';
 
 const env = import.meta.env;
 const EVERY_MS = 30_000;
-
-type Session = { access_token: string; expires_at: number; user: { id: string; email?: string } };
-
-/** The app's session while its token is good. Only the app refreshes it: a second refresher would
- *  spend the same single-use refresh token and sign the app out. */
-function session(): Session | null {
-	try {
-		// Unset on a fork's own domain, where there is no Get Cache session to share.
-		const ref = new URL(env.PUBLIC_GC_RT_supabase_address).hostname.split('.')[0];
-		const s: Session | null = JSON.parse(localStorage.getItem(`sb-${ref}-auth-token`) ?? 'null');
-		return s && s.expires_at * 1000 > Date.now() ? s : null;
-	} catch {
-		return null;
-	}
-}
 
 /** Who Get Cache is signed in as in this browser, with a token still good, or null. */
 export function signedIn(): { authId: string; email: string } | null {
