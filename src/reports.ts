@@ -107,6 +107,57 @@ export const reports = [
 			ORDER BY v.createdAt`,
 		noSum: ['stems/ha', 'Density', 'Quality', 'Payment'],
 	},
+	{
+		slug: 'bag-ups',
+		title: 'Bag-ups',
+		description: 'Each bag-up: when, who, where, and the trees in it.',
+		sql: `SELECT b.plantedDt AS "date", strftime('%H:%M', b.createdAt, 'localtime') AS "time", ${person('p')} AS "planter", b.workMode AS "work",
+				k.blockName AS "block", f.featureName AS "place", count(t.tallyKey) AS "tallies", CAST(coalesce(sum(t.plantedQty), 0) AS INTEGER) AS "trees"
+			FROM bagUpView b LEFT JOIN tallyView t USING (bagUpKey) LEFT JOIN blockView k USING (blockKey)
+				LEFT JOIN mapFeatureView f ON f.mapFeatureKey = b.mapFeatureKey LEFT JOIN personView p ON p.personKey = b.createdByKey
+			GROUP BY b.bagUpKey ORDER BY b.plantedDt, b.createdAt`,
+	},
+	{
+		slug: 'people',
+		title: 'People',
+		description: 'Everyone in the contact book, and what they planted.',
+		sql: `SELECT ${person('p')} AS "name", date(p.createdAt) AS "added",
+				(SELECT count(*) FROM bagUpView b WHERE b.createdByKey = p.personKey) AS "bag-ups",
+				(SELECT CAST(coalesce(sum(t.plantedQty), 0) AS INTEGER) FROM bagUpView b JOIN tallyView t USING (bagUpKey) WHERE b.createdByKey = p.personKey) AS "trees",
+				(SELECT max(b.plantedDt) FROM bagUpView b WHERE b.createdByKey = p.personKey) AS "last planted",
+				CASE WHEN p.hiddenAt IS NOT NULL THEN 'yes' ELSE '' END AS "hidden"
+			FROM personView p ORDER BY "name"`,
+	},
+	{
+		slug: 'maps',
+		title: 'Maps',
+		description: 'Each map: its pieces, pins, blocks and companies.',
+		sql: `SELECT m.mapName AS "map",
+				(SELECT count(*) FROM mapFeatureView f WHERE f.mapKey = m.mapKey AND json_extract(f.geometryJson, '$.type') <> 'Point') AS "pieces",
+				(SELECT count(*) FROM mapFeatureView f WHERE f.mapKey = m.mapKey AND json_extract(f.geometryJson, '$.type') = 'Point') AS "pins",
+				(SELECT count(DISTINCT f.linkedBlockKey) FROM mapFeatureView f WHERE f.mapKey = m.mapKey) AS "blocks",
+				(SELECT group_concat(o.orgName, ', ') FROM orgTagView g JOIN orgTable o USING (orgKey) WHERE g.mapKey = m.mapKey) AS "companies",
+				date(m.createdAt) AS "created", ${person('p')} AS "by"
+			FROM mapView m LEFT JOIN personView p ON p.personKey = m.createdByKey ORDER BY "map"`,
+	},
+	{
+		slug: 'companies',
+		title: 'Companies',
+		description: 'Each company: what it is, and the maps and blocks it is for.',
+		sql: `SELECT o.orgName AS "company",
+				(SELECT group_concat(replace(c.kind, 'Company', ' company'), ', ') FROM orgKindView c WHERE c.orgKey = o.orgKey) AS "kind",
+				(SELECT group_concat(m.mapName, ', ') FROM orgTagView g JOIN mapView m USING (mapKey) WHERE g.orgKey = o.orgKey) AS "maps",
+				(SELECT group_concat(k.blockName, ', ') FROM orgTagView g JOIN blockView k USING (blockKey) WHERE g.orgKey = o.orgKey) AS "blocks",
+				date(o.createdAt) AS "added"
+			FROM orgTable o ORDER BY "company"`,
+	},
+	{
+		slug: 'edits',
+		title: 'Edits',
+		description: 'Why each thing was changed, in the editor’s words.',
+		sql: `SELECT strftime('%Y-%m-%d %H:%M', n.createdAt, 'localtime') AS "time", ${person('p')} AS "by", replace(n.tableName, 'Table', '') AS "what", n.reason AS "reason"
+			FROM editNoteTable n LEFT JOIN personView p ON p.personKey = n.createdByKey ORDER BY n.createdAt DESC`,
+	},
 ];
 
 /** The Reports page: each bound to ?1, the first planted date it counts ('' for all). */
