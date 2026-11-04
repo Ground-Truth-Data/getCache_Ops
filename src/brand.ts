@@ -7,7 +7,7 @@ export interface Brand {
 	accent: string;
 }
 
-const defaults: Brand = { name: 'Get Cache Ops', logos: ['wordmark.webp', 'ops.webp'], icon: 'favicon.png', accent: '#ffd700' };
+const defaults: Brand = { name: 'Get Cache Ops', logos: ['logo_getCache_join.webp', 'logo_ops_join.webp'], icon: 'favicon.png', accent: '#ffd700' };
 
 const custom = Object.values(import.meta.glob<{ default: Partial<Brand> }>('../custom/brand.ts', { eager: true }))[0];
 

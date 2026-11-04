@@ -109,11 +109,11 @@
 <div class="font-sans" style:--accent={brand.accent} style:--rt-yellow={brand.accent} style:--site-head="{headHeight}px">
 	<header class="sticky top-0 z-10 border-b border-rule bg-surface" bind:offsetHeight={headHeight}>
 		<nav class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
-			<a href="#/" class="mr-2 flex sm:mr-4 items-center gap-2 font-display text-2xl text-(--accent)" data-home>
+			<a href="#/" class="mr-2 flex sm:mr-4 items-center {space ? 'gap-2' : ''} font-display text-2xl text-(--accent)" data-home>
 				{#if space}
 					{#if company?.logo}<img src={logoUrl(company)} alt="" class="h-7 sm:h-10" />{/if}<span data-company-head>Get Cache{company ? ` · ${company.name}` : ''}</span>
 				{:else}
-					{#each brand.logos as src, i (src)}<img {src} alt={i ? '' : brand.name} class="h-7 sm:h-10" />{:else}{brand.name}{/each}
+					{#each brand.logos as src, i (src)}<img {src} alt={i ? '' : brand.name} class="h-9 sm:h-14" />{:else}{brand.name}{/each}
 				{/if}
 			</a>
 			{#each pages as [path, label] (path)}
