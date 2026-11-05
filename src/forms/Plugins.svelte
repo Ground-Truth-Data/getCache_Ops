@@ -5,7 +5,7 @@
 	import Report from './Report.svelte';
 	import { session } from '../data/auth';
 	import InboxChrome from '../../_rapper/gc/InboxChrome.svelte';
-	import RowCard from '../../_rapper/gc/RowCard.svelte';
+	import RowShell from '../../_rapper/gc/RowShell.svelte';
 	import { addLink, copyPlugin, live, myPlugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
 
 	let { me, sub, id, signedInNow }: { me: { authId: string } | null; sub?: string; id?: string; signedInNow: () => void } = $props();
@@ -174,14 +174,18 @@
 	<div class="flex flex-col gap-(--rt-space-2)" data-plugins>
 		<InboxChrome rows={pillRows} onpill={tap} bind:query placeholder="Search plugins, makers, organizations" clearLabel="Clear" {buttons} />
 		{#each shown as p (p.pluginId)}
-			<RowCard
-				title={p.title || 'Untitled'}
-				glyphSrc={p.logo ?? 'plugin_gold.webp'}
-				subtitle={[p.maker && `Made by ${p.maker}`, p.answers && `${p.answers} answers`].filter(Boolean).join(' · ')}
-				tags={p.version ? [{ label: p.version, tone: 'gold' }] : []}
-				tier="top"
-				href={p.href}
-			/>
+			<RowShell title={p.title || 'Untitled'} href={p.href} tier="top">
+				{#snippet glyph()}<img src={p.logo ?? 'plugin_gold.webp'} alt="" class="rt-row__glyph-img" />{/snippet}
+				{#snippet subtitle()}
+					{#if p.version}<span class="rt-row__badge rt-row__badge--gold">{p.version}</span>{/if}
+					<span class="rt-row__num">{[`Made by ${p.maker}`, p.answers && `${p.answers} answers`].filter(Boolean).join(' · ')}</span>
+				{/snippet}
+				{#snippet end()}
+					<span class="rt-row__cell rt-row__cell--chevron" aria-hidden="true"
+						><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg></span
+					>
+				{/snippet}
+			</RowShell>
 		{/each}
 	</div>
 	<input bind:this={pick} type="file" accept=".getcache" class="hidden" onchange={(e) => open(e.currentTarget.files?.[0])} data-sent-file />

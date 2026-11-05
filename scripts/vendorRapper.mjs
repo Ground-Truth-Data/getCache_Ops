@@ -19,10 +19,9 @@ const files = [
 	'gc/formSurvey.ts',
 	'gc/FormView.svelte',
 	// The inbox's furniture: Plugins draws through it.
-	...['InboxChrome', 'RowCard', 'Checkbox', 'IdentityPill', 'ConfirmedDiamond', 'SearchInput', 'FancyButton', 'Icon'].map((f) => `gc/${f}.svelte`),
+	...['InboxChrome', 'RowShell', 'SearchInput', 'FancyButton', 'Icon'].map((f) => `gc/${f}.svelte`),
 	'gc/iconPaths.ts',
-	'gc/messages/en.json',
-	...['shovel_gold', 'treeFontRust_mini', 'pen_edit_icon_white', 'note_icon_white', ...['dark', 'light'].flatMap((t) => [`diamond_${t}Rose_tilt`, `diamond_${t}Rose_vert`])].map((f) => `gc/assets/${f}.webp`),
+	...['pen_edit_icon_white', 'note_icon_white'].map((f) => `gc/assets/${f}.webp`),
 ];
 
 // Written in place and only when changed: a deleted and recreated folder drops out of Vite's watcher, which then serves the old kit.
