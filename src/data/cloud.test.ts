@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { expect, test, vi } from 'vitest';
+import { fresh } from './auth';
 import { build, follow, signedIn } from './cloud';
 import { openDatabase, query } from './db';
 
@@ -33,10 +34,15 @@ function browser(inSeconds: number, answer: (path: string) => Response) {
 }
 const settle = () => new Promise((r) => setTimeout(r, 300));
 
-test('an expired token is signed out: Ops never refreshes it', () => {
-	browser(-60, () => Response.json([]));
+test("the app's lapsed token, left by a hidden Get Cache tab, is refreshed and handed back to the app", async () => {
+	vi.stubEnv('PUBLIC_GC_RT_supabase_address', 'https://dev.supabase.co');
+	const store = new Map([['sb-dev-auth-token', JSON.stringify({ access_token: 'old', refresh_token: 'r1', expires_at: Math.floor(Date.now() / 1000) - 60, user: { id: 'u1' } })]]);
+	vi.stubGlobal('localStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) });
+	const next = { access_token: 'new', refresh_token: 'r2', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'p@x' } };
+	vi.stubGlobal('fetch', async () => Response.json(next));
 	expect(signedIn()).toBeNull();
-	browser(3600, () => Response.json([]));
+	expect((await fresh())?.access_token).toBe('new');
+	expect(JSON.parse(store.get('sb-dev-auth-token')!).refresh_token).toBe('r2');
 	expect(signedIn()).toEqual({ authId: 'u1', email: 'p@x' });
 	vi.unstubAllGlobals();
 	vi.unstubAllEnvs();

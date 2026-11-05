@@ -3,7 +3,7 @@
 // keep the maker's credit. Answers never go to Central: a phone sends its plugins file, and Ops keeps every row of
 // every file it is given, in this browser.
 import sqlite3InitModule, { type Database } from '@sqlite.org/sqlite-wasm';
-import { session } from '../data/auth';
+import { fresh } from '../data/auth';
 import { appHome, call } from '../company/central';
 import type { Answers, Definition, Store, Version } from './forms';
 
@@ -62,7 +62,7 @@ export function pluginStore(pluginId: string, meta: () => { logo: string | null 
 		async publish() {
 			const d = id && kept()[id];
 			if (!d) return;
-			if (!session()) throw new SignInNeeded();
+			if (!(await fresh())) throw new SignInNeeded();
 			// An interrupted publish can leave its row unpublished; Central holds one draft per plugin.
 			await call(`plugin?pluginId=eq.${id}&publishedAt=is.null`, 'DELETE');
 			const { pluginId, definition, logo, copiedFrom } = d;

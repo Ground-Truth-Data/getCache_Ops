@@ -1,7 +1,7 @@
 // Company spaces: one Get Cache organization (its orgKey) made a space, kept in Central's ops schema and read and
 // written with the signed-in planter's token (anon when signed out). Row-level security and triggers there decide
 // what is allowed, never this file.
-import { session } from '../data/auth';
+import { fresh } from '../data/auth';
 
 const env = import.meta.env;
 
@@ -16,7 +16,7 @@ export async function call<T>(path: string, method = 'GET', body?: unknown, prof
 		method,
 		headers: {
 			apikey: env.PUBLIC_GC_RT_supabase_key,
-			authorization: `Bearer ${session()?.access_token ?? env.PUBLIC_GC_RT_supabase_key}`,
+			authorization: `Bearer ${(await fresh())?.access_token ?? env.PUBLIC_GC_RT_supabase_key}`,
 			'accept-profile': profile,
 			'content-profile': profile,
 			'content-type': 'application/json',
@@ -68,7 +68,7 @@ export async function uploadLogo(orgKey: string, file: File) {
 	const path = `${orgKey}/logo`;
 	const res = await fetch(`${env.PUBLIC_GC_RT_supabase_address}/storage/v1/object/ops-logos/${path}`, {
 		method: 'POST',
-		headers: { apikey: env.PUBLIC_GC_RT_supabase_key, authorization: `Bearer ${session()?.access_token}`, 'content-type': file.type, 'x-upsert': 'true' },
+		headers: { apikey: env.PUBLIC_GC_RT_supabase_key, authorization: `Bearer ${(await fresh())?.access_token}`, 'content-type': file.type, 'x-upsert': 'true' },
 		body: file,
 	});
 	if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? `HTTP ${res.status}`);

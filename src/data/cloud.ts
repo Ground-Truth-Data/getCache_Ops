@@ -1,10 +1,10 @@
 // The signed-in planter's rows, read from Central (Postgres schema getCacheMobile) with
 // their own token: SELECT only, row-level security decides what comes back. Nothing here
-// can refresh a token, sign out or write. Contract: getCache/src/lib/docs/OPS_READ.md.
+// signs out or writes. Contract: getCache/src/lib/docs/OPS_READ.md.
 
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import ddl from '../../schema/v57.sql?raw';
-import { session } from './auth';
+import { fresh, session } from './auth';
 
 const env = import.meta.env;
 const EVERY_MS = 30_000;
@@ -16,7 +16,7 @@ export function signedIn(): { authId: string; email: string } | null {
 }
 
 async function rest(path: string, range?: string): Promise<Response> {
-	const s = session();
+	const s = await fresh();
 	if (!s) throw new Error('signed out of Get Cache');
 	const res = await fetch(`${env.PUBLIC_GC_RT_supabase_address}/rest/v1/${path}`, {
 		headers: {
@@ -26,7 +26,7 @@ async function rest(path: string, range?: string): Promise<Response> {
 			...(range ? { range } : {}),
 		},
 	});
-	if (res.status === 401) throw new Error('your sign-in has expired: open Get Cache to refresh it');
+	if (res.status === 401) throw new Error('your sign-in has expired: sign in to Get Cache again');
 	return res;
 }
 

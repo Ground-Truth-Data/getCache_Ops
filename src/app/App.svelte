@@ -50,9 +50,9 @@
 		const m = Math.round((now - updated) / 60_000);
 		return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
 	});
-	// Again on coming back from the app's tab, where the planter signed in or the app refreshed the token.
+	// Again on coming back from the app's tab, where the planter may have signed in.
 	async function watch() {
-		if (ownSignIn) await fresh();
+		await fresh();
 		if (account || !(account = signedIn())) return;
 		follow(
 			(bytes, at) => {

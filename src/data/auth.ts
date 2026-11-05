@@ -1,7 +1,8 @@
-// Who is signed in. On Get Cache's own site Ops borrows the app's session and never refreshes it: a second
-// refresher would spend the same single-use refresh token and sign the app out. On getcacheops.org, which cannot
-// see that session, Ops signs in itself with an emailed code and keeps the session in a cookie on the parent
-// domain, so one sign-in covers every company's address.
+// Who is signed in. On Get Cache's own site Ops shares the app's session in the app's own storage key: a hidden
+// app tab stops refreshing, so Ops refreshes a lapsing token and writes it back there, where the app reads it on
+// its next refresh and never spends a used token. On getcacheops.org, which cannot see that session, Ops signs
+// in itself with an emailed code and keeps the session in a cookie on the parent domain, so one sign-in covers
+// every company's address.
 
 const env = import.meta.env;
 const host = globalThis.location?.hostname ?? '';
@@ -14,6 +15,8 @@ export const ownSignIn = !!parts;
 export type Session = { access_token: string; refresh_token?: string; expires_at: number; user: { id: string; email?: string } };
 
 const COOKIE = 'gc-ops-session';
+// Unset on a fork's own domain, where there is no Get Cache session to share.
+const appKey = () => `sb-${new URL(env.PUBLIC_GC_RT_supabase_address).hostname.split('.')[0]}-auth-token`;
 
 function stored(): Session | null {
 	try {
@@ -21,15 +24,14 @@ function stored(): Session | null {
 			const m = document.cookie.match(new RegExp(`(?:^|; )${COOKIE}=([^;]*)`));
 			return m ? JSON.parse(decodeURIComponent(m[1])) : null;
 		}
-		// Unset on a fork's own domain, where there is no Get Cache session to share.
-		const ref = new URL(env.PUBLIC_GC_RT_supabase_address).hostname.split('.')[0];
-		return JSON.parse(localStorage.getItem(`sb-${ref}-auth-token`) ?? 'null');
+		return JSON.parse(localStorage.getItem(appKey()) ?? 'null');
 	} catch {
 		return null;
 	}
 }
 
 function keep(s: Session | null) {
+	if (!ownSignIn) return s && localStorage.setItem(appKey(), JSON.stringify(s));
 	const v = s ? encodeURIComponent(JSON.stringify({ access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at, user: { id: s.user.id, email: s.user.email } })) : '';
 	document.cookie = `${COOKIE}=${v}; domain=${parts![2]}; path=/; max-age=${s ? 30 * 86400 : 0}; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`;
 }
@@ -53,11 +55,11 @@ async function auth(path: string, body: object): Promise<Session> {
 
 let refreshing: Promise<Session | null> | undefined;
 
-/** Ops' own session, refreshed when it has under a minute left. Where the app owns the session, just reads it.
- *  Callers share one refresh: a refresh token is spent on first use. */
+/** The session, refreshed when it has under a minute left. Callers share one refresh: a refresh token is spent
+ *  on first use. */
 export function fresh(): Promise<Session | null> {
 	const s = stored();
-	if (!ownSignIn || !s?.refresh_token || s.expires_at * 1000 - Date.now() > 60_000) return Promise.resolve(session());
+	if (!s?.refresh_token || s.expires_at * 1000 - Date.now() > 60_000) return Promise.resolve(session());
 	return (refreshing ??= auth('token?grant_type=refresh_token', { refresh_token: s.refresh_token })
 		.then((next) => (keep(next), next))
 		.catch((e) => (console.warn('[ops] sign-in refresh failed', e), keep(null), null))
