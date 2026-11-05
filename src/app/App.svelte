@@ -2,7 +2,6 @@
 	import { brand } from '../brand';
 	import { fresh, ownSignIn, space } from '../data/auth';
 	import { follow, signedIn } from '../data/cloud';
-	import Approve from '../company/Approve.svelte';
 	import { logoUrl, space as spaceOf, type Space as SpaceRow } from '../company/central';
 	import Companies from '../company/Companies.svelte';
 	import Space from '../company/Space.svelte';
@@ -20,7 +19,7 @@
 	let source = $state('');
 	let hash = $state(location.hash);
 
-	const pages = [...(space ? [['company', 'Company']] : []), ['home', 'Home'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced'], ['companies', 'Companies']];
+	const pages = [...(space ? [['company', 'Organization']] : []), ['home', 'Home'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced'], ['organizations', 'Organizations']];
 	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/')) ?? pages[0]);
 	const plugin = $derived(customs.find((p) => page[0] === `p/${p.id}`));
@@ -133,7 +132,7 @@
 				</div>
 			{/if}
 			{#each pages as [path, label] (path)}
-				<Pill href="#/{path}" active={page[0] === path}>{label}</Pill>
+				<Pill href="#/{path}" active={page[0] === path}>{#if path === 'organizations'}<img src="org_gold.webp" alt="" class="-my-1 mr-1.5 h-5" />{/if}{label}</Pill>
 			{/each}
 			{#if account}
 				<span class="ml-auto font-display text-lg text-muted" title="When your phone last sent data to Get Cache" data-updated>{ago && `Updated ${ago}`}</span>
@@ -157,12 +156,10 @@
 
 	<main class="mx-auto max-w-7xl px-6 py-6">
 		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
-		{#if why && page[0] !== 'company' && page[0] !== 'companies' && parts[0] !== 'approve'}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
-		{#if parts[0] === 'approve'}
-			<Approve />
-		{:else if page[0] === 'company'}
+		{#if why && page[0] !== 'company' && page[0] !== 'organizations'}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
+		{#if page[0] === 'company'}
 			<Space slug={space!} {company} me={account} token={parts[0] === 'join' ? parts[1] : undefined} reload={loadSpace} {signedInNow} />
-		{:else if page[0] === 'companies'}
+		{:else if page[0] === 'organizations'}
 			<Companies me={account} {signedInNow} />
 		{:else if page[0] === 'home' || page[0] === 'reports'}
 			{#key page[0]}<Reports {ops} page={page[0]} slug={parts[1]} />{/key}

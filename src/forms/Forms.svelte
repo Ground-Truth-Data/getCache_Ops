@@ -16,7 +16,7 @@
 	async function copy() {
 		note = '';
 		const source = paste.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
-		if (!source) return void (note = 'Paste the copy link another company gave you.');
+		if (!source) return void (note = 'Paste the copy link another organization gave you.');
 		try {
 			location.hash = `#/company/form/${await copyForm(source, orgKey)}`;
 		} catch (e) {
@@ -36,7 +36,7 @@
 				<span class="text-sm text-muted">{live ? `version ${live.version}` : 'not published'}{last.publishedAt ? '' : ' · draft'}{last.copiedFrom || versions[0].copiedFrom ? ' · a copy' : ''}</span>
 				{#if live}
 					<a class="text-sm underline" href="#/company/report/{last.formId}" data-report-link>Answers</a>
-					<span class="text-sm text-muted" title="Give this to another company's admin to copy the form">copy link: <code data-copy-link>{live.id}</code></span>
+					<span class="text-sm text-muted" title="Give this to another organization's admin to copy the form">copy link: <code data-copy-link>{live.id}</code></span>
 				{/if}
 			</li>
 		{:else}
@@ -45,8 +45,8 @@
 	</ul>
 	<a class="rt-fancy-btn inline-block rounded-lg px-4 py-1 font-display" href="#/company/form/new" data-new-form>New form</a>
 	<div class="mt-4 flex flex-wrap items-center gap-2">
-		<input class="w-80 rounded border border-rule bg-surface px-2 py-1 text-sm" placeholder="Paste a copy link from another company" bind:value={paste} data-paste />
-		<button class="text-sm underline" onclick={copy} data-copy>Copy into this company</button>
+		<input class="w-80 rounded border border-rule bg-surface px-2 py-1 text-sm" placeholder="Paste a copy link from another organization" bind:value={paste} data-paste />
+		<button class="text-sm underline" onclick={copy} data-copy>Copy into this organization</button>
 	</div>
 	{#if note}<p class="mt-2 text-sm text-muted" data-note>{note}</p>{/if}
 </section>

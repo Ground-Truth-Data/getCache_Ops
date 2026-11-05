@@ -66,7 +66,7 @@
 	<p class="text-muted">Opening {slug}…</p>
 {:else if company === null}
 	<h1 class="mb-4 font-display text-3xl text-(--accent)" data-notfound>Not found</h1>
-	<p class="text-muted">No company has the address {slug}.{me ? '' : ' A company still in draft shows only to its admins: sign in to see yours.'}</p>
+	<p class="text-muted">No organization has the address {slug}.{me ? '' : ' An organization still in draft shows only to its admins: sign in to see yours.'}</p>
 	{#if !me}<div class="mt-6"><SignIn done={signedInNow} /></div>{/if}
 {:else if admin && sub === 'form'}
 	{#key formId}<Builder orgKey={company.orgKey} {formId} />{/key}
@@ -75,7 +75,7 @@
 {:else}
 	<h1 class="mb-2 font-display text-3xl text-(--accent)">{company.name}</h1>
 	{#if company.status !== 'approved'}
-		<p class="mb-4 text-muted" data-status>{company.status === 'draft' ? 'Draft: only its admins see it until Get Cache approves it.' : 'Get Cache did not approve this company.'}</p>
+		<p class="mb-4 text-muted" data-status>{company.status === 'draft' ? 'Draft: only its admins see it until Get Cache approves it.' : 'Get Cache did not approve this organization.'}</p>
 	{/if}
 
 	{#if !me}

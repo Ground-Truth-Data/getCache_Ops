@@ -33,3 +33,21 @@ body {
 	background: var(--color-ground);
 	color: var(--color-ink);
 }
+
+/* The second button beside an rt-fancy-btn: outlined, never a bare underlined link. */
+@layer components {
+	.btn-line {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		border: 1px solid var(--accent);
+		border-radius: 0.5rem;
+		padding: 0.25rem 0.85rem;
+		font-family: var(--font-display);
+		color: var(--color-ink);
+		transition: background 0.12s ease;
+	}
+	.btn-line:hover {
+		background: color-mix(in srgb, var(--accent) 15%, transparent);
+	}
+}
