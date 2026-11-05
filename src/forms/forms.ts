@@ -10,7 +10,7 @@ export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'che
  *  property the builder has no control for survives each version. */
 export type Field = { kind: Kind; key: string; label: string; required: boolean; choices: string[]; min?: number; max?: number; addText: string; fields: Field[]; src: El };
 export type FormRow = { id: string; formId: string; version: number; definition: Definition; publishedAt: string | null; copiedFrom: string | null };
-export type Answer = { id: string; form: string; authId: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
+export type Answer = { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
 export type AnswerRow = { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
 
 export const KINDS: [Kind, string][] = [
@@ -69,10 +69,33 @@ export const keys = (d: Definition) =>
 			: [{ key: e.name, label: e.title ?? e.name }],
 	);
 
-export const forms = (orgKey: string) => call<FormRow[]>(`form?orgKey=eq.${orgKey}&select=id,formId,version,definition,publishedAt,copiedFrom&order=formId,version`);
+/** One version as the builder and the report see it, whoever keeps it: a company form or a plugin. */
+export type Version = { id: string; version: number; definition: Definition; publishedAt: string | null };
+export type Store = { load: () => Promise<Version[]>; save: (definition: Definition, draftId?: string) => Promise<unknown>; publish: (id: string) => Promise<unknown> };
+export type Answers = { versions: Version[]; answers: Answer[]; rows: AnswerRow[] };
+
+export function orgStore(orgKey: string, formId: string): Store {
+	// A new form gets its id when its first draft is saved.
+	let id = formId === 'new' ? undefined : formId;
+	return {
+		load: async () => (id ? (await forms(orgKey)).filter((f) => f.formId === id) : []),
+		async save(definition, draftId) {
+			const made = await saveDraft(orgKey, definition, id, draftId);
+			if (!id && Array.isArray(made)) history.replaceState(null, '', `#/company/form/${(id = made[0].formId)}`);
+		},
+		publish,
+	};
+}
+export async function orgAnswers(orgKey: string, formId: string): Promise<Answers> {
+	const versions = (await forms(orgKey)).filter((f) => f.formId === formId && f.publishedAt);
+	const all = await answers(versions.map((v) => v.id));
+	return { versions, answers: all, rows: await answerRows(all.map((a) => a.id)) };
+}
+
+export const forms = (orgKey: string) =>call<FormRow[]>(`form?orgKey=eq.${orgKey}&select=id,formId,version,definition,publishedAt,copiedFrom&order=formId,version`);
 export const saveDraft = (orgKey: string, definition: Definition, formId?: string, draftId?: string) =>
 	draftId ? call(`form?id=eq.${draftId}`, 'PATCH', { definition }) : call<FormRow[]>('form', 'POST', { orgKey, definition, ...(formId && { formId }) });
 export const publish = (id: string) => call(`form?id=eq.${id}`, 'PATCH', { publishedAt: new Date().toISOString() });
 export const copyForm = (source: string, org: string) => call<string>('rpc/copy_form', 'POST', { source, org });
-export const answers = (ids: string[]) => call<Answer[]>(`answer?form=in.(${ids})&order=filledAt`);
-export const answerRows = (ids: string[]) => (ids.length ? call<AnswerRow[]>(`answerRow?answer=in.(${ids})&order=n`) : Promise.resolve([]));
+const answers = (ids: string[]) => call<Answer[]>(`answer?form=in.(${ids})&order=filledAt`);
+const answerRows = (ids: string[]) => (ids.length ? call<AnswerRow[]>(`answerRow?answer=in.(${ids})&order=n`) : Promise.resolve([]));

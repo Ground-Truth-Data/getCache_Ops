@@ -7,6 +7,7 @@
 	import Builder from '../forms/Builder.svelte';
 	import Forms from '../forms/Forms.svelte';
 	import Report from '../forms/Report.svelte';
+	import { orgAnswers, orgStore } from '../forms/forms';
 
 	let { slug, company, me, token, reload, signedInNow }: {
 		slug: string;
@@ -116,9 +117,9 @@
 		{/if}
 	</div>
 {:else if admin && sub === 'form'}
-	{#key formId}<Builder orgKey={company.orgKey} {formId} />{/key}
+	{#key formId}<Builder store={orgStore(company.orgKey, formId)} back={['#/company/forms', 'Forms']} />{/key}
 {:else if admin && sub === 'report'}
-	<Report orgKey={company.orgKey} {formId} />
+	<Report load={() => orgAnswers(company.orgKey, formId)} back={['#/company/forms', 'Forms']} />
 {:else if admin && sub === 'forms'}
 	{@render back('#/company', company.name)}
 	<Forms orgKey={company.orgKey} />

@@ -5,6 +5,7 @@
 	import { logoUrl, space as spaceOf, type Space as SpaceRow } from '../company/central';
 	import Companies from '../company/Companies.svelte';
 	import Space from '../company/Space.svelte';
+	import Plugins from '../forms/Plugins.svelte';
 	import { openDatabase } from '../data/db';
 	import type { Ops, Plugin } from '../plugin/api';
 	import { customs, makeOps, refusal } from '../plugin/host';
@@ -18,7 +19,7 @@
 	let source = $state('');
 	let hash = $state(location.hash);
 
-	const pages = [...(space ? [['company', 'Organization']] : []), ['home', 'Home'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
+	const pages = [...(space ? [['company', 'Organization']] : []), ['home', 'Home'], ['reports', 'Reports'], ['plugins', 'Plugins'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
 	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
 	// Organizations sits under Advanced for now: most people never need it (Chris, 5 Nov).
 	const orgsPage = $derived(parts[0] === 'organizations');
@@ -163,11 +164,13 @@
 
 	<main class="mx-auto max-w-7xl px-6 py-6">
 		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
-		{#if why && page[0] !== 'company' && !orgsPage}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
+		{#if why && page[0] !== 'company' && page[0] !== 'plugins' && !orgsPage}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
 		{#if orgsPage}
 			<Companies me={account} {signedInNow} />
 		{:else if page[0] === 'company'}
 			<Space slug={space!} {company} me={account} token={parts[0] === 'join' ? parts[1] : undefined} reload={loadSpace} {signedInNow} />
+		{:else if page[0] === 'plugins'}
+			<Plugins me={account} sub={parts[1]} id={parts[2]} {signedInNow} />
 		{:else if page[0] === 'home' || page[0] === 'reports'}
 			{#key page[0]}<Reports {ops} page={page[0]} slug={parts[1]} />{/key}
 		{:else}

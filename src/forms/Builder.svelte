@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { split } from '../../_rapper/gc/form';
 	import FormView from '../../_rapper/gc/FormView.svelte';
-	import { blank, forms, fromDefinition, keys, KINDS, publish, saveDraft, toDefinition, type Field, type FormRow, type Kind } from './forms';
+	import type { Snippet } from 'svelte';
+	import { blank, fromDefinition, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
 
-	let { orgKey, formId }: { orgKey: string; formId: string } = $props();
+	let { store, back, head }: { store: Store; back: [href: string, label: string]; head?: Snippet<[Version | undefined]> } = $props();
 
-	// A new form gets its id when its first draft is saved.
-	let id = $state(formId === 'new' ? undefined : formId);
-	let versions = $state<FormRow[]>([]);
+	let versions = $state<Version[]>([]);
 	let title = $state('');
 	let fields = $state<Field[]>([]);
 	let rest = $state<ReturnType<typeof fromDefinition>['rest']>({});
@@ -21,7 +20,7 @@
 	const definition = $derived(toDefinition(title, fields, rest));
 
 	async function load() {
-		versions = id ? (await forms(orgKey)).filter((f) => f.formId === id) : [];
+		versions = await store.load();
 		if (latest) ({ title, fields, rest } = fromDefinition(latest.definition));
 	}
 	$effect(() => void load().catch((e) => (note = e.message)));
@@ -37,10 +36,9 @@
 	async function save(then?: 'publish') {
 		note = '';
 		try {
-			const made = await saveDraft(orgKey, $state.snapshot(definition), id, draft?.id);
-			if (!id && Array.isArray(made)) history.replaceState(null, '', `#/company/form/${(id = made[0].formId)}`);
+			await store.save($state.snapshot(definition), draft?.id);
 			await load();
-			if (then && draft) await publish(draft.id);
+			if (then && draft) await store.publish(draft.id);
 			await load();
 			note = then ? `Published version ${latest?.version}.` : `Saved draft version ${latest?.version}.`;
 		} catch (e) {
@@ -84,7 +82,7 @@
 	</select>
 {/snippet}
 
-<a class="small-btn mb-6" href="#/company/forms" data-back>← Forms</a>
+<a class="small-btn mb-6" href={back[0]} data-back>← {back[1]}</a>
 <h1 class="mb-2 font-display text-3xl text-(--accent)">{title || 'New form'}</h1>
 <p class="mb-6 text-sm text-muted" data-version>
 	{#if !latest}Not saved yet.{:else if draft}Draft of version {draft.version}.{:else}Version {latest.version} is published and locked: saving starts version {latest.version + 1}.{/if}
@@ -92,6 +90,7 @@
 
 <div class="flex flex-col gap-4">
 	<input class="{input} max-w-xl font-display text-xl" placeholder="Form title" bind:value={title} data-title />
+	{@render head?.(latest)}
 	<div class="flex flex-col">{@render list(fields, false)}</div>
 	<div class="flex flex-wrap gap-4">
 		<button class="underline" onclick={() => save()} data-save>Save draft</button>
