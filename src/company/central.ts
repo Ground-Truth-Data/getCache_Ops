@@ -11,7 +11,7 @@ export type OrgSpace = { orgKey: string; name: string; slug: string; status: 'dr
 export type Space = Omit<OrgSpace, 'slug'> & { role: Role | null };
 export type Member = { orgKey: string; authId: string; role: Role; email: string; joinedAt: string };
 
-async function call<T>(path: string, method = 'GET', body?: unknown, profile = 'ops'): Promise<T> {
+export async function call<T>(path: string, method = 'GET', body?: unknown, profile = 'ops'): Promise<T> {
 	const res = await fetch(`${env.PUBLIC_GC_RT_supabase_address}/rest/v1/${path}`, {
 		method,
 		headers: {

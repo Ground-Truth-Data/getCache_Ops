@@ -2,6 +2,9 @@
 	import { renderSVG } from 'uqr';
 	import { inviteToken, join, members, remove, resetInvite, setRole, spaceUrl, uploadLogo, type Member, type Space } from './central';
 	import SignIn from './SignIn.svelte';
+	import Builder from '../forms/Builder.svelte';
+	import Forms from '../forms/Forms.svelte';
+	import Report from '../forms/Report.svelte';
 
 	let { slug, company, me, token, reload, signedInNow }: {
 		slug: string;
@@ -19,6 +22,9 @@
 	const requests = $derived(people.filter((p) => p.role === 'requested'));
 	const team = $derived(people.filter((p) => p.role !== 'requested'));
 	const link = $derived(invite && `${spaceUrl(slug)}#/join/${invite}`);
+	// #/company/form/<formId|new> and #/company/report/<formId>: an admin's form pages.
+	let hash = $state(location.hash);
+	const [, sub, formId] = $derived(hash.replace(/^#\/?/, '').split('/'));
 
 	async function loadAdmin() {
 		if (company && admin) [people, invite] = await Promise.all([members(company.orgKey), inviteToken(company.orgKey)]);
@@ -54,12 +60,18 @@
 	};
 </script>
 
+<svelte:window onhashchange={() => (hash = location.hash)} />
+
 {#if company === undefined}
 	<p class="text-muted">Opening {slug}…</p>
 {:else if company === null}
 	<h1 class="mb-4 font-display text-3xl text-(--accent)" data-notfound>Not found</h1>
 	<p class="text-muted">No company has the address {slug}.{me ? '' : ' A company still in draft shows only to its admins: sign in to see yours.'}</p>
 	{#if !me}<div class="mt-6"><SignIn done={signedInNow} /></div>{/if}
+{:else if admin && sub === 'form'}
+	{#key formId}<Builder orgKey={company.orgKey} {formId} />{/key}
+{:else if admin && sub === 'report'}
+	<Report orgKey={company.orgKey} {formId} />
 {:else}
 	<h1 class="mb-2 font-display text-3xl text-(--accent)">{company.name}</h1>
 	{#if company.status !== 'approved'}
@@ -94,6 +106,8 @@
 				{/each}
 			</section>
 		{/if}
+
+		<Forms orgKey={company.orgKey} />
 
 		<section class="mt-8" data-members>
 			<h2 class="mb-2 font-display text-2xl">People</h2>
