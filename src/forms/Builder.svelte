@@ -170,12 +170,14 @@
 		nested: '',
 	};
 	const input = 'rounded-lg border border-rule bg-surface px-3 py-2';
+	// Drawn icons fill a card's fixed height (--row) instead of padding it taller.
+	const TALL: Partial<Record<Kind, number>> = { section: 60, nested: 78, gps: 46 };
 </script>
 
-{#snippet icon(kind: Kind, size = 22)}
+{#snippet icon(kind: Kind, size = 22, tall?: number)}
 	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon, Nested's three bars tallest. -->
-	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_flow_icon.webp'} alt="" class:shape={kind === 'nested'} style:height="{Math.round(size * (kind === 'nested' ? 2 : 1.6))}px" style:width="auto" />
-	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{Math.round(size * 1.6)}px" style:width="auto" />
+	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_flow_icon.webp'} alt="" style:height="{tall ?? Math.round(size * (kind === 'nested' ? 2 : 1.6))}px" style:width="auto" />
+	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{tall ?? Math.round(size * 1.6)}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
 {#snippet nth(n: number)}<span class="nth">Section {n} of {sections}</span>{/snippet}
@@ -219,7 +221,7 @@
 		<div class="body">
 		{#if on}
 			<div class="flex flex-wrap items-center gap-3">
-				{@render icon(f.kind, f.kind === "nested" ? 36 : 22)}
+				{@render icon(f.kind, 22, TALL[f.kind])}
 				{#if f.kind === 'gps'}<span class="flex-1 text-xl font-semibold">GPS{@render gpsNote()}</span>
 				{:else}<input class="label" placeholder={KINDS.find(([k]) => k === f.kind)?.[1]} value={f.label} oninput={(e) => relabel(f, e.currentTarget.value)} data-label />{/if}
 				{#if section}{@render nth(sectionNo[i])}{/if}
@@ -243,7 +245,7 @@
 			{/if}
 		{:else}
 			<button class="pick" onclick={() => (selected = f)} data-pick>
-				{@render icon(f.kind, f.kind === "nested" ? 36 : 22)}
+				{@render icon(f.kind, 22, TALL[f.kind])}
 				{#if section}{@render nth(sectionNo[i])}{/if}
 				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{:else if f.kind === 'nested'}<span class="block text-sm font-normal text-muted">Repeating list · each entry asks these questions</span>{/if}</span>
 				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span>&nbsp;required</span>{/if}
@@ -375,9 +377,9 @@
 	.add img {
 		margin-block: -0.6rem;
 	}
-	/* Nested's form-in-a-form runs nearly to its card's border without making the card taller. */
-	.card img.shape {
-		margin-block: -0.75rem;
+	/* Every card and add button in the list is one height, room for a title and a line below it. */
+	[data-fields] {
+		--row: 5.5rem;
 	}
 	.add.section {
 		border-color: var(--accent);
@@ -488,7 +490,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.6rem;
-		min-height: 3.5rem;
+		min-height: var(--row);
 		font-size: 1.1rem;
 		font-weight: 700;
 	}
@@ -537,7 +539,8 @@
 		align-items: center;
 		gap: 0.9rem;
 		width: 100%;
-		padding: 1rem 1.25rem;
+		min-height: var(--row);
+		padding: 0 1.25rem;
 		font-size: 1.3rem;
 		font-weight: 600;
 	}
