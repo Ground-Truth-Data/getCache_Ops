@@ -4,7 +4,7 @@
 	import type { Snippet } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { blank, fromDefinition, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
+	import { blank, fromDefinition, keyFor, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
 
 	let { store, back, logo, byline, meta }: {
 		store: Store;
@@ -64,16 +64,9 @@
 		return () => clearTimeout(t);
 	});
 
-	const keyOf = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^[^a-z]+|_+$/g, '').slice(0, 40);
+	// The key is never shown: it follows the title until published.
 	function relabel(f: Field, label: string) {
-		if (f.kind === 'section') f.key ||= keyFor('section');
-		else if (!locked.has(f.key)) {
-			// The key is never shown: it follows the title until published, and two same titles never share one.
-			const base = keyOf(label);
-			let k = base;
-			for (let n = 2; fields.some((o) => o !== f && o.key === k); n++) k = `${base}_${n}`;
-			f.key = k;
-		}
+		if (f.kind !== 'section' && !locked.has(f.key)) f.key = keyFor(label, f.kind, fields, f);
 		f.label = label;
 	}
 	// Dragged by its grip, a card takes each place it passes: where it lands decides its section and group.
@@ -126,11 +119,10 @@
 	);
 	// The type picker open at the foot of a section or a nested group: where its pick lands.
 	let picking = $state<{ at: number; group: boolean }>();
-	// A section is only a heading: its key is never shown, but SurveyJS still needs one.
-	const keyFor = (kind: Kind) => (kind === 'gps' ? 'gps' : kind === 'section' ? `section_${crypto.randomUUID().slice(0, 8)}` : '');
 	// With a nested group (or one of its questions) picked, a new question lands at the end of that group.
 	function add(kind: Kind, at?: number) {
-		const f = { ...blank(kind), key: keyFor(kind), label: kind === 'gps' ? 'GPS' : '' };
+		const label = kind === 'gps' ? 'GPS' : '';
+		const f = { ...blank(kind), key: keyFor(label, kind, fields), label };
 		if (at === undefined) {
 			at = fields.length;
 			const i = selected && selected !== 'head' ? fields.indexOf(selected) : -1;
@@ -178,7 +170,7 @@
 
 {#snippet icon(kind: Kind, size = 22)}
 	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon, Nested's three bars tallest. -->
-	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_icon.webp'} alt="" style:height="{Math.round(size * (kind === 'nested' ? 2 : 1.6))}px" style:width="auto" />
+	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_flow_icon.webp'} alt="" class:shape={kind === 'nested'} style:height="{Math.round(size * (kind === 'nested' ? 2 : 1.6))}px" style:width="auto" />
 	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{Math.round(size * 1.6)}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
@@ -223,7 +215,7 @@
 		<div class="body">
 		{#if on}
 			<div class="flex flex-wrap items-center gap-3">
-				{@render icon(f.kind)}
+				{@render icon(f.kind, f.kind === "nested" ? 36 : 22)}
 				{#if f.kind === 'gps'}<span class="flex-1 text-xl font-semibold">GPS{@render gpsNote()}</span>
 				{:else}<input class="label" placeholder={KINDS.find(([k]) => k === f.kind)?.[1]} value={f.label} oninput={(e) => relabel(f, e.currentTarget.value)} data-label />{/if}
 				{#if section}{@render nth(sectionNo[i])}{/if}
@@ -247,7 +239,7 @@
 			{/if}
 		{:else}
 			<button class="pick" onclick={() => (selected = f)} data-pick>
-				{@render icon(f.kind)}
+				{@render icon(f.kind, f.kind === "nested" ? 36 : 22)}
 				{#if section}{@render nth(sectionNo[i])}{/if}
 				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{:else if f.kind === 'nested'}<span class="block text-sm font-normal text-muted">Repeating list · each entry asks these questions</span>{/if}</span>
 				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span>&nbsp;required</span>{/if}
@@ -378,6 +370,10 @@
 	/* A big shape icon runs into the padding, nearly to the border, instead of making its button taller. */
 	.add img {
 		margin-block: -0.6rem;
+	}
+	/* Nested's form-in-a-form runs nearly to its card's border without making the card taller. */
+	.card img.shape {
+		margin-block: -0.75rem;
 	}
 	.add.section {
 		border-color: var(--accent);

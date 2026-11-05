@@ -28,6 +28,16 @@ const NEW: Record<Kind, Omit<El, 'name'>> = {
 };
 const choiceText = (c: unknown) => String(typeof c === 'object' ? (c as { value: unknown }).value : c);
 
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^[^a-z]+|_+$/g, '').slice(0, 40);
+/** The key Central takes for a field: from its title, its type while it has none, never one another field holds.
+ *  A section is only a heading, so its key is never seen. */
+export function keyFor(label: string, kind: Kind, fields: Field[], self?: Field) {
+	const base = kind === 'section' ? `section_${crypto.randomUUID().slice(0, 8)}` : slug(label) || kind;
+	let k = base;
+	for (let n = 2; fields.some((o) => o !== self && o.key === k); n++) k = `${base}_${n}`;
+	return k;
+}
+
 export const blank = (kind: Kind): Field => ({
 	kind, key: '', label: '', required: false, choices: kind === 'dropdown' || kind === 'radiogroup' || kind === 'checkbox' ? ['Yes', 'No'] : [],
 	description: '', src: { ...NEW[kind], name: '' },

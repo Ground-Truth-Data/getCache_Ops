@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blank, fromDefinition, toDefinition } from './forms';
+import { blank, fromDefinition, keyFor, toDefinition } from './forms';
 import type { Definition } from '../../_rapper/gc/form';
 
 const v1: Definition & Record<string, unknown> = {
@@ -42,6 +42,14 @@ describe('the builder keeps what it does not edit', () => {
 		expect((d.elements[1].elements as { name: string }[]).map((e) => e.name)).toEqual(['f2', 'f3']);
 		expect(fromDefinition(d).fields.map((f) => f.key)).toEqual(['f0', 'site', 'f2', 'f3']);
 		expect(toDefinition('', fromDefinition(d).fields)).toEqual(d);
+	});
+	it('a field is never without a key Central takes', () => {
+		const central = /^[a-zA-Z][a-zA-Z0-9_]{0,62}$/;
+		const fields = [{ ...blank('text'), key: 'text' }];
+		expect(keyFor('', 'text', fields)).toBe('text_2');
+		expect(keyFor('!!!', 'nested', [])).toBe('nested');
+		expect(keyFor('123 Trees!', 'number', [])).toBe('trees');
+		for (const kind of ['text', 'section', 'gps', 'nested'] as const) expect(keyFor('', kind, [])).toMatch(central);
 	});
 	it('a question saved after a nested group stays out of it', () => {
 		const d: Definition = { elements: [{ type: 'paneldynamic', name: 'trees', templateElements: [{ type: 'text', name: 'species' }] }, { type: 'text', name: 'weather' }] };
