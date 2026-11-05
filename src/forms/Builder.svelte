@@ -1,6 +1,8 @@
 <script lang="ts">
 	import FormView from '../../_rapper/gc/FormView.svelte';
+	import RowGrip from '../../_rapper/gc/RowGrip.svelte';
 	import type { Snippet } from 'svelte';
+	import type { Attachment } from 'svelte/attachments';
 	import { blank, fromDefinition, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
 
 	let { store, back, logo, byline, meta }: {
@@ -62,6 +64,11 @@
 	}
 	// Dragged by its grip, a card takes each place it passes: where it lands decides its section and group.
 	let dragging = $state<number>();
+	const grip = (i: number): Attachment<HTMLElement> => (el) => {
+		el.draggable = true;
+		el.ondragstart = (e) => ((dragging = i), e.dataTransfer?.setDragImage(el.parentElement!, 24, 24));
+		el.ondragend = () => (dragging = undefined);
+	};
 	function over(e: DragEvent, i: number) {
 		if (dragging === undefined) return;
 		e.preventDefault();
@@ -132,9 +139,10 @@
 {#snippet card(f: Field, i: number)}
 	{@const on = selected === f}
 	{@const section = f.kind === 'section'}
-	<div class="card depth-{depths[i]} {on ? 'on' : ''}" class:dragging={dragging === i} data-build={f.key} data-kind={f.kind} data-depth={depths[i]}
+	<!-- The inbox's row: the card on a grey track whose grip pokes out on the right. -->
+	<div class="rt-row-track rt-row-track--grip track" class:rt-row-track--dragging={dragging === i} style:margin-left="{depths[i] * 2}rem"
 		role="listitem" ondragover={(e) => over(e, i)} ondrop={(e) => e.preventDefault()}>
-		<div class="body">
+	<div class="card depth-{depths[i]} {on ? 'on' : ''}" data-build={f.key} data-kind={f.kind} data-depth={depths[i]}>
 		{#if on}
 			<div class="flex flex-wrap items-center gap-3">
 				{@render icon(f.kind)}
@@ -168,12 +176,8 @@
 				{#if f.kind === 'nested'}<span class="add-text">{f.addText || '+ Add'}</span>{/if}
 			</button>
 		{/if}
-		</div>
-		<span class="grip" draggable="true" role="button" tabindex="-1" aria-label="Drag to move" data-grip
-			ondragstart={(e) => ((dragging = i), e.dataTransfer?.setDragImage(e.currentTarget.parentElement!, 24, 24))} ondragend={() => (dragging = undefined)}
-			><svg width="18" height="26" viewBox="0 0 12 20" fill="currentColor" aria-hidden="true"
-				><circle cx="3" cy="4" r="1.6" /><circle cx="9" cy="4" r="1.6" /><circle cx="3" cy="10" r="1.6" /><circle cx="9" cy="10" r="1.6" /><circle cx="3" cy="16" r="1.6" /><circle cx="9" cy="16" r="1.6" /></svg
-			></span>
+	</div>
+	<RowGrip attach={grip(i)} label="Drag to move" dragging={dragging === i} />
 	</div>
 {/snippet}
 
@@ -289,32 +293,11 @@
 		border-radius: 1rem;
 		background: #1a1a1a;
 	}
-	.card[data-build] {
-		flex-direction: row;
-		align-items: stretch;
-	}
-	.body {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-	.grip {
-		display: flex;
-		align-items: center;
-		padding: 0 0.75rem;
-		color: #6b6458;
-		cursor: grab;
-	}
-	.grip:hover {
-		color: var(--accent);
-	}
-	.card.dragging {
-		opacity: 0.4;
+	.track {
+		border-radius: 1rem;
 	}
 	.card.on {
-		padding: 1rem 0 1rem 1.25rem;
+		padding: 1rem 1.25rem;
 		border-color: var(--accent);
 		background: #1f1c14;
 	}
@@ -331,12 +314,6 @@
 	}
 	.card.depth-0 {
 		border-color: var(--accent);
-	}
-	.card.depth-1 {
-		margin-left: 2rem;
-	}
-	.card.depth-2 {
-		margin-left: 4rem;
 	}
 	.card.depth-1:not(.on) {
 		border-color: var(--rt-rust);
