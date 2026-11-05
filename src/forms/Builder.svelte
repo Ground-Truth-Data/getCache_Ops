@@ -224,19 +224,19 @@
 				{@render icon(f.kind, 22, TALL[f.kind])}
 				{#if f.kind === 'gps'}<span class="flex-1 text-xl font-semibold">GPS{@render gpsNote()}</span>
 				{:else}<input class="label" placeholder={KINDS.find(([k]) => k === f.kind)?.[1]} value={f.label} oninput={(e) => relabel(f, e.currentTarget.value)} data-label />{/if}
+				{#if !section && f.kind !== 'nested'}
+					<button class="star" class:on={f.required} aria-pressed={f.required} aria-label="Required" title="Required" onclick={() => (f.required = !f.required)} data-required>*</button>
+				{/if}
 				{#if section}{@render nth(sectionNo[i])}{/if}
 				<button class="trash" onclick={() => (fields.splice(i, 1), (selected = undefined))} aria-label="Remove field" data-remove-field>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
 				</button>
 			</div>
 			{#if f.kind !== 'gps'}<input class="{input} w-full" placeholder="Description (optional)" bind:value={f.description} data-description />{/if}
-			{#if !section && f.kind !== 'nested'}
+			{#if f.kind === 'number'}
 				<div class="flex flex-wrap items-center gap-3 text-sm">
-					<label class="flex items-center gap-2"><input type="checkbox" class="tick" bind:checked={f.required} data-required /><span class="text-base"><span class="req">*</span>&nbsp;required</span></label>
-					{#if f.kind === 'number'}
-						<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
-						<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
-					{/if}
+					<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
+					<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
 				</div>
 			{/if}
 			{#if f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox'}
@@ -247,8 +247,7 @@
 			<button class="pick" onclick={() => (selected = f)} data-pick>
 				{@render icon(f.kind, 22, TALL[f.kind])}
 				{#if section}{@render nth(sectionNo[i])}{/if}
-				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{:else if f.kind === 'nested'}<span class="block text-sm font-normal text-muted">Repeating list · each entry asks these questions</span>{/if}</span>
-				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span>&nbsp;required</span>{/if}
+				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.required}<span class="req">*</span>{/if}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{:else if f.kind === 'nested'}<span class="block text-sm font-normal text-muted">Repeating list · each entry asks these questions</span>{/if}</span>
 			</button>
 		{/if}
 		</div>
@@ -334,33 +333,26 @@
 		border-bottom-color: var(--accent);
 	}
 	.req {
+		margin-left: 0.2em;
 		color: #ff4d55;
 		font-size: 1.4em;
 		font-weight: 800;
 		line-height: 0;
 		vertical-align: -0.25em;
 	}
-	/* The browser's white box vanished on the dark card: black box, thick grey rim, gold tick. */
-	.tick {
-		appearance: none;
-		display: grid;
-		place-content: center;
-		width: 1.6rem;
-		height: 1.6rem;
-		border: 3px solid #6b6458;
-		border-radius: 0.4rem;
-		background: #000;
-		cursor: pointer;
+	/* The star is the switch: dim when optional, red when required. */
+	.star {
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: 999px;
+		color: #5a544b;
+		font-size: 2rem;
+		font-weight: 800;
+		line-height: 1;
+		padding-top: 0.6rem;
 	}
-	.tick:checked {
-		border-color: var(--accent);
-	}
-	.tick:checked::before {
-		content: '';
-		width: 0.85rem;
-		height: 0.85rem;
-		background: var(--accent);
-		clip-path: polygon(14% 44%, 0 65%, 40% 100%, 100% 22%, 84% 6%, 39% 69%);
+	.star.on {
+		color: #ff4d55;
 	}
 	.add {
 		display: flex;
