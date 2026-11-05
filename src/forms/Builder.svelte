@@ -171,12 +171,12 @@
 	};
 	const input = 'rounded-lg border border-rule bg-surface px-3 py-2';
 	// Drawn icons fill a card's fixed height (--row) instead of padding it taller.
-	const TALL: Partial<Record<Kind, number>> = { section: 60, nested: 78, gps: 46 };
+	const TALL: Partial<Record<Kind, number>> = { section: 72, nested: 72, gps: 46 };
 </script>
 
 {#snippet icon(kind: Kind, size = 22, tall?: number)}
 	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon, Nested's three bars tallest. -->
-	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_flow_icon.webp'} alt="" style:height="{tall ?? Math.round(size * (kind === 'nested' ? 2 : 1.6))}px" style:width="auto" />
+	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_flow_icon.webp'} alt="" style:height="{tall ?? size * 2}px" style:width="auto" />
 	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{tall ?? Math.round(size * 1.6)}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
