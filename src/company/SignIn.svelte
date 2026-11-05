@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { sendCode, verifyCode } from '../data/auth';
+	import { ownSignIn, sendCode, verifyCode } from '../data/auth';
 
 	let { done }: { done: () => void } = $props();
 	let email = $state('');
@@ -25,6 +25,10 @@
 	}
 </script>
 
+{#if !ownSignIn}
+	<!-- On Get Cache's own site the app owns the session and its only refresher: signing in there signs Ops in. -->
+	<a class="big-btn gold rt-fancy-btn max-w-sm" href="{location.origin}/app/account" target="_blank" data-app-signin>Sign in with Get Cache</a>
+{:else}
 <form class="flex max-w-sm flex-col gap-3" onsubmit={submit} data-signin>
 	<p class="text-muted">Sign in with the email you use in Get Cache.</p>
 	<input class="rounded-lg border border-rule bg-surface px-3 py-2" type="email" required placeholder="you@example.com" bind:value={email} disabled={sent} data-email />
@@ -34,3 +38,4 @@
 	<button class="rt-fancy-btn self-start rounded-lg px-4 py-1 font-display text-lg">{sent ? 'Sign in' : 'Email me a code'}</button>
 	{#if note}<p class="text-sm text-muted" data-note>{note}</p>{/if}
 </form>
+{/if}

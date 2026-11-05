@@ -3,7 +3,8 @@
 	import SignIn from '../company/SignIn.svelte';
 	import Builder from './Builder.svelte';
 	import Report from './Report.svelte';
-	import { addLink, copyPlugin, myPlugins, pluginStore, receive, received, receivedAnswers, type PluginRow } from './plugins';
+	import { session } from '../data/auth';
+	import { addLink, copyPlugin, myPlugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
 
 	let { me, sub, id, signedInNow }: { me: { authId: string } | null; sub?: string; id?: string; signedInNow: () => void } = $props();
 
@@ -15,10 +16,7 @@
 
 	async function load() {
 		inbox = await received();
-		if (!me) return;
-		const by = new Map<string, PluginRow[]>();
-		for (const p of await myPlugins(me.authId)) by.set(p.pluginId, [...(by.get(p.pluginId) ?? []), p]);
-		mine = [...by.values()];
+		mine = await myPlugins(me?.authId);
 	}
 	$effect(() => {
 		void sub;
@@ -51,15 +49,17 @@
 	let madeBy = $state('');
 	let logo = $state<string | null>(null);
 	let fixed = $state(false);
-	const store = $derived(
-		sub === 'edit' && id
-			? pluginStore(id, () => ({ madeBy: madeBy.trim(), logo }), (rows) => {
-					const last = rows.at(-1);
-					if (last) ({ madeBy, logo } = last);
-					fixed = rows.some((r) => r.publishedAt || r.copiedFrom);
-				})
-			: undefined,
-	);
+	// Set when Publish needs an account: the sign-in shows then, and goes once the session is back.
+	let asking = $state(false);
+	const store = $derived.by(() => {
+		if (sub !== 'edit' || !id) return undefined;
+		const s = pluginStore(id, () => ({ madeBy: madeBy.trim(), logo }), (rows) => {
+			const last = rows.at(-1);
+			if (last) ({ madeBy, logo } = last);
+			fixed = rows.some((r) => r.publishedAt || r.copiedFrom);
+		});
+		return { ...s, publish: (d: string) => s.publish(d).catch((e) => ((asking = e instanceof SignInNeeded), Promise.reject(e))) };
+	});
 	function pickLogo(e: Event & { currentTarget: HTMLInputElement }) {
 		const file = e.currentTarget.files?.[0];
 		if (!file) return;
@@ -71,6 +71,9 @@
 	let photos = new Map<string, string>();
 	const input = 'rounded border border-rule bg-surface px-2 py-1';
 </script>
+
+<!-- Signing in happens in the app's own tab on Get Cache's site: coming back is when the session can be there. -->
+<svelte:window onfocus={() => (asking &&= !session())} />
 
 {#snippet back(label = 'Plugins')}
 	<a class="small-btn mb-6" href="#/plugins" data-back>← {label}</a>
@@ -88,6 +91,7 @@
 
 {#if sub === 'edit' && store}
 	{#key id}<Builder {store} back={['#/plugins', 'Plugins']} head={credit} />{/key}
+	{#if asking}<div class="mt-6" data-publish-signin><SignIn done={() => ((asking = false), signedInNow())} /></div>{/if}
 {:else if sub === 'answers' && id}
 	<Report load={() => receivedAnswers(id).then((a) => ((photos = a.photos), a))} back={['#/plugins', 'Plugins']} photo={(k) => photos.get(k)} />
 {:else if sub === 'share' && id}
@@ -104,9 +108,6 @@
 	</div>
 {:else}
 	<h1 class="mb-6 font-display text-5xl text-(--accent)">Plugins</h1>
-	{#if !me}
-		<SignIn done={signedInNow} />
-	{:else}
 		<div class="flex max-w-3xl flex-col gap-3" data-mine>
 			{#each mine as versions (versions[0].pluginId)}
 				{@const last = versions.at(-1)!}
@@ -132,7 +133,6 @@
 			<input class="{input} w-80 text-sm" placeholder="Paste a plugin's link to copy it" bind:value={paste} data-paste />
 			<button class="small-btn" disabled={!pasted} onclick={() => pasted && copy(pasted)()} data-copy-pasted>Copy</button>
 		</div>
-	{/if}
 
 	<h2 class="mt-12 mb-3 font-display text-3xl">Answers received</h2>
 	<div class="flex max-w-3xl flex-col gap-2" data-received>
