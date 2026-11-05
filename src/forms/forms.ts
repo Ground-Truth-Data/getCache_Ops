@@ -1,11 +1,12 @@
 // Company forms: a version is one SurveyJS JSON definition in Central's ops.form. The builder edits a flat field
 // list and writes only our field types, so a form can never reach the network (no choicesByUrl).
+import type { Definition, El } from '../../_rapper/gc/form';
 import { call } from '../company/central';
+
+export type { Definition };
 
 export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'gps' | 'group';
 export type Field = { kind: Kind; key: string; label: string; required: boolean; choices: string[]; min?: number; max?: number; fields: Field[] };
-export type Definition = { title?: string; elements: El[] };
-type El = Record<string, unknown> & { type: string; name: string; title?: string };
 export type FormRow = { id: string; formId: string; version: number; definition: Definition; publishedAt: string | null; copiedFrom: string | null };
 export type Answer = { id: string; form: string; authId: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
 export type AnswerRow = { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
@@ -48,14 +49,6 @@ export const keys = (d: Definition) =>
 			? [{ key: e.name, label: e.title ?? e.name }, ...(e.templateElements as El[]).map((t) => ({ key: t.name, label: t.title ?? t.name, group: e.name }))]
 			: [{ key: e.name, label: e.title ?? e.name }],
 	);
-
-/** SurveyJS answers split the way Central keeps them: header data, and one row per repeating entry. */
-export function split(d: Definition, data: Record<string, unknown>) {
-	const groups = new Set(d.elements.filter((e) => e.type === 'paneldynamic').map((e) => e.name));
-	const header = Object.fromEntries(Object.entries(data).filter(([k]) => !groups.has(k)));
-	const rows = [...groups].flatMap((g) => ((data[g] as Record<string, unknown>[]) ?? []).map((r, n) => ({ groupKey: g, n: n + 1, data: r })));
-	return { data: header, rows };
-}
 
 export const forms = (orgKey: string) => call<FormRow[]>(`form?orgKey=eq.${orgKey}&select=id,formId,version,definition,publishedAt,copiedFrom&order=formId,version`);
 export const saveDraft = (orgKey: string, definition: Definition, formId?: string, draftId?: string) =>

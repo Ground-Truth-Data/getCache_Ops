@@ -15,6 +15,9 @@ const files = [
 	'gc/mobile.css',
 	'gc/rowShell.css',
 	'gc/fancyButton.css',
+	'gc/form.ts',
+	'gc/formSurvey.ts',
+	'gc/FormView.svelte',
 ];
 
 // Written in place and only when changed: a deleted and recreated folder drops out of Vite's watcher, which then serves the old kit.

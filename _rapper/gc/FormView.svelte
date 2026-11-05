@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Model, PanelModel, Question } from 'survey-core';
-	import type { Definition } from './forms';
-	import { loadSurvey } from './survey';
+	import type { Definition } from './form';
+	import { loadSurvey } from './formSurvey';
 
 	let { definition, onsubmit, keep = async (f: File) => f.name }: {
 		definition: Definition;
@@ -53,25 +53,24 @@
 		if (model?.validate(true)) onsubmit(model.data);
 		tick++;
 	}
-	const input = 'rounded border border-rule bg-surface px-2 py-1';
 </script>
 
 {#snippet field(v: View)}
 	{#if v.visible}
-		<div class="flex flex-col gap-1" data-field={v.q.name}>
+		<div class="field" data-field={v.q.name}>
 			<span class="font-display">{v.title}{v.required ? ' *' : ''}</span>
 			{#if v.type === 'text'}
-				<input class={input} aria-label={v.title} type={v.input === 'number' || v.input === 'date' ? v.input : 'text'} value={v.value ?? ''}
+				<input aria-label={v.title} type={v.input === 'number' || v.input === 'date' ? v.input : 'text'} value={v.value ?? ''}
 					onchange={(e) => set(v.q, v.input === 'number' && e.currentTarget.value !== '' ? Number(e.currentTarget.value) : e.currentTarget.value)} />
 			{:else if v.type === 'dropdown'}
-				<select class={input} aria-label={v.title} value={v.value ?? ''} onchange={(e) => set(v.q, e.currentTarget.value)}>
+				<select aria-label={v.title} value={v.value ?? ''} onchange={(e) => set(v.q, e.currentTarget.value)}>
 					<option value=""></option>
 					{#each v.choices as c (c.value)}<option value={c.value}>{c.text}</option>{/each}
 				</select>
 			{:else if v.type === 'radiogroup' || v.type === 'checkbox'}
-				<div class="flex flex-wrap gap-x-4">
+				<div class="choices">
 					{#each v.choices as c (c.value)}
-						<label class="flex items-center gap-1">
+						<label>
 							{#if v.type === 'radiogroup'}
 								<input type="radio" name={v.q.id} checked={v.value === c.value} onchange={() => set(v.q, c.value)} />
 							{:else}
@@ -84,32 +83,49 @@
 			{:else if v.type === 'file'}
 				<input type="file" accept="image/*" capture="environment" aria-label={v.title} onchange={(e) => photo(v.q, e.currentTarget.files?.[0])} />
 			{:else if v.type === 'gps'}
-				<div class="flex items-center gap-3">
-					<button type="button" class="underline" onclick={() => locate(v.q)}>Use where I am</button>
-					{#if v.value}{@const g = v.value as { lat: number; lng: number }}<span class="text-sm text-muted" data-gps>{g.lat.toFixed(5)}, {g.lng.toFixed(5)}</span>{/if}
+				<div class="choices">
+					<button type="button" class="link" onclick={() => locate(v.q)}>Use where I am</button>
+					{#if v.value}{@const g = v.value as { lat: number; lng: number }}<span class="muted" data-gps>{g.lat.toFixed(5)}, {g.lng.toFixed(5)}</span>{/if}
 				</div>
 			{:else if v.type === 'paneldynamic'}
 				{#each v.panels as panel, i (panel.p.id)}
-					<fieldset class="flex flex-col gap-3 border-l-2 border-rule pl-3" data-entry={i + 1}>
+					<fieldset class="entry" data-entry={i + 1}>
 						{#each panel.items as item (item.q.id)}{@render field(item)}{/each}
-						<button type="button" class="self-start text-sm text-muted underline" onclick={() => v.q.removePanel(panel.p)}>Remove</button>
+						<button type="button" class="link muted" onclick={() => v.q.removePanel(panel.p)}>Remove</button>
 					</fieldset>
 				{/each}
-				<button type="button" class="self-start underline" onclick={() => v.q.addPanel()} data-add>Add another</button>
+				<button type="button" class="link" onclick={() => v.q.addPanel()} data-add>Add another</button>
 			{/if}
-			{#each v.errors as e (e)}<span class="text-sm text-(--accent)" data-error>{e}</span>{/each}
+			{#each v.errors as e (e)}<span class="error" data-error>{e}</span>{/each}
 		</div>
 	{/if}
 {/snippet}
 
 {#if failed}
-	<p class="text-muted">{failed}</p>
+	<p class="muted">{failed}</p>
 {:else if !model}
-	<p class="text-muted">Opening the form…</p>
+	<p class="muted">Opening the form…</p>
 {:else}
-	<form class="flex max-w-xl flex-col gap-4" onsubmit={submit} novalidate data-form>
-		{#if definition.title}<h2 class="font-display text-2xl">{definition.title}</h2>{/if}
+	<form class="form" onsubmit={submit} novalidate data-form>
+		{#if definition.title}<h2 class="font-display">{definition.title}</h2>{/if}
 		{#each top as v (v.q.id)}{@render field(v)}{/each}
-		<button class="rt-fancy-btn self-start rounded-lg px-4 py-1 font-display">Save</button>
+		<button class="rt-fancy-btn save font-display">Save</button>
 	</form>
 {/if}
+
+<style>
+	/* gc/mobile.css's tokens: both Get Cache and Ops load it. */
+	.form { display: flex; flex-direction: column; gap: 1rem; max-width: 36rem; }
+	.form h2 { font-size: 1.5rem; }
+	.field, .entry { display: flex; flex-direction: column; gap: 0.25rem; }
+	.entry { gap: 0.75rem; border: 0; border-left: 2px solid var(--rt-yellow); padding-left: 0.75rem; }
+	.choices { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1rem; }
+	.choices label { display: flex; align-items: center; gap: 0.25rem; }
+	.field :is(input:not([type="radio"], [type="checkbox"], [type="file"]), select) {
+		border: var(--rule-row); border-radius: 0.25rem; background: var(--rt-panel); color: inherit; padding: 0.25rem 0.5rem;
+	}
+	.link { align-self: flex-start; text-decoration: underline; }
+	.muted { color: var(--rt-fg-muted); font-size: 0.875rem; }
+	.error { color: var(--rt-yellow); font-size: 0.875rem; }
+	.save { align-self: flex-start; border-radius: 0.5rem; padding: 0.25rem 1rem; }
+</style>

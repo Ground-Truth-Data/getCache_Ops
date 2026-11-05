@@ -1,6 +1,7 @@
 <script lang="ts">
-	import FormView from './FormView.svelte';
-	import { blank, forms, fromDefinition, keys, KINDS, publish, saveDraft, split, toDefinition, type Field, type FormRow, type Kind } from './forms';
+	import { split } from '../../_rapper/gc/form';
+	import FormView from '../../_rapper/gc/FormView.svelte';
+	import { blank, forms, fromDefinition, keys, KINDS, publish, saveDraft, toDefinition, type Field, type FormRow, type Kind } from './forms';
 
 	let { orgKey, formId }: { orgKey: string; formId: string } = $props();
 
