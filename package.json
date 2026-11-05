@@ -35,6 +35,7 @@
   "version": "0.0.0",
   "dependencies": {
     "@observablehq/plot": "^0.6.17",
+    "@use-gesture/vanilla": "^10.3.1",
     "survey-core": "3.2.3"
   },
   "knip": {

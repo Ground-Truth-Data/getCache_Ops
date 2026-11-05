@@ -5,7 +5,9 @@
 	import Report from './Report.svelte';
 	import { session } from '../data/auth';
 	import InboxChrome from '../../_rapper/gc/InboxChrome.svelte';
+	import RowGrip from '../../_rapper/gc/RowGrip.svelte';
 	import RowShell from '../../_rapper/gc/RowShell.svelte';
+	import { type RowDrag, rowDragHandle, rowShift } from '../../_rapper/gc/rowDrag';
 	import { addLink, copyPlugin, live, myPlugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
 
 	let { me, sub, id, signedInNow }: { me: { authId: string } | null; sub?: string; id?: string; signedInNow: () => void } = $props();
@@ -73,31 +75,37 @@
 		r.readAsDataURL(file);
 	}
 
-	// The home is the inbox: an Organization row, then the chosen one's plugins, then rows.
+	// The home is the inbox: All or You, a search, then rows the maker drags into his own order.
 	const items = $derived([
 		...mine.map((versions) => {
 			const last = versions.at(-1)!;
 			const live = versions.findLast((v) => v.publishedAt);
-			return { pluginId: last.pluginId, title: last.definition.title ?? '', logo: last.logo, maker: live?.madeBy ?? 'You', version: live ? `v${live.version} live` : 'draft', answers: answers.get(last.pluginId) ?? 0, href: `#/plugins/edit/${last.pluginId}` };
+			return { pluginId: last.pluginId, mine: true, title: last.definition.title ?? '', logo: last.logo, maker: live?.madeBy ?? 'You', version: live ? `v${live.version} live` : 'draft', answers: answers.get(last.pluginId) ?? 0, href: `#/plugins/edit/${last.pluginId}` };
 		}),
-		...others.map((p) => ({ pluginId: p.pluginId, title: p.title, logo: null, maker: p.madeBy, version: '', answers: p.answers, href: `#/plugins/answers/${p.pluginId}` })),
+		...others.map((p) => ({ pluginId: p.pluginId, mine: false, title: p.title, logo: null, maker: p.madeBy, version: '', answers: p.answers, href: `#/plugins/answers/${p.pluginId}` })),
 	]);
-	let org = $state('');
-	let one = $state('');
+	// This browser's order; a plugin it hasn't placed yet goes on top.
+	const ORDER = 'ops-plugins-order';
+	let order = $state<string[]>(JSON.parse(localStorage.getItem(ORDER) ?? '[]'));
+	const sorted = $derived(items.toSorted((x, y) => order.indexOf(x.pluginId) - order.indexOf(y.pluginId)));
+	let you = $state(false);
 	let query = $state('');
-	const inOrg = $derived(items.filter((p) => !org || p.maker === org));
-	const pillRows = $derived([
-		[{ key: '', label: 'All', on: !org }, ...[...new Set(items.map((p) => p.maker))].map((k) => ({ key: k, label: k, icon: 'org_gold.webp', on: org === k }))],
-		inOrg.map((p) => ({ key: p.pluginId, label: p.title || 'Untitled', icon: p.logo ?? 'plugin_gold.webp', on: one === p.pluginId })),
-	]);
-	const tap = (key: string, row: number) => (row ? (one = one === key ? '' : key) : ((org = key), (one = '')));
 	const q = $derived(query.trim().toLowerCase());
-	const shown = $derived(inOrg.filter((p) => (!one || p.pluginId === one) && (!q || `${p.title} ${p.maker}`.toLowerCase().includes(q))));
-	const chosen = $derived(items.find((p) => p.pluginId === one && p.answers && p.href.includes('/edit/')));
+	const shown = $derived(sorted.filter((p) => (!you || p.mine) && (!q || `${p.title} ${p.maker}`.toLowerCase().includes(q))));
+	let drag = $state<RowDrag | null>(null);
+	function drop(d: RowDrag) {
+		drag = null;
+		if (d.fromIndex === d.targetIndex) return;
+		const ids = shown.map((p) => p.pluginId);
+		ids.splice(d.targetIndex, 0, ...ids.splice(d.fromIndex, 1));
+		let k = 0;
+		order = sorted.map((p) => (ids.includes(p.pluginId) ? ids[k++] : p.pluginId));
+		localStorage.setItem(ORDER, JSON.stringify(order));
+	}
+	const pills = $derived([[{ key: 'all', label: 'All', on: !you }, { key: 'you', label: 'You', on: you }]]);
 	const buttons = $derived([
-		{ label: 'Open a .getcache file', icon: openIcon, gold: true, onclick: () => pick?.click() },
-		{ label: 'New plugin', icon: pluginIcon, href: '#/plugins/edit/new' },
-		...(chosen ? [{ label: `${chosen.answers} answers`, icon: answersIcon, href: `#/plugins/answers/${chosen.pluginId}` }] : []),
+		{ label: 'Import', icon: gcIcon, gold: true, onclick: () => pick?.click() },
+		{ label: 'New', icon: pluginIcon, hug: true, href: '#/plugins/edit/new' },
 	]);
 
 	let photos = new Map<string, string>();
@@ -107,9 +115,8 @@
 <!-- Signing in happens in the app's own tab on Get Cache's site: coming back is when the session can be there. -->
 <svelte:window onfocus={() => (asking &&= !session())} />
 
-{#snippet openIcon()}<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 19h16" /></svg>{/snippet}
-{#snippet pluginIcon()}<img src="plugin_gold.webp" alt="" class="h-6 w-6 object-contain" />{/snippet}
-{#snippet answersIcon()}<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9" /></svg>{/snippet}
+{#snippet gcIcon()}<img src="gc_mark.webp" alt="" class="h-12 w-12 rounded-lg" />{/snippet}
+{#snippet pluginIcon()}<img src="plugin_white.webp" alt="" class="h-6 w-6 object-contain" />{/snippet}
 
 {#snippet mark(src: string | null, size: string)}
 	<img src={src ?? 'plugin_gold.webp'} alt="" class="{size} shrink-0 rounded-2xl object-contain" />
@@ -172,8 +179,17 @@
 		{/if}
 	</div>
 	<div class="flex flex-col gap-(--rt-space-2)" data-plugins>
-		<InboxChrome rows={pillRows} onpill={tap} bind:query placeholder="Search plugins, makers, organizations" clearLabel="Clear" {buttons} />
-		{#each shown as p (p.pluginId)}
+		<InboxChrome rows={pills} onpill={(k) => (you = k === 'you')} bind:query placeholder="Search plugins and makers" clearLabel="Clear" {buttons} />
+		{#each shown as p, i (p.pluginId)}
+			{@const moving = drag?.rowId === p.pluginId}
+			{@const shift = rowShift(drag, p.pluginId, i)}
+			<div
+				class="rt-row-track rt-row-track--grip"
+				class:rt-row-track--dragging={moving}
+				data-row-id={p.pluginId}
+				style:transform={moving ? `translateY(${drag!.deltaY}px)` : shift ? `translateY(${shift}px)` : undefined}
+				style:transition={shift && !moving ? 'transform 200ms ease' : undefined}
+			>
 			<RowShell title={p.title || 'Untitled'} href={p.href} tier="top">
 				{#snippet glyph()}<img src={p.logo ?? 'plugin_gold.webp'} alt="" class="rt-row__glyph-img" />{/snippet}
 				{#snippet subtitle()}
@@ -186,6 +202,12 @@
 					>
 				{/snippet}
 			</RowShell>
+			<RowGrip
+				label="Drag to reorder"
+				dragging={moving}
+				attach={(el) => rowDragHandle(el, { rowId: p.pluginId, index: i, count: shown.length, drag: () => drag, move: (d) => (drag = d), drop }).destroy}
+			/>
+			</div>
 		{/each}
 	</div>
 	<input bind:this={pick} type="file" accept=".getcache" class="hidden" onchange={(e) => open(e.currentTarget.files?.[0])} data-sent-file />
