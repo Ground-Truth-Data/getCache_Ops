@@ -10,6 +10,7 @@
 	let versions = $state<FormRow[]>([]);
 	let title = $state('');
 	let fields = $state<Field[]>([]);
+	let rest = $state<ReturnType<typeof fromDefinition>['rest']>({});
 	let note = $state('');
 	let preview = $state(false);
 	let saved = $state<ReturnType<typeof split>>();
@@ -17,11 +18,11 @@
 	const draft = $derived(latest && !latest.publishedAt ? latest : undefined);
 	// A key is locked once any version holding it is published.
 	const locked = $derived(new Set(versions.filter((v) => v.publishedAt).flatMap((v) => keys(v.definition).map((k) => k.key))));
-	const definition = $derived(toDefinition(title, fields));
+	const definition = $derived(toDefinition(title, fields, rest));
 
 	async function load() {
 		versions = id ? (await forms(orgKey)).filter((f) => f.formId === id) : [];
-		if (latest) ({ title, fields } = fromDefinition(latest.definition));
+		if (latest) ({ title, fields, rest } = fromDefinition(latest.definition));
 	}
 	$effect(() => void load().catch((e) => (note = e.message)));
 
@@ -71,6 +72,7 @@
 						<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
 					</div>
 				{:else if f.kind === 'group'}
+					<input class="{input} ml-34 w-48 text-sm" placeholder="+ Add" title="The add button's text on the phone" bind:value={f.addText} data-add-text />
 					<div class="ml-8 border-l-2 border-rule pl-4" data-group={f.key}>{@render list(f.fields, true)}</div>
 				{/if}
 			</li>

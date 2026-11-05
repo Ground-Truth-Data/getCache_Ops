@@ -6,7 +6,9 @@ import { call } from '../company/central';
 export type { Definition };
 
 export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'gps' | 'group';
-export type Field = { kind: Kind; key: string; label: string; required: boolean; choices: string[]; min?: number; max?: number; fields: Field[] };
+/** `src` is the element as loaded (or a new field's defaults): saving writes the edited keys onto it, so every
+ *  property the builder has no control for survives each version. */
+export type Field = { kind: Kind; key: string; label: string; required: boolean; choices: string[]; min?: number; max?: number; addText: string; fields: Field[]; src: El };
 export type FormRow = { id: string; formId: string; version: number; definition: Definition; publishedAt: string | null; copiedFrom: string | null };
 export type Answer = { id: string; form: string; authId: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
 export type AnswerRow = { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
@@ -16,31 +18,48 @@ export const KINDS: [Kind, string][] = [
 	['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['group', 'Repeating group'],
 ];
 
-export const blank = (kind: Kind): Field => ({ kind, key: '', label: '', required: false, choices: kind === 'dropdown' || kind === 'radiogroup' || kind === 'checkbox' ? ['Yes', 'No'] : [], fields: [] });
+const NEW: Record<Kind, Omit<El, 'name'>> = {
+	text: { type: 'text' }, number: { type: 'text', inputType: 'number' }, date: { type: 'text', inputType: 'date' },
+	dropdown: { type: 'dropdown' }, radiogroup: { type: 'radiogroup' }, checkbox: { type: 'checkbox' },
+	file: { type: 'file', storeDataAsText: false, acceptedTypes: 'image/*' }, gps: { type: 'gps' }, group: { type: 'paneldynamic', panelCount: 1 },
+};
+const choiceText = (c: unknown) => String(typeof c === 'object' ? (c as { value: unknown }).value : c);
+
+export const blank = (kind: Kind): Field => ({
+	kind, key: '', label: '', required: false, choices: kind === 'dropdown' || kind === 'radiogroup' || kind === 'checkbox' ? ['Yes', 'No'] : [],
+	addText: '', fields: [], src: { ...NEW[kind], name: '' },
+});
 
 function el(f: Field): El {
-	const base = { name: f.key, ...(f.label && { title: f.label }), ...(f.required && { isRequired: true }) };
-	switch (f.kind) {
-		case 'number': return { type: 'text', inputType: 'number', ...base, ...(f.min != null && { min: f.min }), ...(f.max != null && { max: f.max }) };
-		case 'date': return { type: 'text', inputType: 'date', ...base };
-		case 'dropdown': case 'radiogroup': case 'checkbox': return { type: f.kind, ...base, choices: f.choices };
-		case 'file': return { type: 'file', ...base, storeDataAsText: false, acceptedTypes: 'image/*' };
-		case 'group': return { type: 'paneldynamic', ...base, templateElements: f.fields.map(el), panelCount: 1 };
-		default: return { type: f.kind, ...base };
-	}
+	const out: El = { ...f.src, name: f.key };
+	const put = (k: string, v: unknown) => (v === undefined || v === '' || v === false ? delete out[k] : (out[k] = v));
+	put('title', f.label);
+	put('isRequired', f.required);
+	if (f.kind === 'number') (put('min', f.min), put('max', f.max));
+	// Choices the builder shows as plain text; untouched, a definition's own {value, text} pairs stay.
+	if (f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox')
+		out.choices = f.choices.join('\n') === ((f.src.choices as unknown[]) ?? []).map(choiceText).join('\n') ? f.src.choices : f.choices;
+	if (f.kind === 'group') (put('panelAddText', f.addText), (out.templateElements = f.fields.map(el)));
+	return out;
 }
-export const toDefinition = (title: string, fields: Field[]): Definition => ({ ...(title && { title }), elements: fields.map(el) });
+export const toDefinition = (title: string, fields: Field[], rest: Partial<Definition> = {}): Definition => {
+	const d: Definition = { ...rest, elements: fields.map(el) };
+	if (title) d.title = title;
+	else delete d.title;
+	return d;
+};
 
 function field(e: El): Field {
 	const kind = (e.type === 'text' ? (e.inputType === 'number' ? 'number' : e.inputType === 'date' ? 'date' : 'text') : e.type === 'paneldynamic' ? 'group' : e.type) as Kind;
 	return {
 		kind, key: e.name, label: e.title ?? '', required: !!e.isRequired,
-		choices: ((e.choices as unknown[]) ?? []).map((c) => String(typeof c === 'object' ? (c as { value: unknown }).value : c)),
-		min: e.min as number | undefined, max: e.max as number | undefined,
-		fields: ((e.templateElements as El[]) ?? []).map(field),
+		choices: ((e.choices as unknown[]) ?? []).map(choiceText),
+		min: e.min as number | undefined, max: e.max as number | undefined, addText: (e.panelAddText as string) ?? '',
+		fields: ((e.templateElements as El[]) ?? []).map(field), src: e,
 	};
 }
-export const fromDefinition = (d: Definition) => ({ title: d.title ?? '', fields: d.elements.map(field) });
+/** The fields the builder edits, and `rest`: the survey's own settings, written back untouched. */
+export const fromDefinition = ({ title, elements, ...rest }: Definition) => ({ title: title ?? '', fields: elements.map(field), rest });
 
 /** Every key a definition holds, with its label, and the repeating group it sits in. */
 export const keys = (d: Definition) =>
