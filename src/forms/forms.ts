@@ -67,7 +67,10 @@ function field(e: El): Field {
  *  written back untouched. */
 export const fromDefinition = ({ title, elements, ...rest }: Definition) => ({
 	title: title ?? '',
-	fields: elements.flatMap((e) => (e.type === 'panel' ? [field({ ...e, elements: undefined }), ...((e.elements as El[]) ?? []).map(field)] : [field(e)])),
+	fields: elements
+		// Drafts made before sections held repeat groups; the maker opens them as sections.
+		.map((e): El => (e.type === 'paneldynamic' ? { type: 'panel', name: e.name, title: e.title, elements: e.templateElements } : e))
+		.flatMap((e) => (e.type === 'panel' ? [field({ ...e, elements: undefined }), ...((e.elements as El[]) ?? []).map(field)] : [field(e)])),
 	rest,
 });
 
