@@ -104,7 +104,7 @@
 	}
 	const pills = $derived([[{ key: 'all', label: 'All', on: !you }, { key: 'you', label: 'You', on: you }]]);
 	const buttons = $derived([
-		{ label: 'Import', icon: gcIcon, gold: true, onclick: () => pick?.click() },
+		{ label: 'Import plugin', icon: gcIcon, ring: true, onclick: () => pick?.click() },
 		{ label: 'New', icon: pluginIcon, hug: true, href: '#/plugins/edit/new' },
 	]);
 
@@ -115,8 +115,8 @@
 <!-- Signing in happens in the app's own tab on Get Cache's site: coming back is when the session can be there. -->
 <svelte:window onfocus={() => (asking &&= !session())} />
 
-{#snippet gcIcon()}<img src="gc_mark.webp" alt="" class="h-12 w-12 rounded-lg" />{/snippet}
-{#snippet pluginIcon()}<img src="plugin_white.webp" alt="" class="h-6 w-6 object-contain" />{/snippet}
+{#snippet gcIcon()}<img src="gc_logo.webp" alt="" class="h-10 w-auto" />{/snippet}
+{#snippet pluginIcon()}<img src="plugin_white.webp" alt="" class="h-8 w-auto" />{/snippet}
 
 {#snippet mark(src: string | null, size: string)}
 	<img src={src ?? 'plugin_gold.webp'} alt="" class="{size} shrink-0 rounded-2xl object-contain" />
@@ -169,16 +169,16 @@
 		<p class="font-display text-3xl">Scan to add</p>
 	</div>
 {:else}
-	<div class="mb-7 flex flex-wrap items-center gap-4">
+	<div class="mb-7 flex flex-wrap items-end gap-4">
 		<h1 class="font-display text-5xl text-(--accent)">Plugins</h1>
-		<button class="h-11 w-11 rounded-full border-2 border-(--accent) text-xl font-bold text-(--accent)" aria-label="What are plugins?" aria-expanded={info} onclick={() => (info = !info)} data-info>i</button>
+		<button class="mb-2 ml-3 h-6 w-6 rounded-full border-[1.5px] border-(--accent) text-xs font-bold text-(--accent)" aria-label="What are plugins?" aria-expanded={info} onclick={() => (info = !info)} data-info>i</button>
 		{#if info}
 			<p role="note" class="max-w-xl rounded-2xl border border-rule bg-[#1f1c14] px-5 py-3.5 text-lg leading-snug text-[#e8e2d6]" data-info-text>
 				Plugins are custom forms. Build one yourself and share it, or install one from your organization. Use it offline in the Get Cache mobile app.
 			</p>
 		{/if}
 	</div>
-	<div class="flex flex-col gap-(--rt-space-2)" data-plugins>
+	<div class="flex max-w-3xl flex-col gap-(--rt-space-2)" data-plugins>
 		<InboxChrome rows={pills} onpill={(k) => (you = k === 'you')} bind:query placeholder="Search plugins and makers" clearLabel="Clear" {buttons} />
 		{#each shown as p, i (p.pluginId)}
 			{@const moving = drag?.rowId === p.pluginId}

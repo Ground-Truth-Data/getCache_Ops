@@ -118,7 +118,7 @@
 			</div>
 			<div class="flex flex-wrap items-center gap-3 text-sm">
 				{#if f.kind !== 'gps'}<input class="{input} w-36 font-mono" placeholder="key" bind:value={f.key} disabled={locked.has(f.key)} title={locked.has(f.key) ? 'Published: this key is locked' : 'The column name in reports'} data-key />{/if}
-				{#if !group}<label class="flex items-center gap-2"><input type="checkbox" class="h-5 w-5" bind:checked={f.required} data-required /><span><span class="req">*</span> required</span></label>{/if}
+				{#if !group}<label class="flex items-center gap-2"><input type="checkbox" class="tick" bind:checked={f.required} data-required /><span class="text-lg"><span class="req">*</span> required</span></label>{/if}
 				{#if f.kind === 'number'}
 					<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
 					<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
@@ -192,8 +192,33 @@
 		border-bottom-color: var(--accent);
 	}
 	.req {
-		color: #e5484d;
-		font-weight: 700;
+		color: #ff4d55;
+		font-size: 2em;
+		font-weight: 800;
+		line-height: 0;
+		vertical-align: -0.4em;
+	}
+	/* The browser's white box vanished on the dark card: black box, thick grey rim, gold tick. */
+	.tick {
+		appearance: none;
+		display: grid;
+		place-content: center;
+		width: 1.6rem;
+		height: 1.6rem;
+		border: 3px solid #6b6458;
+		border-radius: 0.4rem;
+		background: #000;
+		cursor: pointer;
+	}
+	.tick:checked {
+		border-color: var(--accent);
+	}
+	.tick:checked::before {
+		content: '';
+		width: 0.85rem;
+		height: 0.85rem;
+		background: var(--accent);
+		clip-path: polygon(14% 44%, 0 65%, 40% 100%, 100% 22%, 84% 6%, 39% 69%);
 	}
 	.add {
 		display: flex;
