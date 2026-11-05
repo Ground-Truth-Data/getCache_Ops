@@ -5,7 +5,9 @@ test('one currency reads with its narrow symbol', () => {
 	const money = moneyIn([{ currency: 'CAD' }], 'en');
 	expect(money(0.18, 'CAD')).toBe('$0.18');
 	expect(money(1690.2, 'CAD')).toBe('$1,690.20');
-	expect(money(0.165, 'CAD')).toBe('$0.165');
+	expect(money(0.165, 'CAD', true)).toBe('$0.165');
+	expect(money(144.6, 'CAD')).toBe('$144.60');
+	expect(money(144.315, 'CAD')).toBe('$144.32');
 });
 
 test('two currencies sharing a symbol tell themselves apart', () => {

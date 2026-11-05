@@ -13,7 +13,7 @@ import JsonPeek from "../../_rapper/rt/admin/JsonPeek.svelte";
 import TableToolbar from "../../_rapper/rt/admin/TableToolbar.svelte";
 import { hiddenFromParams, hiddenToParams, visibleColumns } from "../../_rapper/rt/admin/columnPrefs";
 import { type SortState, sortRows } from "../../_rapper/rt/admin/sortRows";
-import { moneyIn } from "./money";
+import { MONEY_NAME, RATE_NAME, moneyIn } from "./money";
 import type { Snippet } from "svelte";
 
 type Row = Record<string, unknown>;
@@ -22,7 +22,9 @@ type Row = Record<string, unknown>;
 // `noSum` columns are rates: a Σ of per-tree prices means nothing.
 let { rows, columns, name, money = [], noSum = [], toggle, panel }: { rows: Row[]; columns: string[]; name: string; money?: string[]; noSum?: string[]; toggle?: Snippet; panel?: Snippet } = $props();
 const onScreen = $derived(money.length ? columns.filter((c) => c !== "currency") : columns);
-const price = $derived(moneyIn(rows));
+const cur = $derived(columns.find((c) => c.toLowerCase() === "currency") ?? "currency");
+const cash = $derived(money.length ? money : columns.some((c) => c === cur) ? columns.filter((c) => c !== cur && MONEY_NAME.test(c)) : []);
+const price = $derived(moneyIn(rows, undefined, cur));
 
 let hash = $state(location.hash);
 $effect(() => {
@@ -80,20 +82,20 @@ function onFilter(v: string) {
 const totals = $derived.by(() => {
 	const out: Record<string, string> = {};
 	for (const c of cols) {
-		if (noSum.includes(c)) continue;
+		if (noSum.includes(c) || (cash.includes(c) && RATE_NAME.test(c))) continue;
 		const vals = matched.map((r) => r[c]);
 		if (!vals.length || !vals.some((v) => typeof v === "number") || !vals.every((v) => v == null || typeof v === "number")) continue;
 		const sum = (vals as number[]).reduce((a, b) => a + (b ?? 0), 0);
-		if (!money.includes(c)) out[c] = sum.toLocaleString();
+		if (!cash.includes(c)) out[c] = sum.toLocaleString();
 		else {
 			// Dollars and euros don't add up, so a mixed-currency column gets no Σ.
-			const codes = new Set(matched.map((r) => r.currency));
+			const codes = new Set(matched.map((r) => r[cur]));
 			if (codes.size === 1) out[c] = price(sum, [...codes][0]);
 		}
 	}
 	return out;
 });
-const cellText = (c: string, r: Row) => (money.includes(c) ? price(r[c], r.currency) : fmt(r[c]));
+const cellText = (c: string, r: Row) => (cash.includes(c) ? price(r[c], r[cur], RATE_NAME.test(c)) : fmt(r[c]));
 
 const countLine = $derived(
 	filter.trim()
