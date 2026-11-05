@@ -131,8 +131,8 @@ body {
 		color: #111;
 	}
 	.chip-rust {
-		border: 2px solid #e08a5b;
-		color: #f0a57e;
+		border: 2px solid var(--rt-rust);
+		color: var(--rt-rust);
 		font-weight: 600;
 	}
 	.badge {
@@ -142,7 +142,7 @@ body {
 		min-width: 2.5rem;
 		height: 2.5rem;
 		border-radius: 999px;
-		background: #e08a5b;
+		background: var(--rt-rust);
 		color: #111;
 		font-family: var(--font-sans);
 		font-size: 1.25rem;

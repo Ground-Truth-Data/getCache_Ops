@@ -93,7 +93,7 @@
 	{@render header('Organizations', 'An organization is a planting company or crew on Get Cache. Its admins build forms here; its members fill them in on their phones. Most people join one from an invite link.')}
 	{#if waiting.length}
 		{@const c = waiting[0]}
-		<section class="mb-7 flex flex-wrap items-center gap-5 rounded-2xl border-2 border-[#e08a5b] bg-[#1e1713] px-6 py-5" aria-label="Waiting for you" data-draft={c.slug}>
+		<section class="mb-7 flex flex-wrap items-center gap-5 rounded-2xl border-2 border-(--rt-rust) bg-[#1e1713] px-6 py-5" aria-label="Waiting for you" data-draft={c.slug}>
 			<span class="badge">{waiting.length}</span>
 			<span class="flex-1 text-2xl font-semibold">New: {c.name}</span>
 			<button class="rt-fancy-btn rounded-2xl px-8 py-3 font-display text-2xl" onclick={act(() => decide(c.orgKey, 'approved'))} data-approve>Approve</button>

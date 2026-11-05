@@ -5,68 +5,80 @@ import { call } from '../company/central';
 
 export type { Definition };
 
-export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'gps' | 'group';
+export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'gps' | 'section';
 /** `src` is the element as loaded (or a new field's defaults): saving writes the edited keys onto it, so every
  *  property the builder has no control for survives each version. */
-export type Field = { kind: Kind; key: string; label: string; required: boolean; choices: string[]; min?: number; max?: number; addText: string; fields: Field[]; src: El };
+/** The builder's list is flat: a section owns the fields after it, up to the next section. */
+export type Field = { kind: Kind; key: string; label: string; description: string; required: boolean; choices: string[]; min?: number; max?: number; src: El };
 export type FormRow = { id: string; formId: string; version: number; definition: Definition; publishedAt: string | null; copiedFrom: string | null };
 export type Answer = { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
 export type AnswerRow = { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
 
 export const KINDS: [Kind, string][] = [
 	['text', 'Text'], ['number', 'Number'], ['dropdown', 'Dropdown'], ['radiogroup', 'Multiple choice'], ['checkbox', 'Checkboxes'],
-	['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['group', 'Repeating group'],
+	['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['section', 'Section'],
 ];
 
 const NEW: Record<Kind, Omit<El, 'name'>> = {
 	text: { type: 'text' }, number: { type: 'text', inputType: 'number' }, date: { type: 'text', inputType: 'date' },
 	dropdown: { type: 'dropdown' }, radiogroup: { type: 'radiogroup' }, checkbox: { type: 'checkbox' },
-	file: { type: 'file', storeDataAsText: false, acceptedTypes: 'image/*' }, gps: { type: 'gps' }, group: { type: 'paneldynamic', panelCount: 1 },
+	file: { type: 'file', storeDataAsText: false, acceptedTypes: 'image/*' }, gps: { type: 'gps' }, section: { type: 'panel' },
 };
 const choiceText = (c: unknown) => String(typeof c === 'object' ? (c as { value: unknown }).value : c);
 
 export const blank = (kind: Kind): Field => ({
 	kind, key: '', label: '', required: false, choices: kind === 'dropdown' || kind === 'radiogroup' || kind === 'checkbox' ? ['Yes', 'No'] : [],
-	addText: '', fields: [], src: { ...NEW[kind], name: '' },
+	description: '', src: { ...NEW[kind], name: '' },
 });
 
 function el(f: Field): El {
 	const out: El = { ...f.src, name: f.key };
 	const put = (k: string, v: unknown) => (v === undefined || v === '' || v === false ? delete out[k] : (out[k] = v));
 	put('title', f.label);
+	put('description', f.description);
 	put('isRequired', f.required);
 	if (f.kind === 'number') (put('min', f.min), put('max', f.max));
 	// Choices the builder shows as plain text; untouched, a definition's own {value, text} pairs stay.
 	if (f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox')
 		out.choices = f.choices.join('\n') === ((f.src.choices as unknown[]) ?? []).map(choiceText).join('\n') ? f.src.choices : f.choices;
-	if (f.kind === 'group') (put('panelAddText', f.addText), (out.templateElements = f.fields.map(el)));
 	return out;
 }
 export const toDefinition = (title: string, fields: Field[], rest: Partial<Definition> = {}): Definition => {
-	const d: Definition = { ...rest, elements: fields.map(el) };
+	const elements: El[] = [];
+	let section: El | undefined;
+	for (const f of fields)
+		if (f.kind === 'section') elements.push((section = { ...el(f), elements: [] }));
+		else ((section?.elements as El[] | undefined) ?? elements).push(el(f));
+	const d: Definition = { ...rest, elements };
 	if (title) d.title = title;
 	else delete d.title;
 	return d;
 };
 
 function field(e: El): Field {
-	const kind = (e.type === 'text' ? (e.inputType === 'number' ? 'number' : e.inputType === 'date' ? 'date' : 'text') : e.type === 'paneldynamic' ? 'group' : e.type) as Kind;
+	const kind = (e.type === 'text' ? (e.inputType === 'number' ? 'number' : e.inputType === 'date' ? 'date' : 'text') : e.type === 'panel' ? 'section' : e.type) as Kind;
 	return {
-		kind, key: e.name, label: e.title ?? '', required: !!e.isRequired,
+		kind, key: e.name, label: e.title ?? '', description: (e.description as string) ?? '', required: !!e.isRequired,
 		choices: ((e.choices as unknown[]) ?? []).map(choiceText),
-		min: e.min as number | undefined, max: e.max as number | undefined, addText: (e.panelAddText as string) ?? '',
-		fields: ((e.templateElements as El[]) ?? []).map(field), src: e,
+		min: e.min as number | undefined, max: e.max as number | undefined, src: e,
 	};
 }
-/** The fields the builder edits, and `rest`: the survey's own settings, written back untouched. */
-export const fromDefinition = ({ title, elements, ...rest }: Definition) => ({ title: title ?? '', fields: elements.map(field), rest });
+/** The fields the builder edits, a section's own fields right after it, and `rest`: the survey's own settings,
+ *  written back untouched. */
+export const fromDefinition = ({ title, elements, ...rest }: Definition) => ({
+	title: title ?? '',
+	fields: elements.flatMap((e) => (e.type === 'panel' ? [field({ ...e, elements: undefined }), ...((e.elements as El[]) ?? []).map(field)] : [field(e)])),
+	rest,
+});
 
 /** Every key a definition holds, with its label, and the repeating group it sits in. */
 export const keys = (d: Definition) =>
 	d.elements.flatMap((e): { key: string; label: string; group?: string }[] =>
 		e.type === 'paneldynamic'
 			? [{ key: e.name, label: e.title ?? e.name }, ...(e.templateElements as El[]).map((t) => ({ key: t.name, label: t.title ?? t.name, group: e.name }))]
-			: [{ key: e.name, label: e.title ?? e.name }],
+			: e.type === 'panel'
+				? (e.elements as El[]).map((t) => ({ key: t.name, label: t.title ?? t.name }))
+				: [{ key: e.name, label: e.title ?? e.name }],
 	);
 
 /** One version as the builder and the report see it, whoever keeps it: a company form or a plugin. */

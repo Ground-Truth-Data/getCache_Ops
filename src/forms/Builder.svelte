@@ -17,6 +17,8 @@
 	let fields = $state<Field[]>([]);
 	let rest = $state<ReturnType<typeof fromDefinition>['rest']>({});
 	let note = $state('');
+	// A refusal flashes red, again on every press, so a second tap is not met with silence.
+	let refusals = $state(0);
 	let selected = $state<Field>();
 	const latest = $derived(versions.at(-1));
 	const draft = $derived(latest && !latest.publishedAt ? latest : undefined);
@@ -45,6 +47,7 @@
 				versions = await store.load();
 			} catch (e) {
 				note = (e as Error).message;
+				refusals++;
 			}
 		}, 400);
 		return () => clearTimeout(t);
@@ -55,15 +58,12 @@
 		if (!locked.has(f.key) && (!f.key || f.key === keyOf(f.label))) f.key = keyOf(label);
 		f.label = label;
 	}
-	const move = (list: Field[], i: number, by: number) => list.splice(i + by, 0, ...list.splice(i, 1));
-	// A new field goes into the repeat group being worked on, else at the end of the form.
-	const groupOf = (f?: Field) => (f?.kind === 'group' ? f : fields.find((g) => g.kind === 'group' && g.fields.includes(f!)));
+	const move = (i: number, by: number) => fields.splice(i + by, 0, ...fields.splice(i, 1));
 	// GPS is named by what it is, never by the maker, and a form asks for location once.
 	const hasGps = $derived(fields.some((f) => f.kind === 'gps'));
 	function add(kind: Kind) {
-		const list = kind === 'gps' ? fields : (groupOf(selected)?.fields ?? fields);
-		list.push(kind === 'gps' ? { ...blank(kind), key: 'gps', label: 'GPS' } : blank(kind));
-		selected = list.at(-1);
+		fields.push(kind === 'gps' ? { ...blank(kind), key: 'gps', label: 'GPS' } : blank(kind));
+		selected = fields.at(-1);
 	}
 
 	async function save(then?: 'publish') {
@@ -74,12 +74,14 @@
 			if (then) await store.publish(draft?.id);
 			await load();
 			note = then ? `Published version ${latest?.version}.` : `Saved draft version ${latest?.version}.`;
+			refusals = 0;
 		} catch (e) {
 			note = (e as Error).message;
+			refusals++;
 		}
 	}
 
-	const ADD: [Kind, string][] = [['text', 'Text'], ['number', 'Number'], ['dropdown', 'Choice'], ['checkbox', 'Checkboxes'], ['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['group', 'Repeat']];
+	const ADD: [Kind, string][] = [['text', 'Text'], ['number', 'Number'], ['dropdown', 'Choice'], ['checkbox', 'Checkboxes'], ['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['section', 'Section']];
 	const CHOICE = 'M8 6h12M8 12h12M8 18h12M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2';
 	const ICON: Record<Kind, string> = {
 		text: 'M4 7V5h16v2M12 5v14M9 19h6',
@@ -90,7 +92,7 @@
 		date: 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 10h18M8 3v4M16 3v4',
 		file: 'M4 8h3l2-3h6l2 3h3v11H4zM15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z',
 		gps: '',
-		group: 'M5.5 4h13A1.5 1.5 0 0 1 20 5.5v3a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 8.5v-3A1.5 1.5 0 0 1 5.5 4zM5.5 14h13a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-3A1.5 1.5 0 0 1 5.5 14z',
+		section: 'M4 5h16M4 10h10M4 15h16M4 20h10',
 	};
 	const input = 'rounded-lg border border-rule bg-surface px-3 py-2';
 	const ghost = 'rounded-lg border border-rule px-3 py-2 text-muted';
@@ -98,33 +100,33 @@
 
 {#snippet icon(kind: Kind, size = 22)}
 	{#if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{size}px" style:width="auto" />
-	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={kind === 'group' ? 'var(--repeat)' : 'var(--accent)'} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
+	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={kind === 'section' ? 'var(--rt-rust)' : 'var(--accent)'} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
 {#snippet gpsNote()}<span class="block text-sm text-muted" data-gps-note>Needs location services on to collect field data.</span>{/snippet}
 
-{#snippet card(f: Field, list: Field[], i: number, inGroup: boolean)}
+{#snippet card(f: Field, i: number, inSection: boolean)}
 	{@const on = selected === f}
-	{@const group = f.kind === 'group'}
-	<div class="card {on ? 'on' : ''} {group ? 'group' : ''} {inGroup && !on ? 'chip' : ''}" data-build={f.key} data-kind={f.kind}>
+	{@const section = f.kind === 'section'}
+	<div class="card {on ? 'on' : ''} {section ? 'section' : ''} {inSection ? 'ml-8' : ''}" data-build={f.key} data-kind={f.kind}>
 		{#if on}
 			<div class="flex flex-wrap items-center gap-3">
 				{@render icon(f.kind)}
 				{#if f.kind === 'gps'}<span class="flex-1 text-xl font-semibold">GPS{@render gpsNote()}</span>
 				{:else}<input class="label" placeholder={KINDS.find(([k]) => k === f.kind)?.[1]} value={f.label} oninput={(e) => relabel(f, e.currentTarget.value)} data-label />{/if}
-				{#if group}<input class="{input} w-32 font-bold" placeholder="+ Add" title="The add button's text on the phone" bind:value={f.addText} data-add-text />{/if}
-				<button class="trash" onclick={() => (list.splice(i, 1), (selected = undefined))} aria-label="Remove field" data-remove-field>
+				<button class="trash" onclick={() => (fields.splice(i, 1), (selected = undefined))} aria-label="Remove field" data-remove-field>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
 				</button>
 			</div>
+			{#if f.kind !== 'gps'}<input class="{input} w-full" placeholder="Description (optional)" bind:value={f.description} data-description />{/if}
 			<div class="flex flex-wrap items-center gap-3 text-sm">
 				{#if f.kind !== 'gps'}<input class="{input} w-36 font-mono" placeholder="key" bind:value={f.key} disabled={locked.has(f.key)} title={locked.has(f.key) ? 'Published: this key is locked' : 'The column name in reports'} data-key />{/if}
-				{#if !group}<label class="flex items-center gap-2"><input type="checkbox" class="tick" bind:checked={f.required} data-required /><span class="text-lg"><span class="req">*</span> required</span></label>{/if}
+				{#if !section}<label class="flex items-center gap-2"><input type="checkbox" class="tick" bind:checked={f.required} data-required /><span class="text-base"><span class="req">*</span>&nbsp;required</span></label>{/if}
 				{#if f.kind === 'number'}
 					<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
 					<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
 				{/if}
-				<button class={ghost} disabled={i === 0} onclick={() => move(list, i, -1)} aria-label="Up">↑</button>
-				<button class={ghost} disabled={i === list.length - 1} onclick={() => move(list, i, 1)} aria-label="Down">↓</button>
+				<button class={ghost} disabled={i === 0} onclick={() => move(i, -1)} aria-label="Up">↑</button>
+				<button class={ghost} disabled={i === fields.length - 1} onclick={() => move(i, 1)} aria-label="Down">↓</button>
 			</div>
 			{#if f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox'}
 				<textarea class="{input} w-full max-w-sm text-base" rows="4" placeholder="One choice per line" value={f.choices.join('\n')}
@@ -132,16 +134,10 @@
 			{/if}
 		{:else}
 			<button class="pick" onclick={() => (selected = f)} data-pick>
-				{#if !inGroup}{@render icon(f.kind)}{/if}
-				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.kind === 'gps'}{@render gpsNote()}{/if}</span>
-				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span> required</span>{/if}
-				{#if group}<span class="add-text">{f.addText || '+ Add'}</span>{/if}
+				{@render icon(f.kind)}
+				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{/if}</span>
+				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span>&nbsp;required</span>{/if}
 			</button>
-		{/if}
-		{#if group}
-			<div class="flex flex-wrap gap-2.5 pl-9" data-group={f.key}>
-				{#each f.fields as c, j (c)}{@render card(c, f.fields, j, true)}{/each}
-			</div>
 		{/if}
 	</div>
 {/snippet}
@@ -158,17 +154,17 @@
 	{#if !store.autosave}<button class="small-btn" onclick={() => save()} data-save>Save draft</button>{/if}
 	<button class="rt-fancy-btn rounded-2xl px-9 py-3 font-display text-2xl" onclick={() => save('publish')} data-publish>Publish</button>
 </header>
-{#if note}<p class="-mt-3 mb-4 text-muted" data-note>{note}</p>{/if}
+{#if note}{#key refusals}<p class="-mt-3 mb-4 {refusals ? 'refused' : 'text-muted'}" data-note>{note}</p>{/key}{/if}
 
 <div class="grid gap-6 lg:grid-cols-[12.5rem_minmax(0,1fr)_20rem]">
 	<aside class="flex flex-wrap gap-2.5 lg:flex-col" aria-label="Add a field">
 		<span class="w-full text-sm font-bold tracking-wider text-muted">ADD</span>
 		{#each ADD as [kind, name] (kind)}
-			<button class="add {kind === 'group' ? 'group' : ''}" disabled={(kind === 'group' && !!groupOf(selected)) || (kind === 'gps' && hasGps)} onclick={() => add(kind)} data-add-field={kind}>{@render icon(kind, 24)}{name}</button>
+			<button class="add {kind === 'section' ? 'section' : ''}" disabled={kind === 'gps' && hasGps} onclick={() => add(kind)} data-add-field={kind}>{@render icon(kind, 24)}{name}</button>
 		{/each}
 	</aside>
 	<section class="flex min-w-0 flex-col gap-3" aria-label="The form" data-fields>
-		{#each fields as f, i (f)}{@render card(f, fields, i, false)}{/each}
+		{#each fields as f, i (f)}{@render card(f, i, f.kind !== 'section' && fields.slice(0, i).some((s) => s.kind === 'section'))}{/each}
 	</section>
 	<aside class="phone" aria-label="Phone preview" data-preview>
 		<FormView {definition} onsubmit={() => {}} />
@@ -176,9 +172,6 @@
 </div>
 
 <style>
-	:global(:root) {
-		--repeat: #e08a5b;
-	}
 	.title {
 		background: transparent;
 		border: none;
@@ -193,10 +186,10 @@
 	}
 	.req {
 		color: #ff4d55;
-		font-size: 2em;
+		font-size: 1.4em;
 		font-weight: 800;
 		line-height: 0;
-		vertical-align: -0.4em;
+		vertical-align: -0.25em;
 	}
 	/* The browser's white box vanished on the dark card: black box, thick grey rim, gold tick. */
 	.tick {
@@ -231,9 +224,8 @@
 		font-weight: 600;
 		font-size: 1.2rem;
 	}
-	.add.group {
-		border-color: var(--repeat);
-		background: #1e1713;
+	.add.section {
+		border-color: var(--rt-rust);
 	}
 	.add:disabled {
 		opacity: 0.35;
@@ -251,19 +243,17 @@
 		border-color: var(--accent);
 		background: #1f1c14;
 	}
-	.card.group {
-		border-color: var(--repeat);
-		background: #1e1713;
-		padding-bottom: 1rem;
+	.card.section {
+		border-color: var(--rt-rust);
 	}
-	.card.chip {
-		border: none;
-		background: #2a221c;
-		border-radius: 0.75rem;
+	.refused {
+		color: #ff4d55;
+		font-weight: 700;
+		animation: flash 0.9s ease-out;
 	}
-	.card.chip .pick {
-		padding: 0.6rem 1rem;
-		font-size: 1.05rem;
+	@keyframes flash {
+		0%, 40% { background: color-mix(in srgb, #ff4d55 30%, transparent); }
+		100% { background: transparent; }
 	}
 	.pick {
 		display: flex;
@@ -283,14 +273,6 @@
 		outline: none;
 		font-size: 1.3rem;
 		font-weight: 600;
-	}
-	.add-text {
-		padding: 0.45rem 1rem;
-		border: 2px dashed var(--repeat);
-		border-radius: 0.75rem;
-		color: #f0a57e;
-		font-size: 1.05rem;
-		font-weight: 700;
 	}
 	.trash {
 		display: flex;

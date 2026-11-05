@@ -32,12 +32,14 @@ describe('the builder keeps what it does not edit', () => {
 		expect((v2 as Record<string, unknown>).showProgressBar).toBe('top');
 	});
 
-	it('a group carries its add-button text', () => {
-		const { title, fields, rest } = fromDefinition(structuredClone(v1));
-		expect(fields[2].addText).toBe('+ Tree');
-		fields[2].addText = '';
-		const { panelAddText, ...withoutIt } = v1.elements[2];
-		expect(panelAddText).toBe('+ Tree');
-		expect(toDefinition(title, fields, rest).elements[2]).toEqual(withoutIt);
+	it('a section owns the fields after it, and comes back flat', () => {
+		const fields = [blank('text'), { ...blank('section'), key: 'site', label: 'Site', description: 'Where you are' }, blank('number'), blank('date')];
+		fields.forEach((f, i) => (f.key ||= `f${i}`));
+		const d = toDefinition('', fields);
+		expect(d.elements.map((e) => e.name)).toEqual(['f0', 'site']);
+		expect(d.elements[1]).toMatchObject({ type: 'panel', title: 'Site', description: 'Where you are' });
+		expect((d.elements[1].elements as { name: string }[]).map((e) => e.name)).toEqual(['f2', 'f3']);
+		expect(fromDefinition(d).fields.map((f) => f.key)).toEqual(['f0', 'site', 'f2', 'f3']);
+		expect(toDefinition('', fromDefinition(d).fields)).toEqual(d);
 	});
 });
