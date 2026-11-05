@@ -99,14 +99,16 @@
 		file: 'M4 8h3l2-3h6l2 3h3v11H4zM15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z',
 		gps: '',
 		section: '',
-		nested: 'M5.5 4h13A1.5 1.5 0 0 1 20 5.5v3a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 8.5v-3A1.5 1.5 0 0 1 5.5 4zM5.5 14h13a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-3A1.5 1.5 0 0 1 5.5 14z',
+		nested: '',
 	};
 	const input = 'rounded-lg border border-rule bg-surface px-3 py-2';
 	const ghost = 'rounded-lg border border-rule px-3 py-2 text-muted';
 </script>
 
 {#snippet icon(kind: Kind, size = 22)}
-	{#if kind === 'gps' || kind === 'section'}<img src={kind === 'gps' ? 'locate_icon_gold.webp' : 'section_icon.webp'} alt="" style:height="{size}px" style:width="auto" />
+	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon. -->
+	{#if kind === 'section' || kind === 'nested'}<img src="{kind}_icon.webp" alt="" style:height="{Math.round(size * 1.6)}px" style:width="auto" />
+	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{size}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
 {#snippet gpsNote()}<span class="block text-sm text-muted" data-gps-note>Needs location services on to collect field data.</span>{/snippet}
