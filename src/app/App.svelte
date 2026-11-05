@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { brand } from '../brand';
-	import { fresh, ownSignIn, space } from '../data/auth';
+	import { fresh, ownSignIn, signOut, space } from '../data/auth';
 	import { follow, signedIn } from '../data/cloud';
 	import { logoUrl, space as spaceOf, type Space as SpaceRow } from '../company/central';
 	import Companies from '../company/Companies.svelte';
@@ -154,6 +154,9 @@
 				</button>
 			{/if}
 			<input bind:this={pick} type="file" class="hidden" onchange={(e) => openFile(e.currentTarget.files?.[0])} />
+			{/if}
+			{#if ownSignIn && account}
+				<button class="small-btn {space ? 'ml-auto' : ''}" onclick={() => (signOut(), location.reload())} data-sign-out>Sign out</button>
 			{/if}
 		</nav>
 	</header>
