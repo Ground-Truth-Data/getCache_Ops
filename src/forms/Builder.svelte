@@ -111,28 +111,37 @@
 		while (j < fields.length && (whole ? fields[j].kind !== 'section' : depths[j] === 2)) j++;
 		return j - i - 1;
 	};
-	const hidden = $derived.by(() => {
-		let shut = folded.has('head');
-		let group = false;
+	/** The section (or head) each card sits in, and the nested group it sits in, if any. */
+	const owners = $derived.by(() => {
+		let sec: Field | 'head' = 'head';
+		let group: Field | undefined;
 		return fields.map((f, i) => {
-			if (f.kind === 'section') return ((shut = folded.has(f)), false);
-			if (f.kind === 'nested') return ((group = folded.has(f)), shut);
-			return shut || (depths[i] === 2 && group);
+			if (f.kind === 'section') sec = f;
+			if (f.kind === 'nested') group = f;
+			return { sec, group: f.kind === 'nested' || depths[i] === 2 ? group : undefined };
 		});
 	});
+	const hidden = $derived(
+		fields.map((f, i) => f.kind !== 'section' && (folded.has(owners[i].sec) || (depths[i] === 2 && folded.has(owners[i].group!)))),
+	);
+	// The type picker open at the foot of a section or a nested group: where its pick lands.
+	let picking = $state<{ at: number; group: boolean }>();
 	// A section is only a heading: its key is never shown, but SurveyJS still needs one.
 	const keyFor = (kind: Kind) => (kind === 'gps' ? 'gps' : kind === 'section' ? `section_${crypto.randomUUID().slice(0, 8)}` : '');
 	// With a nested group (or one of its questions) picked, a new question lands at the end of that group.
-	function add(kind: Kind) {
+	function add(kind: Kind, at?: number) {
 		const f = { ...blank(kind), key: keyFor(kind), label: kind === 'gps' ? 'GPS' : '' };
-		let at = fields.length;
-		const i = selected && selected !== 'head' ? fields.indexOf(selected) : -1;
-		if (i >= 0 && depths[i] >= 1 && (fields[i].kind === 'nested' || depths[i] === 2) && kind !== 'section' && kind !== 'nested') {
-			at = i + 1;
-			while (depths[at] === 2) at++;
+		if (at === undefined) {
+			at = fields.length;
+			const i = selected && selected !== 'head' ? fields.indexOf(selected) : -1;
+			if (i >= 0 && depths[i] >= 1 && (fields[i].kind === 'nested' || depths[i] === 2) && kind !== 'section' && kind !== 'nested') {
+				at = i + 1;
+				while (depths[at] === 2) at++;
+			}
 		}
 		fields.splice(at, 0, f);
 		selected = fields[at];
+		picking = undefined;
 	}
 
 	async function save(then?: 'publish') {
@@ -184,6 +193,25 @@
 	</button>
 {/snippet}
 
+{#snippet foot(at: number, label: string, group?: Field)}
+	<div class="foot" class:sage={group} style:margin-left="{group ? 4 : 2}rem">
+		{#if picking?.at === at && picking.group === !!group}
+			<div class="picker">
+				<span class="text-sm font-bold">Add to {label}: pick a type</span>
+				<div class="grid grid-cols-2 gap-2 xl:grid-cols-3">
+					{#each ADD.filter(([k]) => !group || (k !== 'section' && k !== 'nested')) as [kind, name] (kind)}
+						<button class="add" disabled={kind === 'gps' && hasGps} onclick={() => add(kind, at)} data-pick-type={kind}>{@render icon(kind, 20)}{name}</button>
+					{/each}
+					<button class="add text-muted" onclick={() => (picking = undefined)}>Cancel</button>
+				</div>
+			</div>
+		{:else}
+			<button class="more" onclick={() => (picking = { at, group: !!group })} data-foot={group ? 'group' : 'section'}><span class="plus">+</span>{group ? 'Add to' : 'Add question to'} {label}</button>
+			{#if group}<button class="done" onclick={() => folded.add(group)} data-done>Done, fold list</button>{/if}
+		{/if}
+	</div>
+{/snippet}
+
 {#snippet card(f: Field, i: number)}
 	{@const on = selected === f}
 	{@const section = f.kind === 'section'}
@@ -221,7 +249,7 @@
 			<button class="pick" onclick={() => (selected = f)} data-pick>
 				{@render icon(f.kind)}
 				{#if section}{@render nth(sectionNo[i])}{/if}
-				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{/if}</span>
+				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{:else if f.kind === 'nested'}<span class="block text-sm font-normal text-muted">Repeating list · each entry asks these questions</span>{/if}</span>
 				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span>&nbsp;required</span>{/if}
 			</button>
 		{/if}
@@ -274,11 +302,14 @@
 				</button>
 			</div>
 		{/if}
+		{#if !folded.has('head') && (!fields.length || fields[0].kind === 'section')}{@render foot(0, title || 'Section 1')}{/if}
 		{#each fields as f, i (f)}
+			{@const { sec, group } = owners[i]}
 			{#if !hidden[i]}{@render card(f, i)}{/if}
-			<!-- The foot of every nested group: a new question lands inside it, as its last. -->
-			{#if (f.kind === 'nested' || depths[i] === 2) && depths[i + 1] !== 2 && !hidden[i] && !(f.kind === 'nested' && folded.has(f))}
-				<button class="inside" style:margin-left="4rem" onclick={() => fields.splice(i + 1, 0, (selected = blank('text')))} data-inside>+ Add a question</button>
+			<!-- Every nested group and every section ends in its own add button: what it adds lands there, as its last. -->
+			{#if group && depths[i + 1] !== 2 && !folded.has(sec) && !folded.has(group)}{@render foot(i + 1, group.label || 'this list', group)}{/if}
+			{#if (i + 1 === fields.length || fields[i + 1].kind === 'section') && !folded.has(sec)}
+				{@render foot(i + 1, sec === 'head' ? title || 'Section 1' : sec.label || `Section ${sectionNo[fields.indexOf(sec)]}`)}
 			{/if}
 		{/each}
 	</section>
@@ -434,13 +465,63 @@
 	.add.nest {
 		border-color: var(--rt-rust);
 	}
-	.inside {
-		padding: 1.1rem;
-		border: 2px dashed var(--rt-sage);
+	/* A section's foot is rust, a nested group's sage: the colour of what it adds. */
+	.foot {
+		--tone: var(--rt-rust);
+		display: flex;
+		gap: 0.6rem;
+		margin-right: 1.5rem;
+	}
+	.foot.sage {
+		--tone: var(--rt-sage);
+	}
+	.more,
+	.done,
+	.picker {
+		border: 2px solid var(--tone);
 		border-radius: 1rem;
-		color: var(--rt-sage);
-		font-weight: 600;
-		text-align: left;
+		background: color-mix(in srgb, var(--tone) 12%, #121212);
+	}
+	.more {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.6rem;
+		min-height: 3.5rem;
+		font-size: 1.1rem;
+		font-weight: 700;
+	}
+	.plus {
+		width: 1.7rem;
+		height: 1.7rem;
+		border-radius: 999px;
+		background: var(--tone);
+		color: #161a10;
+		font-size: 1.3rem;
+		line-height: 1.7rem;
+	}
+	.done {
+		padding: 0 1.1rem;
+		border-color: color-mix(in srgb, var(--tone) 45%, transparent);
+		background: transparent;
+		color: var(--tone);
+		font-weight: 700;
+	}
+	.picker {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 1rem;
+		color: var(--tone);
+	}
+	.picker .add {
+		color: var(--rt-cream, #f3efe6);
+	}
+	.add svg,
+	.add img {
+		flex: none;
 	}
 	.refused {
 		color: #ff4d55;
