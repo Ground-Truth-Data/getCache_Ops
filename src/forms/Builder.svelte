@@ -80,8 +80,13 @@
 		e.preventDefault();
 		if (dragging !== i) (fields.splice(i, 0, ...fields.splice(dragging, 1)), (dragging = i));
 	}
-	// GPS is named by what it is, never by the maker, and a form asks for location once.
+	// GPS is a switch on the whole form, not a question: on, the form carries one GPS field at its top.
 	const hasGps = $derived(fields.some((f) => f.kind === 'gps'));
+	function stamp() {
+		const i = fields.findIndex((f) => f.kind === 'gps');
+		if (i >= 0) fields.splice(i, 1);
+		else fields.unshift({ ...blank('gps'), key: keyFor('GPS', 'gps', fields), label: 'GPS' });
+	}
 	// As in the inbox: the form's head and each section are gold parents, every question is rust, and a nested
 	// group's repeated questions sit a level deeper in sage.
 	// Numbered like Google Forms: the form's head is section 1.
@@ -120,8 +125,7 @@
 	let picking = $state<{ at: number; group: boolean }>();
 	// With a nested group (or one of its questions) picked, a new question lands at the end of that group.
 	function add(kind: Kind, at?: number) {
-		const label = kind === 'gps' ? 'GPS' : '';
-		const f = { ...blank(kind), key: keyFor(label, kind, fields), label };
+		const f = { ...blank(kind), key: keyFor('', kind, fields), label: '' };
 		if (at === undefined) {
 			at = fields.length;
 			const i = selected && selected !== 'head' ? fields.indexOf(selected) : -1;
@@ -155,7 +159,7 @@
 		console.warn(`[forms] ${what} refused: ${note}`, bad.length ? { badKeys: bad } : '');
 	}
 
-	const ADD: [Kind, string][] = [['text', 'Text'], ['number', 'Number'], ['dropdown', 'Choice'], ['checkbox', 'Checkboxes'], ['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['section', 'Section'], ['nested', 'Nested']];
+	const ADD: [Kind, string][] = [['text', 'Text'], ['number', 'Number'], ['dropdown', 'Choice'], ['checkbox', 'Checkboxes'], ['date', 'Date'], ['file', 'Photo'], ['section', 'Section'], ['nested', 'Nested']];
 	const CHOICE = 'M8 6h12M8 12h12M8 18h12M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2';
 	const ICON: Record<Kind, string> = {
 		text: 'M4 7V5h16v2M12 5v14M9 19h6',
@@ -171,17 +175,15 @@
 	};
 	const input = 'rounded-lg border border-rule bg-surface px-3 py-2';
 	// Drawn icons fill a card's fixed height (--row) instead of padding it taller.
-	const TALL: Partial<Record<Kind, number>> = { section: 72, nested: 72, gps: 46 };
+	const TALL: Partial<Record<Kind, number>> = { section: 72, nested: 72 };
 </script>
 
 {#snippet icon(kind: Kind, size = 22, tall?: number)}
 	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon, Nested's three bars tallest. -->
 	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_flow_icon.webp'} alt="" style:height="{tall ?? size * 2}px" style:width="auto" />
-	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{tall ?? Math.round(size * 1.6)}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
 {#snippet nth(n: number)}<span class="nth">Section {n} of {sections}</span>{/snippet}
-{#snippet gpsNote()}<span class="block text-sm text-muted" data-gps-note>Needs location services on to collect field data.</span>{/snippet}
 
 {#snippet fold(key: Field | 'head', n: number, sage = false)}
 	{@const shut = folded.has(key)}
@@ -198,7 +200,7 @@
 				<span class="text-sm font-bold">Add to {label}: pick a type</span>
 				<div class="grid grid-cols-2 gap-2 xl:grid-cols-3">
 					{#each ADD.filter(([k]) => !group || (k !== 'section' && k !== 'nested')) as [kind, name] (kind)}
-						<button class="add" disabled={kind === 'gps' && hasGps} onclick={() => add(kind, at)} data-pick-type={kind}>{@render icon(kind, 20)}{name}</button>
+						<button class="add" onclick={() => add(kind, at)} data-pick-type={kind}>{@render icon(kind, 20)}{name}</button>
 					{/each}
 					<button class="add text-muted" onclick={() => (picking = undefined)}>Cancel</button>
 				</div>
@@ -222,8 +224,7 @@
 		{#if on}
 			<div class="flex flex-wrap items-center gap-3">
 				{@render icon(f.kind, 22, TALL[f.kind])}
-				{#if f.kind === 'gps'}<span class="flex-1 text-xl font-semibold">GPS{@render gpsNote()}</span>
-				{:else}<input class="label" placeholder={KINDS.find(([k]) => k === f.kind)?.[1]} value={f.label} oninput={(e) => relabel(f, e.currentTarget.value)} data-label />{/if}
+				<input class="label" placeholder={KINDS.find(([k]) => k === f.kind)?.[1]} value={f.label} oninput={(e) => relabel(f, e.currentTarget.value)} data-label />
 				{#if !section && f.kind !== 'nested'}
 					<button class="star" class:on={f.required} aria-pressed={f.required} aria-label="Required" title="Required" onclick={() => (f.required = !f.required)} data-required>*</button>
 				{/if}
@@ -232,7 +233,7 @@
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
 				</button>
 			</div>
-			{#if f.kind !== 'gps'}<input class="{input} w-full" placeholder="Description (optional)" bind:value={f.description} data-description />{/if}
+			<input class="{input} w-full" placeholder="Description (optional)" bind:value={f.description} data-description />
 			{#if f.kind === 'number'}
 				<div class="flex flex-wrap items-center gap-3 text-sm">
 					<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
@@ -247,7 +248,7 @@
 			<button class="pick" onclick={() => (selected = f)} data-pick>
 				{@render icon(f.kind, 22, TALL[f.kind])}
 				{#if section}{@render nth(sectionNo[i])}{/if}
-				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.required}<span class="req">*</span>{/if}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{:else if f.kind === 'nested'}<span class="block text-sm font-normal text-muted">Repeating list · each entry asks these questions</span>{/if}</span>
+				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.required}<span class="req">*</span>{/if}{#if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{:else if f.kind === 'nested'}<span class="block text-sm font-normal text-muted">Repeating list · each entry asks these questions</span>{/if}</span>
 			</button>
 		{/if}
 		</div>
@@ -275,10 +276,15 @@
 	<aside class="flex flex-wrap gap-2.5 lg:flex-col" aria-label="Add a field">
 		<span class="w-full text-sm font-bold tracking-wider text-muted">ADD</span>
 		{#each ADD as [kind, name] (kind)}
-			<button class="add {kind === 'section' ? 'section' : kind === 'nested' ? 'nest' : ''}" disabled={kind === 'gps' && hasGps} onclick={() => add(kind)} data-add-field={kind}>{@render icon(kind, 24)}{name}</button>
+			<button class="add {kind === 'section' ? 'section' : kind === 'nested' ? 'nest' : ''}" onclick={() => add(kind)} data-add-field={kind}>{@render icon(kind, 24)}{name}</button>
 		{/each}
 	</aside>
 	<section class="flex min-w-0 flex-col gap-3" aria-label="The form" data-fields>
+		<button class="stamp" class:on={hasGps} role="switch" aria-checked={hasGps} onclick={stamp} data-gps-stamp>
+			<img src="locate_icon_gold.webp" alt="" class="h-10 w-auto" />
+			<span class="flex-1 text-left text-xl font-semibold">GPS stamp<span class="block text-sm font-normal text-muted">{hasGps ? 'Stamped when they save.' : 'Off. No location saved with answers.'}</span></span>
+			<span class="slot"><span class="knob"></span></span>
+		</button>
 		{#if selected === 'head'}
 			<div class="card depth-0 on" data-head>
 				<div class="flex flex-wrap items-center gap-3">
@@ -302,7 +308,7 @@
 		{#if !folded.has('head') && (!fields.length || fields[0].kind === 'section')}{@render foot(0, title || 'Section 1')}{/if}
 		{#each fields as f, i (f)}
 			{@const { sec, group } = owners[i]}
-			{#if !hidden[i]}{@render card(f, i)}{/if}
+			{#if !hidden[i] && f.kind !== 'gps'}{@render card(f, i)}{/if}
 			<!-- Every nested group and every section ends in its own add button: what it adds lands there, as its last. -->
 			{#if group && depths[i + 1] !== 2 && !folded.has(sec) && !folded.has(group)}{@render foot(i + 1, group.label || 'this list', group)}{/if}
 			{#if (i + 1 === fields.length || fields[i + 1].kind === 'section') && !folded.has(sec)}
@@ -340,12 +346,12 @@
 		line-height: 0;
 		vertical-align: -0.25em;
 	}
-	/* The star is the switch: dim when optional, red when required. */
+	/* The star is the switch: gold when optional, red when required. */
 	.star {
 		width: 2.5rem;
 		height: 2.5rem;
 		border-radius: 999px;
-		color: #5a544b;
+		color: var(--accent);
 		font-size: 2rem;
 		font-weight: 800;
 		line-height: 1;
@@ -353,6 +359,45 @@
 	}
 	.star.on {
 		color: #ff4d55;
+	}
+	.stamp {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 0.9rem 1.2rem;
+		border: 2px solid #3a3632;
+		border-radius: 1.1rem;
+		background: #171615;
+	}
+	.stamp.on {
+		border-color: #8c857a;
+		background: #1f1d1a;
+	}
+	.slot {
+		position: relative;
+		flex: none;
+		width: 3.25rem;
+		height: 1.9rem;
+		border-radius: 999px;
+		background: #3a3632;
+		transition: background 0.15s;
+	}
+	.knob {
+		position: absolute;
+		top: 0.2rem;
+		left: 0.2rem;
+		width: 1.5rem;
+		height: 1.5rem;
+		border-radius: 999px;
+		background: #8c857a;
+		transition: left 0.15s;
+	}
+	.stamp.on .slot {
+		background: var(--accent);
+	}
+	.stamp.on .knob {
+		left: 1.55rem;
+		background: #121212;
 	}
 	.add {
 		display: flex;
