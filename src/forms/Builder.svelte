@@ -3,6 +3,7 @@
 	import RowGrip from '../../_rapper/gc/RowGrip.svelte';
 	import type { Snippet } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { blank, fromDefinition, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
 
 	let { store, back, logo, byline, meta }: {
@@ -101,6 +102,24 @@
 		let deep = false;
 		return fields.map((f) => (f.kind === 'section' ? ((deep = false), 0) : f.kind === 'nested' ? ((deep = true), 1) : deep ? 2 : 1));
 	});
+	// The head, a section or a nested group folds shut behind its chevron, as in the inbox.
+	const folded = new SvelteSet<Field | 'head'>();
+	/** How many cards the fold at `i` holds; -1 is the head. */
+	const held = (i: number) => {
+		const whole = i < 0 || fields[i].kind === 'section';
+		let j = i + 1;
+		while (j < fields.length && (whole ? fields[j].kind !== 'section' : depths[j] === 2)) j++;
+		return j - i - 1;
+	};
+	const hidden = $derived.by(() => {
+		let shut = folded.has('head');
+		let group = false;
+		return fields.map((f, i) => {
+			if (f.kind === 'section') return ((shut = folded.has(f)), false);
+			if (f.kind === 'nested') return ((group = folded.has(f)), shut);
+			return shut || (depths[i] === 2 && group);
+		});
+	});
 	// A section is only a heading: its key is never shown, but SurveyJS still needs one.
 	const keyFor = (kind: Kind) => (kind === 'gps' ? 'gps' : kind === 'section' ? `section_${crypto.randomUUID().slice(0, 8)}` : '');
 	// With a nested group (or one of its questions) picked, a new question lands at the end of that group.
@@ -157,6 +176,14 @@
 {#snippet nth(n: number)}<span class="nth">Section {n} of {sections}</span>{/snippet}
 {#snippet gpsNote()}<span class="block text-sm text-muted" data-gps-note>Needs location services on to collect field data.</span>{/snippet}
 
+{#snippet fold(key: Field | 'head', n: number, sage = false)}
+	{@const shut = folded.has(key)}
+	<button class="fold" class:sage aria-expanded={!shut} aria-label={shut ? 'Open' : 'Fold'} onclick={() => (shut ? folded.delete(key) : folded.add(key))} data-fold>
+		<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" style:transform="rotate({shut ? 0 : 90}deg)"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+		{#if shut}<span class="count">{n}</span>{/if}
+	</button>
+{/snippet}
+
 {#snippet card(f: Field, i: number)}
 	{@const on = selected === f}
 	{@const section = f.kind === 'section'}
@@ -164,6 +191,8 @@
 	<div class="rt-row-track rt-row-track--grip track" class:rt-row-track--dragging={dragging === i} style:margin-left="{depths[i] * 2}rem"
 		role="listitem" ondragover={(e) => over(e, i)} ondrop={(e) => e.preventDefault()}>
 	<div class="card depth-{depths[i]} {on ? 'on' : ''}" data-build={f.key} data-kind={f.kind} data-depth={depths[i]}>
+		{#if section || f.kind === 'nested'}{@render fold(f, held(i), f.kind === 'nested')}{/if}
+		<div class="body">
 		{#if on}
 			<div class="flex flex-wrap items-center gap-3">
 				{@render icon(f.kind)}
@@ -196,6 +225,7 @@
 				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span>&nbsp;required</span>{/if}
 			</button>
 		{/if}
+		</div>
 	</div>
 	<RowGrip attach={grip(i)} label="Drag to move" dragging={dragging === i} />
 	</div>
@@ -227,6 +257,7 @@
 		{#if selected === 'head'}
 			<div class="card depth-0 on" data-head>
 				<div class="flex flex-wrap items-center gap-3">
+					{@render fold('head', held(-1))}
 					<img src="plugin_gold.webp" alt="" class="h-8 w-8 object-contain" />
 					<input class="label" placeholder="Name" bind:value={title} />
 					{@render nth(1)}
@@ -234,16 +265,19 @@
 				<input class="{input} w-full" placeholder="Description (optional)" bind:value={rest.description} data-form-description />
 			</div>
 		{:else}
-			<button class="card depth-0 head pick" onclick={() => (selected = 'head')} data-head>
-				<img src="plugin_gold.webp" alt="" class="h-8 w-8 object-contain" />
-				<span class="flex-1 text-left">{title || 'Name'}{#if rest.description}<span class="block text-sm font-normal text-muted">{rest.description}</span>{/if}</span>
-				{@render nth(1)}
-			</button>
+			<div class="card depth-0 head">
+				{@render fold('head', held(-1))}
+				<button class="pick" onclick={() => (selected = 'head')} data-head>
+					<img src="plugin_gold.webp" alt="" class="h-8 w-8 object-contain" />
+					<span class="flex-1 text-left">{title || 'Name'}{#if rest.description}<span class="block text-sm font-normal text-muted">{rest.description}</span>{/if}</span>
+					{@render nth(1)}
+				</button>
+			</div>
 		{/if}
 		{#each fields as f, i (f)}
-			{@render card(f, i)}
+			{#if !hidden[i]}{@render card(f, i)}{/if}
 			<!-- The foot of every nested group: a new question lands inside it, as its last. -->
-			{#if (f.kind === 'nested' || depths[i] === 2) && depths[i + 1] !== 2}
+			{#if (f.kind === 'nested' || depths[i] === 2) && depths[i + 1] !== 2 && !hidden[i] && !(f.kind === 'nested' && folded.has(f))}
 				<button class="inside" style:margin-left="4rem" onclick={() => fields.splice(i + 1, 0, (selected = blank('text')))} data-inside>+ Add a question</button>
 			{/if}
 		{/each}
@@ -330,6 +364,47 @@
 	}
 	.track {
 		border-radius: 1rem;
+	}
+	.card[data-build] {
+		flex-direction: row;
+	}
+	.body {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.fold {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding-left: 1rem;
+		color: var(--accent);
+	}
+	.card.on .fold {
+		padding-left: 0;
+	}
+	.fold.sage {
+		color: var(--rt-sage);
+	}
+	.fold svg {
+		flex: none;
+		transition: transform 0.15s;
+	}
+	.count {
+		min-width: 1.6rem;
+		height: 1.6rem;
+		padding: 0 0.4rem;
+		border-radius: 999px;
+		background: var(--accent);
+		color: #161a10;
+		font-size: 0.9rem;
+		font-weight: 800;
+		line-height: 1.6rem;
+	}
+	.fold.sage .count {
+		background: var(--rt-sage);
 	}
 	.card.on {
 		padding: 1rem 1.25rem;
