@@ -21,7 +21,7 @@
 
 	const pages = [...(space ? [['company', 'Organization']] : []), ['home', 'Home'], ['reports', 'Reports'], ['plugins', 'Plugins'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
 	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
-	// Organizations sits under Advanced for now: most people never need it (Chris, 5 Nov).
+	// Organizations has no tab or tile: Chris parked companies (5 Nov); invite links still land here.
 	const orgsPage = $derived(parts[0] === 'organizations');
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/')) ?? pages[0]);
 	const plugin = $derived(customs.find((p) => page[0] === `p/${p.id}`));
@@ -179,7 +179,6 @@
 				<p class="mb-4 text-sm text-muted" data-warning>Raw tables change between versions. Reports are the stable way to build.</p>
 				{#if ops}<Custom {ops} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if page[0] === 'advanced'}
-				<a class="tile mb-10 max-w-sm" href="#/organizations" data-orgs-tile><img src="org_gold.webp" alt="" class="h-16" />Organizations</a>
 				{#if ops}<Advanced {ops} />{:else}<h1 class="mb-6 font-display text-3xl text-(--accent)">SQL Queries</h1><p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if ops && plugin}
 				<!-- Each copy is a new ops: a live copy keeps one `source`, so keying on it froze the first. -->
