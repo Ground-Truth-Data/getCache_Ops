@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ownSignIn, signOut } from '../data/auth';
-	import { ask, check, create, isApprover, mine, myOrgs, remove, spaceUrl, type Org } from './central';
+	import { check, create, isApprover, mine, myOrgs, remove, spaceUrl, type Org } from './central';
 	import SignIn from './SignIn.svelte';
 
 	let { me, signedInNow }: { me: { authId: string } | null; signedInNow: () => void } = $props();
@@ -41,8 +41,8 @@
 		{#each list as m (m.orgKey)}
 			<li class="flex flex-wrap items-center gap-3">
 				{#if m.orgSpace}<a class="font-display text-xl underline" href={spaceUrl(m.orgSpace.slug)}>{m.orgSpace.name}</a><span class="text-sm text-muted">{m.orgSpace.status}</span>{:else}<span class="font-display text-xl">A company not open yet</span>{/if}
-				<span class="text-sm text-muted">{m.role === 'asked' ? 'asked to join' : m.role}</span>
-				<button class="text-sm text-muted underline" onclick={act(() => remove(m.orgKey, m.authId))} data-leave>{m.role === 'asked' ? 'Withdraw' : 'Leave'}</button>
+				<span class="text-sm text-muted">{m.role === 'requested' ? 'request sent' : m.role}</span>
+				<button class="text-sm text-muted underline" onclick={act(() => remove(m.orgKey, m.authId))} data-leave>{m.role === 'requested' ? 'Withdraw' : 'Leave'}</button>
 			</li>
 		{:else}
 			<li class="text-muted">You are in no company yet.</li>
@@ -50,17 +50,15 @@
 	</ul>
 
 	<h2 class="mb-1 font-display text-xl">Your organizations in Get Cache</h2>
-	<p class="mb-3 text-sm text-muted">Make one a company space: it gets its own web address, and crew join it from a link.</p>
+	<p class="mb-3 text-sm text-muted">Make one a company space: it gets its own web address, and people ask to join it from its private invite link.</p>
 	<ul class="flex max-w-xl flex-col gap-3" data-orgs>
 		{#each orgs as o (o.orgKey)}
 			<li class="flex flex-col gap-1" data-org={o.orgName}>
 				<span class="font-display text-lg">{o.orgName || 'Unnamed organization'}</span>
 				{#if o.found?.refused}
 					<span class="text-sm text-muted" data-refused>{o.found.refused}</span>
-				{:else if o.found?.takenKey}
-					<span class="text-sm text-muted" data-taken>{o.found.takenName} already has that address.
-						<button class="underline" onclick={act(() => ask(o.found!.takenKey!, me.authId))} data-ask-join>Ask to join</button>
-					</span>
+				{:else if o.found?.taken}
+					<span class="text-sm text-muted" data-taken>That name is taken.</span>
 				{:else if o.found?.slug}
 					<span class="text-sm text-muted" data-slug>Its address: {spaceUrl(o.found.slug)}</span>
 					<button class="rt-fancy-btn self-start rounded-lg px-4 py-1 font-display" onclick={act(() => create(o.orgKey))} data-make>Make it a company space</button>

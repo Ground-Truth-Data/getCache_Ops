@@ -5,12 +5,11 @@ import { session } from '../data/auth';
 
 const env = import.meta.env;
 
-export type Role = 'admin' | 'crew' | 'follower' | 'asked';
+export type Role = 'admin' | 'member' | 'requested';
 export type Org = { orgKey: string; orgName: string };
 export type OrgSpace = { orgKey: string; name: string; slug: string; status: 'draft' | 'approved' | 'rejected'; logo: string | null };
 export type Space = Omit<OrgSpace, 'slug'> & { role: Role | null };
 export type Member = { orgKey: string; authId: string; role: Role; email: string; joinedAt: string };
-export type Invite = { token: string; createdAt: string };
 
 async function call<T>(path: string, method = 'GET', body?: unknown, profile = 'ops'): Promise<T> {
 	const res = await fetch(`${env.PUBLIC_GC_RT_supabase_address}/rest/v1/${path}`, {
@@ -41,21 +40,21 @@ export const logoUrl = (c: { logo: string | null }) => (c.logo ? `${env.PUBLIC_G
 /** The organizations this planter has in Get Cache, as Central mirrors their phone. */
 export const myOrgs = (authId: string) => call<Org[]>(`orgTable?ownerId=eq.${authId}&select=orgKey,orgName&order=orgName`, 'GET', undefined, 'getCacheMobile');
 
-/** The address a name would get, and who already holds it or one like it, or why the name is refused. */
-export const check = (name: string) => one(call<{ slug: string | null; takenKey: string | null; takenName: string | null; refused: string | null }[]>('rpc/check', 'POST', { name }));
+/** The address a name would get, whether it or a look-alike is taken (never by whom), or why it is refused. */
+export const check = (name: string) => one(call<{ slug: string | null; taken: boolean | null; refused: string | null }[]>('rpc/check', 'POST', { name }));
 export const create = (orgKey: string) => call('orgSpace', 'POST', { orgKey });
 export const space = (slug: string) => one(call<Space[]>('rpc/space', 'POST', { slug }));
+/** Opening the invite link signed in sends a join request; an admin approves it. */
 export const join = (token: string) => call<string>('rpc/join', 'POST', { token });
-export const ask = (orgKey: string, authId: string) => call('orgMember', 'POST', { orgKey, authId, role: 'asked' });
 
 export const mine = (authId: string) => call<(Member & { orgSpace: OrgSpace | null })[]>(`orgMember?authId=eq.${authId}&select=*,orgSpace(${SPACE})&order=joinedAt`);
 export const members = (orgKey: string) => call<Member[]>(`orgMember?orgKey=eq.${orgKey}&order=joinedAt`);
 export const setRole = (orgKey: string, authId: string, role: Role) => call(`orgMember?orgKey=eq.${orgKey}&authId=eq.${authId}`, 'PATCH', { role });
 export const remove = (orgKey: string, authId: string) => call(`orgMember?orgKey=eq.${orgKey}&authId=eq.${authId}`, 'DELETE');
 
-export const invites = (orgKey: string) => call<Invite[]>(`orgInvite?orgKey=eq.${orgKey}&order=createdAt`);
-export const invite = (orgKey: string) => call('orgInvite', 'POST', { orgKey });
-export const withdraw = (token: string) => call(`orgInvite?token=eq.${token}`, 'DELETE');
+export const inviteToken = async (orgKey: string) => (await one(call<{ token: string }[]>(`orgInvite?orgKey=eq.${orgKey}&select=token`)))?.token;
+/** A new link; the old one stops working at once. */
+export const resetInvite = (orgKey: string) => call<string>('rpc/reset_invite', 'POST', { org: orgKey });
 
 export const isApprover = async (authId: string) => (await call<unknown[]>(`approver?authId=eq.${authId}`)).length > 0;
 export const drafts = () => call<(OrgSpace & { createdAt: string })[]>(`orgSpace?status=eq.draft&select=${SPACE},createdAt&order=createdAt`);
