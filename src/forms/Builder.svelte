@@ -61,6 +61,12 @@
 	const move = (i: number, by: number) => fields.splice(i + by, 0, ...fields.splice(i, 1));
 	// GPS is named by what it is, never by the maker, and a form asks for location once.
 	const hasGps = $derived(fields.some((f) => f.kind === 'gps'));
+	// As in the inbox: the form's head and each section are gold parents, what they hold is rust, and a nested
+	// group's own fields sit one level deeper in sage.
+	const depths = $derived.by(() => {
+		let deep = false;
+		return fields.map((f) => (f.kind === 'section' ? ((deep = false), 0) : f.kind === 'nested' ? ((deep = true), 1) : deep ? 2 : 1));
+	});
 	function add(kind: Kind) {
 		fields.push(kind === 'gps' ? { ...blank(kind), key: 'gps', label: 'GPS' } : blank(kind));
 		selected = fields.at(-1);
@@ -81,7 +87,7 @@
 		}
 	}
 
-	const ADD: [Kind, string][] = [['text', 'Text'], ['number', 'Number'], ['dropdown', 'Choice'], ['checkbox', 'Checkboxes'], ['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['section', 'Section']];
+	const ADD: [Kind, string][] = [['text', 'Text'], ['number', 'Number'], ['dropdown', 'Choice'], ['checkbox', 'Checkboxes'], ['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['section', 'Section'], ['nested', 'Nested']];
 	const CHOICE = 'M8 6h12M8 12h12M8 18h12M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2';
 	const ICON: Record<Kind, string> = {
 		text: 'M4 7V5h16v2M12 5v14M9 19h6',
@@ -93,6 +99,7 @@
 		file: 'M4 8h3l2-3h6l2 3h3v11H4zM15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z',
 		gps: '',
 		section: '',
+		nested: 'M5.5 4h13A1.5 1.5 0 0 1 20 5.5v3a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 8.5v-3A1.5 1.5 0 0 1 5.5 4zM5.5 14h13a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-3A1.5 1.5 0 0 1 5.5 14z',
 	};
 	const input = 'rounded-lg border border-rule bg-surface px-3 py-2';
 	const ghost = 'rounded-lg border border-rule px-3 py-2 text-muted';
@@ -104,15 +111,16 @@
 {/snippet}
 {#snippet gpsNote()}<span class="block text-sm text-muted" data-gps-note>Needs location services on to collect field data.</span>{/snippet}
 
-{#snippet card(f: Field, i: number, inSection: boolean)}
+{#snippet card(f: Field, i: number)}
 	{@const on = selected === f}
 	{@const section = f.kind === 'section'}
-	<div class="card {on ? 'on' : ''} {section ? 'section' : ''} {inSection ? 'nested ml-8' : ''}" data-build={f.key} data-kind={f.kind}>
+	<div class="card depth-{depths[i]} {on ? 'on' : ''}" data-build={f.key} data-kind={f.kind} data-depth={depths[i]}>
 		{#if on}
 			<div class="flex flex-wrap items-center gap-3">
 				{@render icon(f.kind)}
 				{#if f.kind === 'gps'}<span class="flex-1 text-xl font-semibold">GPS{@render gpsNote()}</span>
 				{:else}<input class="label" placeholder={KINDS.find(([k]) => k === f.kind)?.[1]} value={f.label} oninput={(e) => relabel(f, e.currentTarget.value)} data-label />{/if}
+				{#if f.kind === 'nested'}<input class="{input} w-36 font-bold" placeholder="+ Add" title="The add button's text on the phone" bind:value={f.addText} data-add-text />{/if}
 				<button class="trash" onclick={() => (fields.splice(i, 1), (selected = undefined))} aria-label="Remove field" data-remove-field>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
 				</button>
@@ -120,7 +128,7 @@
 			{#if f.kind !== 'gps'}<input class="{input} w-full" placeholder="Description (optional)" bind:value={f.description} data-description />{/if}
 			<div class="flex flex-wrap items-center gap-3 text-sm">
 				{#if f.kind !== 'gps'}<input class="{input} w-36 font-mono" placeholder="key" bind:value={f.key} disabled={locked.has(f.key)} title={locked.has(f.key) ? 'Published: this key is locked' : 'The column name in reports'} data-key />{/if}
-				{#if !section}<label class="flex items-center gap-2"><input type="checkbox" class="tick" bind:checked={f.required} data-required /><span class="text-base"><span class="req">*</span>&nbsp;required</span></label>{/if}
+				{#if !section && f.kind !== 'nested'}<label class="flex items-center gap-2"><input type="checkbox" class="tick" bind:checked={f.required} data-required /><span class="text-base"><span class="req">*</span>&nbsp;required</span></label>{/if}
 				{#if f.kind === 'number'}
 					<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
 					<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
@@ -137,6 +145,7 @@
 				{@render icon(f.kind)}
 				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{/if}</span>
 				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span>&nbsp;required</span>{/if}
+				{#if f.kind === 'nested'}<span class="add-text">{f.addText || '+ Add'}</span>{/if}
 			</button>
 		{/if}
 	</div>
@@ -160,11 +169,15 @@
 	<aside class="flex flex-wrap gap-2.5 lg:flex-col" aria-label="Add a field">
 		<span class="w-full text-sm font-bold tracking-wider text-muted">ADD</span>
 		{#each ADD as [kind, name] (kind)}
-			<button class="add {kind === 'section' ? 'section' : ''}" disabled={kind === 'gps' && hasGps} onclick={() => add(kind)} data-add-field={kind}>{@render icon(kind, 24)}{name}</button>
+			<button class="add {kind === 'section' ? 'section' : kind === 'nested' ? 'nest' : ''}" disabled={kind === 'gps' && hasGps} onclick={() => add(kind)} data-add-field={kind}>{@render icon(kind, 24)}{name}</button>
 		{/each}
 	</aside>
 	<section class="flex min-w-0 flex-col gap-3" aria-label="The form" data-fields>
-		{#each fields as f, i (f)}{@render card(f, i, f.kind !== 'section' && fields.slice(0, i).some((s) => s.kind === 'section'))}{/each}
+		<button class="card depth-0 head pick" onclick={() => document.querySelector<HTMLInputElement>('[data-title]')?.focus()} data-head>
+			<img src="plugin_gold.webp" alt="" class="h-6 w-6 object-contain" />
+			<span class="flex-1 text-left">{title || 'Name'}</span>
+		</button>
+		{#each fields as f, i (f)}{@render card(f, i)}{/each}
 	</section>
 	<aside class="phone" aria-label="Phone preview" data-preview>
 		<FormView {definition} onsubmit={() => {}} />
@@ -243,12 +256,33 @@
 		border-color: var(--accent);
 		background: #1f1c14;
 	}
-	/* As in the inbox: a section heads in gold, the fields it holds are rust. */
-	.card.section {
+	.card.head {
+		flex-direction: row;
+	}
+	.card.depth-0 {
 		border-color: var(--accent);
 	}
-	.card.nested:not(.on) {
+	.card.depth-1 {
+		margin-left: 2rem;
+	}
+	.card.depth-2 {
+		margin-left: 4rem;
+	}
+	.card.depth-1:not(.on) {
 		border-color: var(--rt-rust);
+	}
+	.card.depth-2:not(.on) {
+		border-color: var(--rt-sage);
+	}
+	.add.nest {
+		border-color: var(--rt-rust);
+	}
+	.add-text {
+		padding: 0.3rem 0.8rem;
+		border: 2px dashed var(--rt-sage);
+		border-radius: 0.6rem;
+		color: var(--rt-sage);
+		font-size: 1rem;
 	}
 	.refused {
 		color: #ff4d55;
