@@ -66,7 +66,13 @@
 	const keyOf = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^[^a-z]+|_+$/g, '').slice(0, 40);
 	function relabel(f: Field, label: string) {
 		if (f.kind === 'section') f.key ||= keyFor('section');
-		else if (!locked.has(f.key) && (!f.key || f.key === keyOf(f.label))) f.key = keyOf(label);
+		else if (!locked.has(f.key)) {
+			// The key is never shown: it follows the title until published, and two same titles never share one.
+			const base = keyOf(label);
+			let k = base;
+			for (let n = 2; fields.some((o) => o !== f && o.key === k); n++) k = `${base}_${n}`;
+			f.key = k;
+		}
 		f.label = label;
 	}
 	// Dragged by its grip, a card takes each place it passes: where it lands decides its section and group.
@@ -144,7 +150,7 @@
 
 {#snippet icon(kind: Kind, size = 22)}
 	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon, Nested's three bars tallest. -->
-	{#if kind === 'section' || kind === 'nested'}<img src="{kind}_icon.webp" alt="" style:height="{Math.round(size * (kind === 'nested' ? 2 : 1.6))}px" style:width="auto" />
+	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_icon.webp'} alt="" style:height="{Math.round(size * (kind === 'nested' ? 2 : 1.6))}px" style:width="auto" />
 	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{Math.round(size * 1.6)}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
@@ -169,14 +175,15 @@
 				</button>
 			</div>
 			{#if f.kind !== 'gps'}<input class="{input} w-full" placeholder="Description (optional)" bind:value={f.description} data-description />{/if}
-			<div class="flex flex-wrap items-center gap-3 text-sm">
-				{#if f.kind !== 'gps' && !section}<input class="{input} w-36 font-mono" placeholder="key" bind:value={f.key} disabled={locked.has(f.key)} title={locked.has(f.key) ? 'Published: this key is locked' : 'The column name in reports'} data-key />{/if}
-				{#if !section && f.kind !== 'nested'}<label class="flex items-center gap-2"><input type="checkbox" class="tick" bind:checked={f.required} data-required /><span class="text-base"><span class="req">*</span>&nbsp;required</span></label>{/if}
-				{#if f.kind === 'number'}
-					<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
-					<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
-				{/if}
-			</div>
+			{#if !section && f.kind !== 'nested'}
+				<div class="flex flex-wrap items-center gap-3 text-sm">
+					<label class="flex items-center gap-2"><input type="checkbox" class="tick" bind:checked={f.required} data-required /><span class="text-base"><span class="req">*</span>&nbsp;required</span></label>
+					{#if f.kind === 'number'}
+						<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
+						<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
+					{/if}
+				</div>
+			{/if}
 			{#if f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox'}
 				<textarea class="{input} w-full max-w-sm text-base" rows="4" placeholder="One choice per line" value={f.choices.join('\n')}
 					oninput={(e) => (f.choices = e.currentTarget.value.split('\n').map((c) => c.trim()).filter(Boolean))} data-choices></textarea>
