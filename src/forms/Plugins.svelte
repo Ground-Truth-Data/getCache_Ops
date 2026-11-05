@@ -3,6 +3,7 @@
 	import SignIn from '../company/SignIn.svelte';
 	import Builder from './Builder.svelte';
 	import Report from './Report.svelte';
+	import Response from './Response.svelte';
 	import { session } from '../data/auth';
 	import InboxChrome from '../../_rapper/gc/InboxChrome.svelte';
 	import RowGrip from '../../_rapper/gc/RowGrip.svelte';
@@ -10,7 +11,7 @@
 	import { type RowDrag, rowDragHandle, rowShift } from '../../_rapper/gc/rowDrag';
 	import { addLink, copyPlugin, live, myPlugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
 
-	let { me, sub, id, signedInNow }: { me: { authId: string } | null; sub?: string; id?: string; signedInNow: () => void } = $props();
+	let { me, sub, id, answer, signedInNow }: { me: { authId: string } | null; sub?: string; id?: string; answer?: string; signedInNow: () => void } = $props();
 
 	let mine = $state<PluginRow[][]>([]);
 	let inbox = $state<Awaited<ReturnType<typeof received>>>([]);
@@ -134,8 +135,10 @@
 	{/snippet}
 	{#key id}<Builder {store} back={['#/plugins', 'Plugins']} logo={logoPick} {byline} meta={logo} />{/key}
 	{#if asking}<div class="mt-6" data-publish-signin><SignIn done={() => ((asking = false), signedInNow())} /></div>{/if}
+{:else if sub === 'answers' && id && answer}
+	<Response load={() => receivedAnswers(id).then((a) => ((photos = a.photos), a))} id={answer} back={[`#/plugins/answers/${id}`, 'Answers']} photo={(k) => photos.get(k)} />
 {:else if sub === 'answers' && id}
-	<Report load={() => receivedAnswers(id).then((a) => ((photos = a.photos), a))} back={['#/plugins', 'Plugins']} photo={(k) => photos.get(k)} />
+	<Report load={() => receivedAnswers(id).then((a) => ((photos = a.photos), a))} back={['#/plugins', 'Plugins']} photo={(k) => photos.get(k)} open={(a) => `#/plugins/answers/${id}/${a}`} />
 {:else if sub === 'share' && id}
 	{@const link = addLink(id)}
 	<header class="mb-8 flex flex-wrap items-center gap-4 border-b border-rule pb-5 print:hidden">
@@ -194,7 +197,7 @@
 				{#snippet glyph()}<img src={p.logo ?? 'plugin_gold.webp'} alt="" class="rt-row__glyph-img" />{/snippet}
 				{#snippet subtitle()}
 					{#if p.version}<span class="rt-row__badge rt-row__badge--gold">{p.version}</span>{/if}
-					<span class="rt-row__num">{[`Made by ${p.maker}`, p.answers && `${p.answers} answers`].filter(Boolean).join(' · ')}</span>
+					<span class="rt-row__num">Made by {p.maker}</span>
 				{/snippet}
 				{#snippet end()}
 					<span class="rt-row__cell rt-row__cell--chevron" aria-hidden="true"
@@ -202,6 +205,14 @@
 					>
 				{/snippet}
 			</RowShell>
+			{#if p.answers}
+				<!-- Beside the row, not in it: the row is already a link, and one link can't hold another. -->
+				<a
+					class="absolute top-1/2 right-16 z-1 -translate-y-1/2 rounded-full bg-(--rt-sage) px-3 py-1 text-sm font-extrabold text-[#161a10] hover:brightness-110"
+					href="#/plugins/answers/{p.pluginId}"
+					data-answers-link>{p.answers} {p.answers === 1 ? 'answer' : 'answers'}</a
+				>
+			{/if}
 			<RowGrip
 				label="Drag to reorder"
 				dragging={moving}

@@ -110,11 +110,11 @@ export const CENTRAL_KEY = /^[a-zA-Z][a-zA-Z0-9_]{0,62}$/;
 
 /** Every key a definition holds, with its label, and the repeating group it sits in. */
 export const keys = (d: Definition) => {
-	const walk = (els: El[], group?: string): { key: string; label: string; group?: string }[] =>
+	const walk = (els: El[], group?: string): { key: string; label: string; type: string; group?: string }[] =>
 		els.flatMap((e) =>
 			e.type === 'panel'
 				? walk(e.elements as El[], group)
-				: [{ key: e.name, label: e.title ?? e.name, group }, ...(e.type === 'paneldynamic' ? walk(e.templateElements as El[], e.name) : [])],
+				: [{ key: e.name, label: e.title ?? e.name, type: e.type, group }, ...(e.type === 'paneldynamic' ? walk(e.templateElements as El[], e.name) : [])],
 		);
 	return walk(d.elements);
 };

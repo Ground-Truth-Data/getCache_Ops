@@ -171,7 +171,7 @@
 		{:else if page[0] === 'company'}
 			<Space slug={space!} {company} me={account} token={parts[0] === 'join' ? parts[1] : undefined} reload={loadSpace} {signedInNow} />
 		{:else if page[0] === 'plugins'}
-			<Plugins me={account} sub={parts[1]} id={parts[2]} {signedInNow} />
+			<Plugins me={account} sub={parts[1]} id={parts[2]} answer={parts[3]} {signedInNow} />
 		{:else if page[0] === 'home' || page[0] === 'reports'}
 			{#key page[0]}<Reports {ops} page={page[0]} slug={parts[1]} />{/key}
 		{:else}
