@@ -39,6 +39,9 @@ export async function myPlugins(authId?: string): Promise<PluginRow[][]> {
 	return [...ids].map((id) => withDraft(rows.filter((r) => r.pluginId === id), id)).filter((v) => v.length);
 }
 
+/** A plugin's newest published version, as a phone adding it would get it. */
+export const live = async (pluginId: string) => (await published([pluginId])).at(-1);
+
 /** What a phone opens to add the plugin: the same link is in its QR code. */
 export const addLink = (pluginId: string) => `${new URL(appHome).origin}/app/plugin?add=${pluginId}`;
 
@@ -46,6 +49,7 @@ export const addLink = (pluginId: string) => `${new URL(appHome).origin}/app/plu
 export function pluginStore(pluginId: string, meta: () => { madeBy: string; logo: string | null }, loaded: (rows: PluginRow[]) => void): Store {
 	let id = pluginId === 'new' ? undefined : pluginId;
 	return {
+		autosave: true,
 		async load() {
 			const rows = id ? withDraft(await published([id]), id) : [];
 			loaded(rows);

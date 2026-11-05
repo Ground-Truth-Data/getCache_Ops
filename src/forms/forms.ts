@@ -71,7 +71,13 @@ export const keys = (d: Definition) =>
 
 /** One version as the builder and the report see it, whoever keeps it: a company form or a plugin. */
 export type Version = { id: string; version: number; definition: Definition; publishedAt: string | null };
-export type Store = { load: () => Promise<Version[]>; save: (definition: Definition, draftId?: string) => Promise<unknown>; publish: (id: string) => Promise<unknown> };
+/** `autosave`: saving costs nothing (kept in this browser), so every change is saved and there is no Save button. */
+export type Store = {
+	load: () => Promise<Version[]>;
+	save: (definition: Definition, draftId?: string) => Promise<unknown>;
+	publish: (draftId?: string) => Promise<unknown>;
+	autosave?: boolean;
+};
 export type Answers = { versions: Version[]; answers: Answer[]; rows: AnswerRow[] };
 
 export function orgStore(orgKey: string, formId: string): Store {
@@ -83,7 +89,7 @@ export function orgStore(orgKey: string, formId: string): Store {
 			const made = await saveDraft(orgKey, definition, id, draftId);
 			if (!id && Array.isArray(made)) history.replaceState(null, '', `#/company/form/${(id = made[0].formId)}`);
 		},
-		publish,
+		publish: (draftId) => publish(draftId!),
 	};
 }
 export async function orgAnswers(orgKey: string, formId: string): Promise<Answers> {
