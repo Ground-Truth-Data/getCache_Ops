@@ -128,7 +128,8 @@
 				<div class="mr-2 flex sm:mr-4">
 					{#each brand.logos as src, i (src)}
 						<a href={i ? '#/' : `${HOME}/app/menu`} class="rounded-xl py-1 transition-colors hover:bg-white/10 {i ? 'pr-2' : 'pl-2'}" title={i ? 'Ops home' : 'Back to Get Cache'}>
-							<img {src} alt={i ? 'Ops' : 'Get Cache'} class="h-11 sm:h-14" />
+							<!-- The letters are 57% of the art, set low under the dragonflies: this height and lift line them up with a nav pill. -->
+							<img {src} alt={i ? 'Ops' : 'Get Cache'} class="relative -top-[7px] h-[68px]" />
 						</a>
 					{/each}
 				</div>
