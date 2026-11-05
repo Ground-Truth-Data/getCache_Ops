@@ -99,7 +99,14 @@ const flatAll = (els: El[]): Field[] =>
 	});
 /** The fields the builder edits, each group's own fields right after it, and `rest`: the survey's own settings,
  *  written back untouched. */
-export const fromDefinition = ({ title, elements, ...rest }: Definition) => ({ title: title ?? '', fields: flatAll(elements), rest });
+export function fromDefinition({ title, elements, ...rest }: Definition) {
+	const fields = flatAll(elements);
+	// A draft kept in this browser before keys were born on every field would be refused by Central on each save.
+	for (const f of fields) if (!CENTRAL_KEY.test(f.key)) f.key = keyFor(f.label, f.kind, fields, f);
+	return { title: title ?? '', fields, rest };
+}
+/** Central's own rule for a key (ops.form_refused). */
+export const CENTRAL_KEY = /^[a-zA-Z][a-zA-Z0-9_]{0,62}$/;
 
 /** Every key a definition holds, with its label, and the repeating group it sits in. */
 export const keys = (d: Definition) => {

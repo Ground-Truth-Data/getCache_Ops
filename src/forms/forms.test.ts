@@ -51,6 +51,10 @@ describe('the builder keeps what it does not edit', () => {
 		expect(keyFor('123 Trees!', 'number', [])).toBe('trees');
 		for (const kind of ['text', 'section', 'gps', 'nested'] as const) expect(keyFor('', kind, [])).toMatch(central);
 	});
+	it('a draft kept before keys were born gets one on load', () => {
+		const d: Definition = { elements: [{ type: 'text', name: '', title: 'Tree height' }, { type: 'panel', name: '' }, { type: 'gps', name: '' }] };
+		expect(fromDefinition(d).fields.map((f) => f.key)).toEqual(['tree_height', expect.stringMatching(/^section_/), 'gps']);
+	});
 	it('a question saved after a nested group stays out of it', () => {
 		const d: Definition = { elements: [{ type: 'paneldynamic', name: 'trees', templateElements: [{ type: 'text', name: 'species' }] }, { type: 'text', name: 'weather' }] };
 		const { fields } = fromDefinition(d);

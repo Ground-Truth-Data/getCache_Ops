@@ -4,7 +4,7 @@
 	import type { Snippet } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { blank, fromDefinition, keyFor, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
+	import { blank, CENTRAL_KEY, fromDefinition, keyFor, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
 
 	let { store, back, logo, byline, meta }: {
 		store: Store;
@@ -57,8 +57,7 @@
 				await store.save(JSON.parse(key)[0], draft?.id);
 				versions = await store.load();
 			} catch (e) {
-				note = (e as Error).message;
-				refusals++;
+				refused(e, 'autosave');
 			}
 		}, 400);
 		return () => clearTimeout(t);
@@ -146,9 +145,14 @@
 			note = then ? `Published version ${latest?.version}.` : `Saved draft version ${latest?.version}.`;
 			refusals = 0;
 		} catch (e) {
-			note = (e as Error).message;
-			refusals++;
+			refused(e, then ?? 'save');
 		}
+	}
+	function refused(e: unknown, what: string) {
+		note = (e as Error).message;
+		refusals++;
+		const bad = fields.filter((f) => !CENTRAL_KEY.test(f.key)).map((f) => `${f.kind} "${f.label}" key="${f.key}"`);
+		console.warn(`[forms] ${what} refused: ${note}`, bad.length ? { badKeys: bad } : '');
 	}
 
 	const ADD: [Kind, string][] = [['text', 'Text'], ['number', 'Number'], ['dropdown', 'Choice'], ['checkbox', 'Checkboxes'], ['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['section', 'Section'], ['nested', 'Nested']];
