@@ -9,7 +9,6 @@
 	import type { Ops, Plugin } from '../plugin/api';
 	import { customs, makeOps, refusal } from '../plugin/host';
 	import { VERSION } from '../version';
-	import Pill from '../../_rapper/rt/admin/Pill.svelte';
 	import Advanced from './Advanced.svelte';
 	import Custom from './Custom.svelte';
 	import Reports from './Reports.svelte';
@@ -19,8 +18,10 @@
 	let source = $state('');
 	let hash = $state(location.hash);
 
-	const pages = [...(space ? [['company', 'Organization']] : []), ['home', 'Home'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced'], ['organizations', 'Organizations']];
+	const pages = [...(space ? [['company', 'Organization']] : []), ['home', 'Home'], ['reports', 'Reports'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
 	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
+	// Organizations sits under Advanced for now: most people never need it (Chris, 5 Nov).
+	const orgsPage = $derived(parts[0] === 'organizations');
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/')) ?? pages[0]);
 	const plugin = $derived(customs.find((p) => page[0] === `p/${p.id}`));
 
@@ -115,7 +116,7 @@
 
 <!-- --site-head: where a table's frozen header row docks, flush under this header whatever its wrapped height. -->
 <div class="font-sans" style:--accent={brand.accent} style:--rt-yellow={brand.accent} style:--site-head="{headHeight}px">
-	<header class="sticky top-0 z-10 border-b border-rule bg-surface" bind:offsetHeight={headHeight}>
+	<header class="sticky top-0 z-10 print:hidden border-b border-rule bg-surface" bind:offsetHeight={headHeight}>
 		<nav class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
 			{#if space}
 				<a href="#/" class="mr-2 flex sm:mr-4 items-center gap-2 font-display text-2xl text-(--accent)">
@@ -131,8 +132,10 @@
 					{/each}
 				</div>
 			{/if}
+			<!-- An organization's own address is only that organization: no reports, no sample, no sync. -->
+			{#if !space}
 			{#each pages as [path, label] (path)}
-				<Pill href="#/{path}" active={page[0] === path}>{#if path === 'organizations'}<img src="org_gold.webp" alt="" class="-my-1 mr-1.5 h-5" />{/if}{label}</Pill>
+				<a class="nav-pill" class:active={orgsPage ? path === 'advanced' : page[0] === path} aria-current={page[0] === path ? 'page' : undefined} href="#/{path}">{label}</a>
 			{/each}
 			{#if account}
 				<span class="ml-auto font-display text-lg text-muted" title="When your phone last sent data to Get Cache" data-updated>{ago && `Updated ${ago}`}</span>
@@ -151,16 +154,17 @@
 				</button>
 			{/if}
 			<input bind:this={pick} type="file" class="hidden" onchange={(e) => openFile(e.currentTarget.files?.[0])} />
+			{/if}
 		</nav>
 	</header>
 
 	<main class="mx-auto max-w-7xl px-6 py-6">
 		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
-		{#if why && page[0] !== 'company' && page[0] !== 'organizations'}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
-		{#if page[0] === 'company'}
-			<Space slug={space!} {company} me={account} token={parts[0] === 'join' ? parts[1] : undefined} reload={loadSpace} {signedInNow} />
-		{:else if page[0] === 'organizations'}
+		{#if why && page[0] !== 'company' && !orgsPage}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
+		{#if orgsPage}
 			<Companies me={account} {signedInNow} />
+		{:else if page[0] === 'company'}
+			<Space slug={space!} {company} me={account} token={parts[0] === 'join' ? parts[1] : undefined} reload={loadSpace} {signedInNow} />
 		{:else if page[0] === 'home' || page[0] === 'reports'}
 			{#key page[0]}<Reports {ops} page={page[0]} slug={parts[1]} />{/key}
 		{:else}
@@ -169,6 +173,7 @@
 				<p class="mb-4 text-sm text-muted" data-warning>Raw tables change between versions. Reports are the stable way to build.</p>
 				{#if ops}<Custom {ops} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if page[0] === 'advanced'}
+				<a class="tile mb-10 max-w-sm" href="#/organizations" data-orgs-tile><img src="org_gold.webp" alt="" class="h-16" />Organizations</a>
 				{#if ops}<Advanced {ops} />{:else}<h1 class="mb-6 font-display text-3xl text-(--accent)">SQL Queries</h1><p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if ops && plugin}
 				<!-- Each copy is a new ops: a live copy keeps one `source`, so keying on it froze the first. -->

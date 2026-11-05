@@ -35,7 +35,11 @@ const SPACE = 'orgKey,name,slug,status,logo';
 /** A space's own address; dev serves Ops under /ops/ on every host. */
 export const spaceUrl = (slug: string) => (import.meta.env.DEV ? `http://${slug}.ops.localhost:5194/ops/` : `https://${slug}.getcacheops.org/`);
 
-export const logoUrl = (c: { logo: string | null }) => (c.logo ? `${env.PUBLIC_GC_RT_supabase_address}/storage/v1/object/public/ops-logos/${c.logo}` : '');
+/** Ops' own home, where the Organizations page lives, and the Get Cache app a joiner goes back to. */
+export const opsHome = import.meta.env.DEV ? 'http://ops.localhost:5194/ops/' : 'https://getcacheops.org/';
+export const appHome = import.meta.env.DEV ? 'http://getcache.localhost:5173/app/menu' : 'https://getcache.org/app/menu';
+
+export const logoUrl =(c: { logo: string | null }) => (c.logo ? `${env.PUBLIC_GC_RT_supabase_address}/storage/v1/object/public/ops-logos/${c.logo}` : '');
 
 /** The organizations this planter has in Get Cache, as Central mirrors their phone. */
 export const myOrgs = (authId: string) => call<Org[]>(`orgTable?ownerId=eq.${authId}&select=orgKey,orgName&order=orgName`, 'GET', undefined, 'getCacheMobile');

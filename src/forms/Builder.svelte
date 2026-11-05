@@ -82,7 +82,7 @@
 	</select>
 {/snippet}
 
-<p class="mb-4"><a class="text-sm text-muted underline" href="#/company">← Forms</a></p>
+<a class="small-btn mb-6" href="#/company/forms" data-back>← Forms</a>
 <h1 class="mb-2 font-display text-3xl text-(--accent)">{title || 'New form'}</h1>
 <p class="mb-6 text-sm text-muted" data-version>
 	{#if !latest}Not saved yet.{:else if draft}Draft of version {draft.version}.{:else}Version {latest.version} is published and locked: saving starts version {latest.version + 1}.{/if}

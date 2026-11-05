@@ -44,7 +44,7 @@
 	const td = 'border-b border-rule py-1 pr-4 align-top';
 </script>
 
-<p class="mb-4"><a class="text-sm text-muted underline" href="#/company">← Forms</a></p>
+<a class="small-btn mb-6" href="#/company/forms" data-back>← Forms</a>
 <h1 class="mb-6 font-display text-3xl text-(--accent)">{versions.at(-1)?.definition.title ?? 'Form'}: answers</h1>
 {#if note}<p class="text-muted" data-note>{note}</p>{/if}
 
