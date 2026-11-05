@@ -143,8 +143,8 @@
 </script>
 
 {#snippet icon(kind: Kind, size = 22)}
-	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon. -->
-	{#if kind === 'section' || kind === 'nested'}<img src="{kind}_icon.webp" alt="" style:height="{Math.round(size * 1.6)}px" style:width="auto" />
+	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon, Nested's three bars tallest. -->
+	{#if kind === 'section' || kind === 'nested'}<img src="{kind}_icon.webp" alt="" style:height="{Math.round(size * (kind === 'nested' ? 2 : 1.6))}px" style:width="auto" />
 	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{size}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
@@ -303,6 +303,10 @@
 		background: #1a1a1a;
 		font-weight: 600;
 		font-size: 1.2rem;
+	}
+	/* A big shape icon runs into the padding, nearly to the border, instead of making its button taller. */
+	.add img {
+		margin-block: -0.6rem;
 	}
 	.add.section {
 		border-color: var(--accent);
