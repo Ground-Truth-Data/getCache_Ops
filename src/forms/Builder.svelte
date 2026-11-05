@@ -21,6 +21,13 @@
 	let note = $state('');
 	// A refusal flashes red, again on every press, so a second tap is not met with silence.
 	let refusals = $state(0);
+	let viewer = $state<HTMLDialogElement>();
+	// A fresh query string restarts the one-shot blink; the dialog opens once the lid is back up.
+	let blink = $state('');
+	function view() {
+		blink = `eye_blink.webp?${Date.now()}`;
+		setTimeout(() => viewer?.showModal(), 1000);
+	}
 	/** The field being edited, or 'head': the form's own title and description, which are section 1. */
 	let selected = $state<Field | 'head'>();
 	const latest = $derived(versions.at(-1));
@@ -191,6 +198,7 @@
 		{@render byline?.()}
 	</div>
 	{#if !store.autosave}<button class="small-btn" onclick={() => save()} data-save>Save draft</button>{/if}
+	<button class="view" onclick={view} aria-label="View the form" data-view><img src={blink || 'eye.webp'} alt="" /></button>
 	<button class="rt-fancy-btn rounded-2xl px-9 py-3 font-display text-2xl" onclick={() => save('publish')} data-publish>Publish</button>
 </header>
 {#if note}{#key refusals}<p class="-mt-3 mb-4 {refusals ? 'refused' : 'text-muted'}" data-note>{note}</p>{/key}{/if}
@@ -225,6 +233,10 @@
 		<FormView {definition} onsubmit={() => {}} />
 	</aside>
 </div>
+<dialog bind:this={viewer} class="viewer" closedby="any" data-viewer>
+	<button class="small-btn close" onclick={() => viewer?.close()}>Close</button>
+	<div class="phone"><FormView {definition} onsubmit={() => viewer?.close()} /></div>
+</dialog>
 
 <style>
 	.title {
@@ -368,6 +380,36 @@
 		border: 1px solid #4a443c;
 		border-radius: 0.75rem;
 		color: #c9c3b7;
+	}
+	.view {
+		display: grid;
+		place-items: center;
+		width: 4.5rem;
+		height: 3.6rem;
+		border: 3px solid var(--accent);
+		border-radius: 1rem;
+		background: #000;
+		box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 35%, transparent);
+	}
+	.view img {
+		width: 2.9rem;
+	}
+	.viewer {
+		margin: auto;
+		padding: 0;
+		border: none;
+		background: transparent;
+	}
+	.viewer::backdrop {
+		background: rgb(0 0 0 / 0.75);
+	}
+	.viewer .phone {
+		width: 24rem;
+		max-height: 85vh;
+	}
+	.close {
+		display: block;
+		margin: 0 0 0.75rem auto;
 	}
 	.phone {
 		align-self: start;
