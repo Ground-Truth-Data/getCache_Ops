@@ -97,9 +97,17 @@
 	});
 	// A section is only a heading: its key is never shown, but SurveyJS still needs one.
 	const keyFor = (kind: Kind) => (kind === 'gps' ? 'gps' : kind === 'section' ? `section_${crypto.randomUUID().slice(0, 8)}` : '');
+	// With a nested group (or one of its questions) picked, a new question lands at the end of that group.
 	function add(kind: Kind) {
-		fields.push({ ...blank(kind), key: keyFor(kind), label: kind === 'gps' ? 'GPS' : '' });
-		selected = fields.at(-1);
+		const f = { ...blank(kind), key: keyFor(kind), label: kind === 'gps' ? 'GPS' : '' };
+		let at = fields.length;
+		const i = selected && selected !== 'head' ? fields.indexOf(selected) : -1;
+		if (i >= 0 && depths[i] >= 1 && (fields[i].kind === 'nested' || depths[i] === 2) && kind !== 'section' && kind !== 'nested') {
+			at = i + 1;
+			while (depths[at] === 2) at++;
+		}
+		fields.splice(at, 0, f);
+		selected = fields[at];
 	}
 
 	async function save(then?: 'publish') {
@@ -227,7 +235,12 @@
 				{@render nth(1)}
 			</button>
 		{/if}
-		{#each fields as f, i (f)}{@render card(f, i)}{/each}
+		{#each fields as f, i (f)}
+			{@render card(f, i)}
+			{#if f.kind === 'nested' && depths[i + 1] !== 2}
+				<button class="inside" style:margin-left="4rem" onclick={() => (selected = f)} data-inside>Questions inside {f.label || 'this list'} go here: pick it, then add from the left</button>
+			{/if}
+		{/each}
 	</section>
 	<aside class="phone" aria-label="Phone preview" data-preview>
 		<FormView {definition} onsubmit={() => {}} />
@@ -335,6 +348,13 @@
 	}
 	.add.nest {
 		border-color: var(--rt-rust);
+	}
+	.inside {
+		padding: 1.1rem;
+		border: 2px dashed var(--rt-sage);
+		border-radius: 1rem;
+		color: var(--rt-sage);
+		text-align: left;
 	}
 	.add-text {
 		padding: 0.3rem 0.8rem;
