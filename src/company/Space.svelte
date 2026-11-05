@@ -19,7 +19,7 @@
 	const link = (t: string) => `${spaceUrl(slug)}#/join/${t}`;
 
 	async function loadAdmin() {
-		if (company && admin) [people, links] = await Promise.all([members(company.id), invites(company.id)]);
+		if (company && admin) [people, links] = await Promise.all([members(company.orgKey), invites(company.orgKey)]);
 	}
 	$effect(() => void loadAdmin().catch((e) => (note = e.message)));
 
@@ -44,7 +44,7 @@
 	};
 	const pickLogo = (e: Event & { currentTarget: HTMLInputElement }) => {
 		const file = e.currentTarget.files?.[0];
-		if (file && company) act(() => uploadLogo(company.id, file))();
+		if (file && company) act(() => uploadLogo(company.orgKey, file))();
 	};
 </script>
 
@@ -65,13 +65,13 @@
 	{:else if token}
 		<p class="text-muted">Joining…</p>
 	{:else if company.role === null}
-		<button class="rt-fancy-btn rounded-lg px-4 py-1 font-display text-lg" onclick={act(() => ask(company.id, me.authId))} data-ask-join>Ask to join</button>
+		<button class="rt-fancy-btn rounded-lg px-4 py-1 font-display text-lg" onclick={act(() => ask(company.orgKey, me.authId))} data-ask-join>Ask to join</button>
 	{:else if company.role === 'asked'}
 		<p class="text-muted" data-role>Your request to join is with its admins.</p>
-		<button class="mt-2 text-sm text-muted underline" onclick={act(() => remove(company.id, me.authId))} data-leave>Withdraw</button>
+		<button class="mt-2 text-sm text-muted underline" onclick={act(() => remove(company.orgKey, me.authId))} data-leave>Withdraw</button>
 	{:else}
 		<p class="text-muted" data-role>You are {company.role === 'admin' ? 'an admin' : company.role} here.
-			<button class="text-sm underline" onclick={act(() => remove(company.id, me.authId))} data-leave>Leave</button>
+			<button class="text-sm underline" onclick={act(() => remove(company.orgKey, me.authId))} data-leave>Leave</button>
 		</p>
 	{/if}
 
@@ -90,16 +90,16 @@
 							<td class="py-1 pr-4">{p.email}</td>
 							<td class="pr-4">
 								{#if p.role === 'asked'}
-									<button class="underline" onclick={act(() => setRole(company.id, p.authId, 'crew'))} data-let-in>Let in</button>
+									<button class="underline" onclick={act(() => setRole(company.orgKey, p.authId, 'crew'))} data-let-in>Let in</button>
 								{:else}
-									<select value={p.role} onchange={(e) => act(() => setRole(company.id, p.authId, e.currentTarget.value as Member['role']))()} data-role-pick>
+									<select value={p.role} onchange={(e) => act(() => setRole(company.orgKey, p.authId, e.currentTarget.value as Member['role']))()} data-role-pick>
 										<option value="admin">admin</option>
 										<option value="crew">crew</option>
 										<option value="follower">follower</option>
 									</select>
 								{/if}
 							</td>
-							<td>{#if p.authId !== me?.authId}<button class="text-sm text-muted underline" onclick={act(() => remove(company.id, p.authId))} data-remove>Remove</button>{/if}</td>
+							<td>{#if p.authId !== me?.authId}<button class="text-sm text-muted underline" onclick={act(() => remove(company.orgKey, p.authId))} data-remove>Remove</button>{/if}</td>
 						</tr>
 					{/each}
 				</tbody>
@@ -118,7 +118,7 @@
 					</div>
 				</div>
 			{/each}
-			<button class="rt-fancy-btn rounded-lg px-4 py-1 font-display text-lg" onclick={act(() => invite(company.id))} data-new-invite>New invite link</button>
+			<button class="rt-fancy-btn rounded-lg px-4 py-1 font-display text-lg" onclick={act(() => invite(company.orgKey))} data-new-invite>New invite link</button>
 		</section>
 	{/if}
 {/if}
