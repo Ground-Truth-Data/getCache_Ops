@@ -41,14 +41,23 @@
 	const trySample = async () => open(await (await fetch('sample.sqlite')).arrayBuffer(), SAMPLE);
 	const LIVE = 'your Get Cache account';
 	let account = $state<ReturnType<typeof signedIn>>(null);
+	let updated = $state<number>();
+	let now = $state(Date.now());
+	setInterval(() => (now = Date.now()), 30_000);
+	const ago = $derived.by(() => {
+		if (!updated) return '';
+		const m = Math.round((now - updated) / 60_000);
+		return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
+	});
 	// Again on coming back from the app's tab, where the planter signed in or the app refreshed the token.
 	async function watch() {
 		if (ownSignIn) await fresh();
 		if (account || !(account = signedIn())) return;
 		follow(
-			(bytes) => {
+			(bytes, at) => {
 				if (source && source !== LIVE) return;
 				open(bytes, LIVE);
+				updated = at ? Date.parse(at) : undefined;
 			},
 			() => (account = null),
 		);
@@ -72,6 +81,12 @@
 		// A file the app was born with holds no work: leave the page to the cloud copy.
 		if (ops && !ops.query(`SELECT ${WORK.map((t) => `(SELECT count(*) FROM ${t})`).join(' + ')} AS n`)[0]?.n) ((ops = undefined), (source = ''));
 	}
+	// A company's own address: its name heads the page, or "not found".
+	let company = $state<SpaceRow | null>();
+	const loadSpace = async () => {
+		if (space) company = (await spaceOf(space).catch((e) => (console.warn('[ops] company', e), undefined))) ?? null;
+	};
+	const signedInNow = () => watch().then(loadSpace);
 	let tried = $state(false);
 	local().finally(() => ((tried = true), signedInNow()));
 	const why = $derived(
@@ -81,19 +96,13 @@
 	let pick = $state<HTMLInputElement>();
 	let headHeight = $state(0);
 
-	// A company's own address: its name heads the page, or "not found".
-	let company = $state<SpaceRow | null>();
-	const loadSpace = async () => {
-		if (space) company = (await spaceOf(space).catch((e) => (console.warn('[ops] company', e), undefined))) ?? null;
-	};
-	const signedInNow = () => watch().then(loadSpace);
 	async function openFile(file?: File) {
 		if (file) open(await file.arrayBuffer(), file.name);
 	}
 
 	function drop(e: DragEvent) {
 		e.preventDefault();
-		openFile(e.dataTransfer?.files[0]);
+		if (!account) openFile(e.dataTransfer?.files[0]);
 	}
 
 	function mount(el: HTMLElement, [plugin, ops]: [Plugin, Ops]) {
@@ -119,16 +128,22 @@
 			{#each pages as [path, label] (path)}
 				<Pill href="#/{path}" active={page[0] === path}>{label}</Pill>
 			{/each}
-			<button class="rt-fancy-btn ml-auto rounded-lg px-3 py-1 font-display text-lg" onclick={askHome} data-ask><img src="sync.webp" alt="" class="-my-2 mr-0.5 inline h-8 align-middle brightness-0" />Sync<span class="max-sm:hidden"> Get Cache</span></button>
+			{#if account}
+				<span class="ml-auto font-display text-lg text-muted" title="When your phone last sent data to Get Cache" data-updated>{ago && `Updated ${ago}`}</span>
+			{:else if location.origin !== HOME}
+				<button class="rt-fancy-btn ml-auto rounded-lg px-3 py-1 font-display text-lg" onclick={askHome} data-ask><img src="sync.webp" alt="" class="-my-2 mr-0.5 inline h-8 align-middle brightness-0" />Sync<span class="max-sm:hidden"> Get Cache</span></button>
+			{/if}
 			{#if source !== SAMPLE}
 				<button class="rounded-lg px-3 py-1 font-display text-lg text-muted hover:bg-(--accent)/15 hover:text-ink" onclick={trySample} data-sample>Sample</button>
 			{:else if account}
 				<!-- The account copy is cached, so a reload brings it straight back. -->
 				<button class="rounded-lg px-3 py-1 font-display text-lg text-muted hover:bg-(--accent)/15 hover:text-ink" onclick={() => location.reload()} data-sample>My season</button>
 			{/if}
-			<button class="rounded-lg p-2 text-muted hover:bg-(--accent)/15 hover:text-(--accent)" title="Import a backup" aria-label="Import a backup" onclick={() => pick?.click()} data-import>
-				<svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" /></svg>
-			</button>
+			{#if !account}
+				<button class="rounded-lg p-2 text-muted hover:bg-(--accent)/15 hover:text-(--accent)" title="Import a backup" aria-label="Import a backup" onclick={() => pick?.click()} data-import>
+					<svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" /></svg>
+				</button>
+			{/if}
 			<input bind:this={pick} type="file" class="hidden" onchange={(e) => openFile(e.currentTarget.files?.[0])} />
 		</nav>
 	</header>
