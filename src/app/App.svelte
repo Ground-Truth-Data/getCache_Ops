@@ -128,7 +128,7 @@
 				<div class="mr-2 flex sm:mr-4">
 					{#each brand.logos as src, i (src)}
 						<a href={i ? '#/' : `${HOME}/app/menu`} class="rounded-xl py-1 transition-colors hover:bg-white/10 {i ? 'pr-2' : 'pl-2'}" title={i ? 'Ops home' : 'Back to Get Cache'}>
-							<img {src} alt={i ? 'Ops' : 'Get Cache'} class="h-9 sm:h-14" />
+							<img {src} alt={i ? 'Ops' : 'Get Cache'} class="h-11 sm:h-14" />
 						</a>
 					{/each}
 				</div>
