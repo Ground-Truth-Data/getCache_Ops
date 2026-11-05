@@ -206,7 +206,7 @@
 		{#if selected === 'head'}
 			<div class="card depth-0 on" data-head>
 				<div class="flex flex-wrap items-center gap-3">
-					<img src="plugin_gold.webp" alt="" class="h-6 w-6 object-contain" />
+					<img src="plugin_gold.webp" alt="" class="h-8 w-8 object-contain" />
 					<input class="label" placeholder="Name" bind:value={title} />
 					{@render nth(1)}
 				</div>
@@ -214,7 +214,7 @@
 			</div>
 		{:else}
 			<button class="card depth-0 head pick" onclick={() => (selected = 'head')} data-head>
-				<img src="plugin_gold.webp" alt="" class="h-6 w-6 object-contain" />
+				<img src="plugin_gold.webp" alt="" class="h-8 w-8 object-contain" />
 				<span class="flex-1 text-left">{title || 'Name'}{#if rest.description}<span class="block text-sm font-normal text-muted">{rest.description}</span>{/if}</span>
 				{@render nth(1)}
 			</button>
