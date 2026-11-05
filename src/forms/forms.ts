@@ -8,8 +8,8 @@ export type { Definition };
 export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'gps' | 'section' | 'nested';
 /** `src` is the element as loaded (or a new field's defaults): saving writes the edited keys onto it, so every
  *  property the builder has no control for survives each version. The builder's list is flat: a section owns
- *  what follows it up to the next section, and a nested group (one entry per tree, say) owns the fields after
- *  it up to the next nested group or section. `addText` is a nested group's add button on the phone. */
+ *  what follows it up to the next section, and a nested group (a little form repeated per tree, say) owns the
+ *  fields after it up to the next nested group or section. `addText` is a nested group's add button on the phone. */
 export type Field = { kind: Kind; key: string; label: string; description: string; addText: string; required: boolean; choices: string[]; min?: number; max?: number; src: El };
 export type FormRow = { id: string; formId: string; version: number; definition: Definition; publishedAt: string | null; copiedFrom: string | null };
 export type Answer = { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
@@ -64,6 +64,7 @@ export const toDefinition = (title: string, fields: Field[], rest: Partial<Defin
 	const d: Definition = { ...rest, elements };
 	if (title) d.title = title;
 	else delete d.title;
+	if (!d.description) delete d.description;
 	return d;
 };
 
@@ -77,11 +78,19 @@ function field(e: El): Field {
 }
 const flat = (e: El): Field[] => {
 	const kids = (e.type === 'panel' ? e.elements : e.type === 'paneldynamic' ? e.templateElements : undefined) as El[] | undefined;
-	return kids ? [field({ ...e, elements: undefined, templateElements: undefined }), ...kids.flatMap(flat)] : [field(e)];
+	return kids ? [field({ ...e, elements: undefined, templateElements: undefined }), ...flatAll(kids)] : [field(e)];
 };
+// In the flat list a nested group swallows every question after it, so a question that sat after one in the
+// definition is kept out by a blank section of its own.
+const flatAll = (els: El[]): Field[] =>
+	els.flatMap((e, i) => {
+		const next = els[i + 1];
+		const gap = e.type === 'paneldynamic' && next && next.type !== 'panel' && next.type !== 'paneldynamic';
+		return gap ? [...flat(e), { ...blank('section'), key: `section_${crypto.randomUUID().slice(0, 8)}` }] : flat(e);
+	});
 /** The fields the builder edits, each group's own fields right after it, and `rest`: the survey's own settings,
  *  written back untouched. */
-export const fromDefinition = ({ title, elements, ...rest }: Definition) => ({ title: title ?? '', fields: elements.flatMap(flat), rest });
+export const fromDefinition = ({ title, elements, ...rest }: Definition) => ({ title: title ?? '', fields: flatAll(elements), rest });
 
 /** Every key a definition holds, with its label, and the repeating group it sits in. */
 export const keys = (d: Definition) => {

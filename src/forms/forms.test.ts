@@ -43,13 +43,21 @@ describe('the builder keeps what it does not edit', () => {
 		expect(fromDefinition(d).fields.map((f) => f.key)).toEqual(['f0', 'site', 'f2', 'f3']);
 		expect(toDefinition('', fromDefinition(d).fields)).toEqual(d);
 	});
+	it('a question saved after a nested group stays out of it', () => {
+		const d: Definition = { elements: [{ type: 'paneldynamic', name: 'trees', templateElements: [{ type: 'text', name: 'species' }] }, { type: 'text', name: 'weather' }] };
+		const { fields } = fromDefinition(d);
+		expect(fields.map((f) => f.kind)).toEqual(['nested', 'text', 'section', 'text']);
+		const out = toDefinition('', fields);
+		expect(out.elements[0].templateElements).toEqual([{ type: 'text', name: 'species' }]);
+		expect((out.elements[1].elements as { name: string }[]).map((e) => e.name)).toEqual(['weather']);
+	});
 	it('a nested group sits in its section and owns the fields after it, up to the next section', () => {
-		const fields = [blank('section'), blank('text'), { ...blank('nested'), addText: '+ Tree' }, blank('number'), blank('section'), blank('date')];
+		const fields = [blank('section'), blank('text'), { ...blank('nested'), addText: '+ Tree' }, blank('number'), blank('text'), blank('section'), blank('date')];
 		fields.forEach((f, i) => (f.key = `f${i}`));
 		const d = toDefinition('', fields);
-		expect(d.elements.map((e) => e.name)).toEqual(['f0', 'f4']);
+		expect(d.elements.map((e) => e.name)).toEqual(['f0', 'f5']);
 		const [text, nested] = d.elements[0].elements as { name: string; templateElements?: { name: string }[] }[];
-		expect([text.name, nested.name, nested.templateElements?.map((e) => e.name)]).toEqual(['f1', 'f2', ['f3']]);
+		expect([text.name, nested.name, nested.templateElements?.map((e) => e.name)]).toEqual(['f1', 'f2', ['f3', 'f4']]);
 		expect(toDefinition('', fromDefinition(d).fields)).toEqual(d);
 	});
 });

@@ -19,7 +19,8 @@
 	let note = $state('');
 	// A refusal flashes red, again on every press, so a second tap is not met with silence.
 	let refusals = $state(0);
-	let selected = $state<Field>();
+	/** The field being edited, or 'head': the form's own title and description, which are section 1. */
+	let selected = $state<Field | 'head'>();
 	const latest = $derived(versions.at(-1));
 	const draft = $derived(latest && !latest.publishedAt ? latest : undefined);
 	// A key is locked once any version holding it is published.
@@ -55,20 +56,35 @@
 
 	const keyOf = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^[^a-z]+|_+$/g, '').slice(0, 40);
 	function relabel(f: Field, label: string) {
-		if (!locked.has(f.key) && (!f.key || f.key === keyOf(f.label))) f.key = keyOf(label);
+		if (f.kind === 'section') f.key ||= keyFor('section');
+		else if (!locked.has(f.key) && (!f.key || f.key === keyOf(f.label))) f.key = keyOf(label);
 		f.label = label;
 	}
-	const move = (i: number, by: number) => fields.splice(i + by, 0, ...fields.splice(i, 1));
+	// Dragged by its grip, a card takes each place it passes: where it lands decides its section and group.
+	let dragging = $state<number>();
+	function over(e: DragEvent, i: number) {
+		if (dragging === undefined) return;
+		e.preventDefault();
+		if (dragging !== i) (fields.splice(i, 0, ...fields.splice(dragging, 1)), (dragging = i));
+	}
 	// GPS is named by what it is, never by the maker, and a form asks for location once.
 	const hasGps = $derived(fields.some((f) => f.kind === 'gps'));
-	// As in the inbox: the form's head and each section are gold parents, what they hold is rust, and a nested
-	// group's own fields sit one level deeper in sage.
+	// As in the inbox: the form's head and each section are gold parents, every question is rust, and a nested
+	// group's repeated questions sit a level deeper in sage.
+	// Numbered like Google Forms: the form's head is section 1.
+	const sectionNo = $derived.by(() => {
+		let n = 1;
+		return fields.map((f) => (f.kind === 'section' ? ++n : 0));
+	});
+	const sections = $derived(1 + fields.filter((f) => f.kind === 'section').length);
 	const depths = $derived.by(() => {
 		let deep = false;
 		return fields.map((f) => (f.kind === 'section' ? ((deep = false), 0) : f.kind === 'nested' ? ((deep = true), 1) : deep ? 2 : 1));
 	});
+	// A section is only a heading: its key is never shown, but SurveyJS still needs one.
+	const keyFor = (kind: Kind) => (kind === 'gps' ? 'gps' : kind === 'section' ? `section_${crypto.randomUUID().slice(0, 8)}` : '');
 	function add(kind: Kind) {
-		fields.push(kind === 'gps' ? { ...blank(kind), key: 'gps', label: 'GPS' } : blank(kind));
+		fields.push({ ...blank(kind), key: keyFor(kind), label: kind === 'gps' ? 'GPS' : '' });
 		selected = fields.at(-1);
 	}
 
@@ -102,7 +118,6 @@
 		nested: '',
 	};
 	const input = 'rounded-lg border border-rule bg-surface px-3 py-2';
-	const ghost = 'rounded-lg border border-rule px-3 py-2 text-muted';
 </script>
 
 {#snippet icon(kind: Kind, size = 22)}
@@ -111,17 +126,21 @@
 	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{size}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
+{#snippet nth(n: number)}<span class="nth">Section {n} of {sections}</span>{/snippet}
 {#snippet gpsNote()}<span class="block text-sm text-muted" data-gps-note>Needs location services on to collect field data.</span>{/snippet}
 
 {#snippet card(f: Field, i: number)}
 	{@const on = selected === f}
 	{@const section = f.kind === 'section'}
-	<div class="card depth-{depths[i]} {on ? 'on' : ''}" data-build={f.key} data-kind={f.kind} data-depth={depths[i]}>
+	<div class="card depth-{depths[i]} {on ? 'on' : ''}" class:dragging={dragging === i} data-build={f.key} data-kind={f.kind} data-depth={depths[i]}
+		role="listitem" ondragover={(e) => over(e, i)} ondrop={(e) => e.preventDefault()}>
+		<div class="body">
 		{#if on}
 			<div class="flex flex-wrap items-center gap-3">
 				{@render icon(f.kind)}
 				{#if f.kind === 'gps'}<span class="flex-1 text-xl font-semibold">GPS{@render gpsNote()}</span>
 				{:else}<input class="label" placeholder={KINDS.find(([k]) => k === f.kind)?.[1]} value={f.label} oninput={(e) => relabel(f, e.currentTarget.value)} data-label />{/if}
+				{#if section}{@render nth(sectionNo[i])}{/if}
 				{#if f.kind === 'nested'}<input class="{input} w-36 font-bold" placeholder="+ Add" title="The add button's text on the phone" bind:value={f.addText} data-add-text />{/if}
 				<button class="trash" onclick={() => (fields.splice(i, 1), (selected = undefined))} aria-label="Remove field" data-remove-field>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
@@ -129,14 +148,12 @@
 			</div>
 			{#if f.kind !== 'gps'}<input class="{input} w-full" placeholder="Description (optional)" bind:value={f.description} data-description />{/if}
 			<div class="flex flex-wrap items-center gap-3 text-sm">
-				{#if f.kind !== 'gps'}<input class="{input} w-36 font-mono" placeholder="key" bind:value={f.key} disabled={locked.has(f.key)} title={locked.has(f.key) ? 'Published: this key is locked' : 'The column name in reports'} data-key />{/if}
+				{#if f.kind !== 'gps' && !section}<input class="{input} w-36 font-mono" placeholder="key" bind:value={f.key} disabled={locked.has(f.key)} title={locked.has(f.key) ? 'Published: this key is locked' : 'The column name in reports'} data-key />{/if}
 				{#if !section && f.kind !== 'nested'}<label class="flex items-center gap-2"><input type="checkbox" class="tick" bind:checked={f.required} data-required /><span class="text-base"><span class="req">*</span>&nbsp;required</span></label>{/if}
 				{#if f.kind === 'number'}
 					<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
 					<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
 				{/if}
-				<button class={ghost} disabled={i === 0} onclick={() => move(i, -1)} aria-label="Up">↑</button>
-				<button class={ghost} disabled={i === fields.length - 1} onclick={() => move(i, 1)} aria-label="Down">↓</button>
 			</div>
 			{#if f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox'}
 				<textarea class="{input} w-full max-w-sm text-base" rows="4" placeholder="One choice per line" value={f.choices.join('\n')}
@@ -145,11 +162,18 @@
 		{:else}
 			<button class="pick" onclick={() => (selected = f)} data-pick>
 				{@render icon(f.kind)}
+				{#if section}{@render nth(sectionNo[i])}{/if}
 				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{/if}</span>
 				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span>&nbsp;required</span>{/if}
 				{#if f.kind === 'nested'}<span class="add-text">{f.addText || '+ Add'}</span>{/if}
 			</button>
 		{/if}
+		</div>
+		<span class="grip" draggable="true" role="button" tabindex="-1" aria-label="Drag to move" data-grip
+			ondragstart={(e) => ((dragging = i), e.dataTransfer?.setDragImage(e.currentTarget.parentElement!, 24, 24))} ondragend={() => (dragging = undefined)}
+			><svg width="18" height="26" viewBox="0 0 12 20" fill="currentColor" aria-hidden="true"
+				><circle cx="3" cy="4" r="1.6" /><circle cx="9" cy="4" r="1.6" /><circle cx="3" cy="10" r="1.6" /><circle cx="9" cy="10" r="1.6" /><circle cx="3" cy="16" r="1.6" /><circle cx="9" cy="16" r="1.6" /></svg
+			></span>
 	</div>
 {/snippet}
 
@@ -175,10 +199,22 @@
 		{/each}
 	</aside>
 	<section class="flex min-w-0 flex-col gap-3" aria-label="The form" data-fields>
-		<button class="card depth-0 head pick" onclick={() => document.querySelector<HTMLInputElement>('[data-title]')?.focus()} data-head>
-			<img src="plugin_gold.webp" alt="" class="h-6 w-6 object-contain" />
-			<span class="flex-1 text-left">{title || 'Name'}</span>
-		</button>
+		{#if selected === 'head'}
+			<div class="card depth-0 on" data-head>
+				<div class="flex flex-wrap items-center gap-3">
+					<img src="plugin_gold.webp" alt="" class="h-6 w-6 object-contain" />
+					<input class="label" placeholder="Name" bind:value={title} />
+					{@render nth(1)}
+				</div>
+				<input class="{input} w-full" placeholder="Description (optional)" bind:value={rest.description} data-form-description />
+			</div>
+		{:else}
+			<button class="card depth-0 head pick" onclick={() => (selected = 'head')} data-head>
+				<img src="plugin_gold.webp" alt="" class="h-6 w-6 object-contain" />
+				<span class="flex-1 text-left">{title || 'Name'}{#if rest.description}<span class="block text-sm font-normal text-muted">{rest.description}</span>{/if}</span>
+				{@render nth(1)}
+			</button>
+		{/if}
 		{#each fields as f, i (f)}{@render card(f, i)}{/each}
 	</section>
 	<aside class="phone" aria-label="Phone preview" data-preview>
@@ -253,10 +289,42 @@
 		border-radius: 1rem;
 		background: #1a1a1a;
 	}
+	.card[data-build] {
+		flex-direction: row;
+		align-items: stretch;
+	}
+	.body {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.grip {
+		display: flex;
+		align-items: center;
+		padding: 0 0.75rem;
+		color: #6b6458;
+		cursor: grab;
+	}
+	.grip:hover {
+		color: var(--accent);
+	}
+	.card.dragging {
+		opacity: 0.4;
+	}
 	.card.on {
-		padding: 1rem 1.25rem;
+		padding: 1rem 0 1rem 1.25rem;
 		border-color: var(--accent);
 		background: #1f1c14;
+	}
+	.nth {
+		padding: 0.15rem 0.6rem;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 18%, transparent);
+		color: var(--accent);
+		font-size: 0.85rem;
+		white-space: nowrap;
 	}
 	.card.head {
 		flex-direction: row;
