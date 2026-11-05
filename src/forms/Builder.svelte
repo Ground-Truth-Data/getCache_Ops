@@ -92,22 +92,22 @@
 		date: 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 10h18M8 3v4M16 3v4',
 		file: 'M4 8h3l2-3h6l2 3h3v11H4zM15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z',
 		gps: '',
-		section: 'M4 5h16M4 10h10M4 15h16M4 20h10',
+		section: '',
 	};
 	const input = 'rounded-lg border border-rule bg-surface px-3 py-2';
 	const ghost = 'rounded-lg border border-rule px-3 py-2 text-muted';
 </script>
 
 {#snippet icon(kind: Kind, size = 22)}
-	{#if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{size}px" style:width="auto" />
-	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={kind === 'section' ? 'var(--rt-rust)' : 'var(--accent)'} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
+	{#if kind === 'gps' || kind === 'section'}<img src={kind === 'gps' ? 'locate_icon_gold.webp' : 'section_icon.webp'} alt="" style:height="{size}px" style:width="auto" />
+	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
 {#snippet gpsNote()}<span class="block text-sm text-muted" data-gps-note>Needs location services on to collect field data.</span>{/snippet}
 
 {#snippet card(f: Field, i: number, inSection: boolean)}
 	{@const on = selected === f}
 	{@const section = f.kind === 'section'}
-	<div class="card {on ? 'on' : ''} {section ? 'section' : ''} {inSection ? 'ml-8' : ''}" data-build={f.key} data-kind={f.kind}>
+	<div class="card {on ? 'on' : ''} {section ? 'section' : ''} {inSection ? 'nested ml-8' : ''}" data-build={f.key} data-kind={f.kind}>
 		{#if on}
 			<div class="flex flex-wrap items-center gap-3">
 				{@render icon(f.kind)}
@@ -225,7 +225,7 @@
 		font-size: 1.2rem;
 	}
 	.add.section {
-		border-color: var(--rt-rust);
+		border-color: var(--accent);
 	}
 	.add:disabled {
 		opacity: 0.35;
@@ -243,7 +243,11 @@
 		border-color: var(--accent);
 		background: #1f1c14;
 	}
+	/* As in the inbox: a section heads in gold, the fields it holds are rust. */
 	.card.section {
+		border-color: var(--accent);
+	}
+	.card.nested:not(.on) {
 		border-color: var(--rt-rust);
 	}
 	.refused {
