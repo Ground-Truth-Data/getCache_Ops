@@ -145,7 +145,7 @@
 {#snippet icon(kind: Kind, size = 22)}
 	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon, Nested's three bars tallest. -->
 	{#if kind === 'section' || kind === 'nested'}<img src="{kind}_icon.webp" alt="" style:height="{Math.round(size * (kind === 'nested' ? 2 : 1.6))}px" style:width="auto" />
-	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{size}px" style:width="auto" />
+	{:else if kind === 'gps'}<img src="locate_icon_gold.webp" alt="" style:height="{Math.round(size * 1.6)}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
 {#snippet nth(n: number)}<span class="nth">Section {n} of {sections}</span>{/snippet}
@@ -164,7 +164,6 @@
 				{#if f.kind === 'gps'}<span class="flex-1 text-xl font-semibold">GPS{@render gpsNote()}</span>
 				{:else}<input class="label" placeholder={KINDS.find(([k]) => k === f.kind)?.[1]} value={f.label} oninput={(e) => relabel(f, e.currentTarget.value)} data-label />{/if}
 				{#if section}{@render nth(sectionNo[i])}{/if}
-				{#if f.kind === 'nested'}<input class="{input} w-36 font-bold" placeholder="+ Add" title="The add button's text on the phone" bind:value={f.addText} data-add-text />{/if}
 				<button class="trash" onclick={() => (fields.splice(i, 1), (selected = undefined))} aria-label="Remove field" data-remove-field>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
 				</button>
@@ -188,7 +187,6 @@
 				{#if section}{@render nth(sectionNo[i])}{/if}
 				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.kind === 'gps'}{@render gpsNote()}{:else if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{/if}</span>
 				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span>&nbsp;required</span>{/if}
-				{#if f.kind === 'nested'}<span class="add-text">{f.addText || '+ Add'}</span>{/if}
 			</button>
 		{/if}
 	</div>
@@ -237,8 +235,9 @@
 		{/if}
 		{#each fields as f, i (f)}
 			{@render card(f, i)}
-			{#if f.kind === 'nested' && depths[i + 1] !== 2}
-				<button class="inside" style:margin-left="4rem" onclick={() => (selected = f)} data-inside>Questions inside {f.label || 'this list'} go here: pick it, then add from the left</button>
+			<!-- The foot of every nested group: a new question lands inside it, as its last. -->
+			{#if (f.kind === 'nested' || depths[i] === 2) && depths[i + 1] !== 2}
+				<button class="inside" style:margin-left="4rem" onclick={() => fields.splice(i + 1, 0, (selected = blank('text')))} data-inside>+ Add a question</button>
 			{/if}
 		{/each}
 	</section>
@@ -358,14 +357,8 @@
 		border: 2px dashed var(--rt-sage);
 		border-radius: 1rem;
 		color: var(--rt-sage);
+		font-weight: 600;
 		text-align: left;
-	}
-	.add-text {
-		padding: 0.3rem 0.8rem;
-		border: 2px dashed var(--rt-sage);
-		border-radius: 0.6rem;
-		color: var(--rt-sage);
-		font-size: 1rem;
 	}
 	.refused {
 		color: #ff4d55;

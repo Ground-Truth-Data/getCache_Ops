@@ -52,7 +52,7 @@ describe('the builder keeps what it does not edit', () => {
 		expect((out.elements[1].elements as { name: string }[]).map((e) => e.name)).toEqual(['weather']);
 	});
 	it('a nested group sits in its section and owns the fields after it, up to the next section', () => {
-		const fields = [blank('section'), blank('text'), { ...blank('nested'), addText: '+ Tree' }, blank('number'), blank('text'), blank('section'), blank('date')];
+		const fields = [blank('section'), blank('text'), blank('nested'), blank('number'), blank('text'), blank('section'), blank('date')];
 		fields.forEach((f, i) => (f.key = `f${i}`));
 		const d = toDefinition('', fields);
 		expect(d.elements.map((e) => e.name)).toEqual(['f0', 'f5']);

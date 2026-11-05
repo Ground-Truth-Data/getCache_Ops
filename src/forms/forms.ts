@@ -9,8 +9,8 @@ export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'che
 /** `src` is the element as loaded (or a new field's defaults): saving writes the edited keys onto it, so every
  *  property the builder has no control for survives each version. The builder's list is flat: a section owns
  *  what follows it up to the next section, and a nested group (a little form repeated per tree, say) owns the
- *  fields after it up to the next nested group or section. `addText` is a nested group's add button on the phone. */
-export type Field = { kind: Kind; key: string; label: string; description: string; addText: string; required: boolean; choices: string[]; min?: number; max?: number; src: El };
+ *  fields after it up to the next nested group or section. */
+export type Field = { kind: Kind; key: string; label: string; description: string; required: boolean; choices: string[]; min?: number; max?: number; src: El };
 export type FormRow = { id: string; formId: string; version: number; definition: Definition; publishedAt: string | null; copiedFrom: string | null };
 export type Answer = { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
 export type AnswerRow = { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
@@ -30,7 +30,7 @@ const choiceText = (c: unknown) => String(typeof c === 'object' ? (c as { value:
 
 export const blank = (kind: Kind): Field => ({
 	kind, key: '', label: '', required: false, choices: kind === 'dropdown' || kind === 'radiogroup' || kind === 'checkbox' ? ['Yes', 'No'] : [],
-	description: '', addText: '', src: { ...NEW[kind], name: '' },
+	description: '', src: { ...NEW[kind], name: '' },
 });
 
 function el(f: Field): El {
@@ -43,7 +43,6 @@ function el(f: Field): El {
 	// Choices the builder shows as plain text; untouched, a definition's own {value, text} pairs stay.
 	if (f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox')
 		out.choices = f.choices.join('\n') === ((f.src.choices as unknown[]) ?? []).map(choiceText).join('\n') ? f.src.choices : f.choices;
-	if (f.kind === 'nested') put('panelAddText', f.addText);
 	return out;
 }
 export const toDefinition = (title: string, fields: Field[], rest: Partial<Definition> = {}): Definition => {
@@ -71,7 +70,7 @@ export const toDefinition = (title: string, fields: Field[], rest: Partial<Defin
 function field(e: El): Field {
 	const kind = (e.type === 'text' ? (e.inputType === 'number' ? 'number' : e.inputType === 'date' ? 'date' : 'text') : e.type === 'panel' ? 'section' : e.type === 'paneldynamic' ? 'nested' : e.type) as Kind;
 	return {
-		kind, key: e.name, label: e.title ?? '', description: (e.description as string) ?? '', addText: (e.panelAddText as string) ?? '', required: !!e.isRequired,
+		kind, key: e.name, label: e.title ?? '', description: (e.description as string) ?? '', required: !!e.isRequired,
 		choices: ((e.choices as unknown[]) ?? []).map(choiceText),
 		min: e.min as number | undefined, max: e.max as number | undefined, src: e,
 	};
