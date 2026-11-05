@@ -11,6 +11,7 @@ export default defineConfig(({ command, isPreview }) => ({
 	// Supabase's public names keep their Bitwarden spelling, PUBLIC_ prefix and all.
 	envPrefix: ['VITE_', 'PUBLIC_'],
 	plugins: [svelte(), tailwindcss()],
+	resolve: { alias: [{ find: /^\$parent\/src\/lib\/paraglide\/(messages|runtime)$/, replacement: new URL('src/forms/gcStrings.ts', import.meta.url).pathname }] },
 	// Pre-bundling breaks the WASM file's relative URL.
 	optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
 }));

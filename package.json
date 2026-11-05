@@ -16,7 +16,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "sample": "node scripts/makeSample.mjs",
-    "check": "svelte-check --threshold error",
+    "check": "svelte-check --threshold error --ignore _rapper",
     "rapper": "node scripts/vendorRapper.mjs"
   },
   "devDependencies": {

@@ -4,6 +4,8 @@
 	import Builder from './Builder.svelte';
 	import Report from './Report.svelte';
 	import { session } from '../data/auth';
+	import InboxChrome from '../../_rapper/gc/InboxChrome.svelte';
+	import RowCard from '../../_rapper/gc/RowCard.svelte';
 	import { addLink, copyPlugin, live, myPlugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
 
 	let { me, sub, id, signedInNow }: { me: { authId: string } | null; sub?: string; id?: string; signedInNow: () => void } = $props();
@@ -71,13 +73,43 @@
 		r.readAsDataURL(file);
 	}
 
+	// The home is the inbox: an Organization row, then the chosen one's plugins, then rows.
+	const items = $derived([
+		...mine.map((versions) => {
+			const last = versions.at(-1)!;
+			const live = versions.findLast((v) => v.publishedAt);
+			return { pluginId: last.pluginId, title: last.definition.title ?? '', logo: last.logo, maker: live?.madeBy ?? 'You', version: live ? `v${live.version} live` : 'draft', answers: answers.get(last.pluginId) ?? 0, href: `#/plugins/edit/${last.pluginId}` };
+		}),
+		...others.map((p) => ({ pluginId: p.pluginId, title: p.title, logo: null, maker: p.madeBy, version: '', answers: p.answers, href: `#/plugins/answers/${p.pluginId}` })),
+	]);
+	let org = $state('');
+	let one = $state('');
+	let query = $state('');
+	const inOrg = $derived(items.filter((p) => !org || p.maker === org));
+	const pillRows = $derived([
+		[{ key: '', label: 'All', on: !org }, ...[...new Set(items.map((p) => p.maker))].map((k) => ({ key: k, label: k, icon: 'org_gold.webp', on: org === k }))],
+		inOrg.map((p) => ({ key: p.pluginId, label: p.title || 'Untitled', icon: p.logo ?? 'plugin_gold.webp', on: one === p.pluginId })),
+	]);
+	const tap = (key: string, row: number) => (row ? (one = one === key ? '' : key) : ((org = key), (one = '')));
+	const q = $derived(query.trim().toLowerCase());
+	const shown = $derived(inOrg.filter((p) => (!one || p.pluginId === one) && (!q || `${p.title} ${p.maker}`.toLowerCase().includes(q))));
+	const chosen = $derived(items.find((p) => p.pluginId === one && p.answers && p.href.includes('/edit/')));
+	const buttons = $derived([
+		{ label: 'Open a .getcache file', icon: openIcon, gold: true, onclick: () => pick?.click() },
+		{ label: 'New plugin', icon: pluginIcon, href: '#/plugins/edit/new' },
+		...(chosen ? [{ label: `${chosen.answers} answers`, icon: answersIcon, href: `#/plugins/answers/${chosen.pluginId}` }] : []),
+	]);
+
 	let photos = new Map<string, string>();
 	let copied = $state(false);
-	const chip = 'rounded-full px-3.5 py-1.5 text-[0.95rem] font-bold';
 </script>
 
 <!-- Signing in happens in the app's own tab on Get Cache's site: coming back is when the session can be there. -->
 <svelte:window onfocus={() => (asking &&= !session())} />
+
+{#snippet openIcon()}<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 19h16" /></svg>{/snippet}
+{#snippet pluginIcon()}<img src="plugin_gold.webp" alt="" class="h-6 w-6 object-contain" />{/snippet}
+{#snippet answersIcon()}<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9" /></svg>{/snippet}
 
 {#snippet mark(src: string | null, size: string)}
 	<img src={src ?? 'plugin_gold.webp'} alt="" class="{size} shrink-0 rounded-2xl object-contain" />
@@ -139,35 +171,18 @@
 			</p>
 		{/if}
 	</div>
-	<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-tiles>
-		<a class="tile tile-gold rt-fancy-btn min-h-60" href="#/plugins/edit/new" data-new>
-			<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-			New plugin
-		</a>
-		{#each mine as versions (versions[0].pluginId)}
-			{@const last = versions.at(-1)!}
-			{@const shown = versions.findLast((v) => v.publishedAt)}
-			{@const n = answers.get(last.pluginId)}
-			<div class="relative flex min-h-60 flex-col gap-4 rounded-3xl border-2 border-[#3a352e] bg-[#1a1a1a] p-7" data-plugin-tile={last.definition.title}>
-				{@render mark(last.logo, 'h-18 w-18')}
-				<a class="font-display text-[2rem] leading-tight after:absolute after:inset-0" href="#/plugins/edit/{last.pluginId}" data-edit>{last.definition.title || 'Untitled'}</a>
-				<span class="mt-auto flex flex-wrap gap-2.5">
-					<span class="{chip} bg-[#2a2620] text-(--accent)" data-version>{shown ? `v${shown.version} live` : 'draft'}</span>
-					{#if n}<a class="{chip} relative z-10 border-2 border-[#4a443c] text-[#c9c3b7]" href="#/plugins/answers/{last.pluginId}" data-answers>{n} answers</a>{/if}
-				</span>
-			</div>
+	<div class="flex flex-col gap-(--rt-space-2)" data-plugins>
+		<InboxChrome rows={pillRows} onpill={tap} bind:query placeholder="Search plugins, makers, organizations" clearLabel="Clear" {buttons} />
+		{#each shown as p (p.pluginId)}
+			<RowCard
+				title={p.title || 'Untitled'}
+				glyphSrc={p.logo ?? 'plugin_gold.webp'}
+				subtitle={[p.maker && `Made by ${p.maker}`, p.answers && `${p.answers} answers`].filter(Boolean).join(' · ')}
+				tags={p.version ? [{ label: p.version, tone: 'gold' }] : []}
+				tier="top"
+				href={p.href}
+			/>
 		{/each}
-		{#each others as p (p.pluginId)}
-			<a class="flex min-h-60 flex-col gap-4 rounded-3xl border-2 border-[#3a352e] bg-[#1a1a1a] p-7" href="#/plugins/answers/{p.pluginId}" data-plugin-tile={p.title}>
-				{@render mark(null, 'h-18 w-18')}
-				<span class="font-display text-[2rem] leading-tight">{p.title}</span>
-				<span class="mt-auto"><span class="{chip} border-2 border-[#4a443c] text-[#c9c3b7]" data-answers>{p.answers} answers</span></span>
-			</a>
-		{/each}
-		<button class="tile min-h-60 border-2 border-dashed border-[#4a443c]" onclick={() => pick?.click()} data-open-sent>
-			<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 19h16" /></svg>
-			Open a .getcache file
-		</button>
 	</div>
 	<input bind:this={pick} type="file" accept=".getcache" class="hidden" onchange={(e) => open(e.currentTarget.files?.[0])} data-sent-file />
 {/if}

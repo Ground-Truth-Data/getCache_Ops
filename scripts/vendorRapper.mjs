@@ -18,15 +18,20 @@ const files = [
 	'gc/form.ts',
 	'gc/formSurvey.ts',
 	'gc/FormView.svelte',
+	// The inbox's furniture: Plugins draws through it.
+	...['InboxChrome', 'RowCard', 'Checkbox', 'IdentityPill', 'ConfirmedDiamond', 'SearchInput', 'FancyButton', 'Icon'].map((f) => `gc/${f}.svelte`),
+	'gc/iconPaths.ts',
+	'gc/messages/en.json',
+	...['shovel_gold', 'treeFontRust_mini', 'pen_edit_icon_white', 'note_icon_white', ...['dark', 'light'].flatMap((t) => [`diamond_${t}Rose_tilt`, `diamond_${t}Rose_vert`])].map((f) => `gc/assets/${f}.webp`),
 ];
 
 // Written in place and only when changed: a deleted and recreated folder drops out of Vite's watcher, which then serves the old kit.
 if (existsSync(`${rapper}/.git`)) {
 	for (const f of files) {
-		const text = execFileSync('git', ['-C', rapper, 'show', `HEAD:${f}`], { encoding: 'utf8' });
+		const bytes = execFileSync('git', ['-C', rapper, 'show', `HEAD:${f}`], { maxBuffer: 1 << 26 });
 		const to = `_rapper/${f}`;
-		if (existsSync(to) && readFileSync(to, 'utf8') === text) continue;
+		if (existsSync(to) && readFileSync(to).equals(bytes)) continue;
 		mkdirSync(dirname(to), { recursive: true });
-		writeFileSync(to, text);
+		writeFileSync(to, bytes);
 	}
 }

@@ -3,6 +3,20 @@
 @import "./rowShell.css";
 
 :root {
+	/* Three accents: gold = commit, terracotta = context, sage = nature. */
+	--palette-gold: var(--rt-yellow);
+	--palette-terracotta: #b36940;
+	--palette-rust: #c97a4a;
+	--palette-terracotta-hint: #d18a5e;
+	--palette-sage: #838963;
+	/* Review mode: amber = held for you, red = an edit or a clock set back. */
+	--palette-amber: #ee9b2f;
+	--palette-red: #e2553f;
+	/* Shared: what other people can see. Used nowhere else, so it never reads as private. */
+	--palette-sky: #6fc3e8;
+	--palette-sky-dim: #4a8aa8;
+	--palette-sky-ink: #14202a;
+
 	--rt-bg: #1a1a1a;
 	--rt-surface: #1f1f1f;
 	--rt-panel: #141414;
@@ -373,14 +387,17 @@ hr {
 	box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.65);
 }
 
-/* Keeps the scrollbar off rounded corners; set --scroll-inset to the box's own radius. */
-.rt-scroll-inset {
-	scrollbar-width: thin;
-	scrollbar-color: var(--rt-border-strong, rgb(255 255 255 / 0.28)) transparent;
+/* Keeps the scrollbar off rounded corners; set --scroll-inset to the box's own radius.
+   Chrome ignores every ::-webkit-scrollbar rule once scrollbar-width/-color is set, so those are Firefox-only. */
+@supports not selector(::-webkit-scrollbar) {
+	.rt-scroll-inset {
+		scrollbar-width: thin;
+		scrollbar-color: var(--scroll-thumb, var(--rt-border-strong, rgb(255 255 255 / 0.28))) transparent;
+	}
 }
 
 .rt-scroll-inset::-webkit-scrollbar {
-	width: 6px;
+	width: var(--scroll-w, 6px);
 }
 
 .rt-scroll-inset::-webkit-scrollbar-track {
@@ -390,7 +407,10 @@ hr {
 }
 
 .rt-scroll-inset::-webkit-scrollbar-thumb {
-	background: var(--rt-border-strong, rgb(255 255 255 / 0.28));
+	background: var(--scroll-thumb, var(--rt-border-strong, rgb(255 255 255 / 0.28)));
+	/* Transparent border clipped off the background: the pill floats off the box's edge. */
+	border: var(--scroll-gap, 0px) solid transparent;
+	background-clip: padding-box;
 	border-radius: 99px;
 }
 
