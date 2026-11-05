@@ -77,14 +77,20 @@
 		}
 	}
 
-	const ADD: [Kind, string][] = [['text', 'Text'], ['number', 'Number'], ['dropdown', 'Choice'], ['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['group', 'Repeat']];
+	const ADD: [Kind, string][] = [['text', 'Text'], ['number', 'Number'], ['dropdown', 'Choice'], ['checkbox', 'Checkboxes'], ['date', 'Date'], ['file', 'Photo'], ['group', 'Repeat']];
+	// GPS is not a field the maker names: it is one switch for the whole form.
+	const gps = $derived(fields.some((f) => f.kind === 'gps'));
+	function setGps(on: boolean) {
+		if (!on) fields = fields.filter((f) => f.kind !== 'gps');
+		else if (!gps) fields.push({ ...blank('gps'), key: 'gps', label: 'Location' });
+	}
 	const CHOICE = 'M8 6h12M8 12h12M8 18h12M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2';
 	const ICON: Record<Kind, string> = {
 		text: 'M4 7V5h16v2M12 5v14M9 19h6',
 		number: 'M9 4L7 20M17 4l-2 16M4 9h16M3 15h16',
 		dropdown: CHOICE,
 		radiogroup: CHOICE,
-		checkbox: CHOICE,
+		checkbox: 'M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM8 12l3 3 5-6',
 		date: 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 10h18M8 3v4M16 3v4',
 		file: 'M4 8h3l2-3h6l2 3h3v11H4zM15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z',
 		gps: 'M12 21s-6-6-6-11a6 6 0 0 1 12 0c0 5-6 11-6 11zM14 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0z',
@@ -113,7 +119,7 @@
 			</div>
 			<div class="flex flex-wrap items-center gap-3 text-sm">
 				<input class="{input} w-36 font-mono" placeholder="key" bind:value={f.key} disabled={locked.has(f.key)} title={locked.has(f.key) ? 'Published: this key is locked' : 'The column name in reports'} data-key />
-				{#if !group}<label class="flex items-center gap-2"><input type="checkbox" class="h-5 w-5" bind:checked={f.required} data-required />must fill</label>{/if}
+				{#if !group}<label class="flex items-center gap-2"><input type="checkbox" class="h-5 w-5" bind:checked={f.required} data-required /><span><span class="req">*</span> required</span></label>{/if}
 				{#if f.kind === 'number'}
 					<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
 					<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
@@ -129,7 +135,7 @@
 			<button class="pick" onclick={() => (selected = f)} data-pick>
 				{#if !inGroup}{@render icon(f.kind)}{/if}
 				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}</span>
-				{#if f.required}<span class="text-sm text-muted">must fill</span>{/if}
+				{#if f.required}<span class="text-sm text-muted"><span class="req">*</span> required</span>{/if}
 				{#if group}<span class="add-text">{f.addText || '+ Add'}</span>{/if}
 			</button>
 		{/if}
@@ -163,7 +169,12 @@
 		{/each}
 	</aside>
 	<section class="flex min-w-0 flex-col gap-3" aria-label="The form" data-fields>
-		{#each fields as f, i (f)}{@render card(f, fields, i, false)}{/each}
+		{#each fields as f, i (f)}{#if f.kind !== 'gps'}{@render card(f, fields, i, false)}{/if}{/each}
+		<label class="gps" data-gps-switch>
+			<input type="checkbox" class="h-5 w-5" checked={gps} onchange={(e) => setGps(e.currentTarget.checked)} />
+			<img src="diamond.webp" alt="" width="22" height="22" />
+			<span>Collect GPS{#if gps}<span class="block text-sm text-muted">Needs location services on to collect field data.</span>{/if}</span>
+		</label>
 	</section>
 	<aside class="phone" aria-label="Phone preview" data-preview>
 		<FormView {definition} onsubmit={() => {}} />
@@ -185,6 +196,20 @@
 	}
 	.title:focus {
 		border-bottom-color: var(--accent);
+	}
+	.req {
+		color: #e5484d;
+		font-weight: 700;
+	}
+	.gps {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.85rem 1.25rem;
+		border: 2px dashed #3a352e;
+		border-radius: 1rem;
+		font-size: 1.15rem;
+		font-weight: 600;
 	}
 	.add {
 		display: flex;

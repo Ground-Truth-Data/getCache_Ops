@@ -43,18 +43,16 @@
 		if (pick) pick.value = '';
 	}
 
-	// The maker's page: the credit and logo travel with every version.
-	let madeBy = $state('');
+	// The credit is the publishing account's name, set by Central; the logo travels with every version.
+	let madeBy = $state<string>();
 	let logo = $state<string | null>(null);
-	let fixed = $state(false);
 	// Set when Publish needs an account: the sign-in shows then, and goes once the session is back.
 	let asking = $state(false);
 	const store = $derived.by(() => {
 		if (sub !== 'edit' || !id) return undefined;
-		const s = pluginStore(id, () => ({ madeBy: madeBy.trim(), logo }), (rows) => {
-			const last = rows.at(-1);
-			if (last) ({ madeBy, logo } = last);
-			fixed = rows.some((r) => r.publishedAt || r.copiedFrom);
+		const s = pluginStore(id, () => ({ logo }), (rows) => {
+			logo = rows.at(-1)?.logo ?? null;
+			madeBy = rows.findLast((r) => r.publishedAt)?.madeBy;
 		});
 		return {
 			...s,
@@ -93,12 +91,9 @@
 		</label>
 	{/snippet}
 	{#snippet byline()}
-		<span class="flex items-center gap-1.5 text-[#c9c3b7]" data-credit
-			>Made by
-			{#if fixed}<span data-made-by-fixed>{madeBy}</span>{:else}<input class="border-b border-rule bg-transparent outline-none focus:border-(--accent)" placeholder="you" bind:value={madeBy} data-made-by />{/if}</span
-		>
+		{#if madeBy}<span class="text-[#c9c3b7]" data-credit>Made by {madeBy}</span>{/if}
 	{/snippet}
-	{#key id}<Builder {store} back={['#/plugins', 'Plugins']} logo={logoPick} {byline} meta={[madeBy, logo]} />{/key}
+	{#key id}<Builder {store} back={['#/plugins', 'Plugins']} logo={logoPick} {byline} meta={logo} />{/key}
 	{#if asking}<div class="mt-6" data-publish-signin><SignIn done={() => ((asking = false), signedInNow())} /></div>{/if}
 {:else if sub === 'answers' && id}
 	<Report load={() => receivedAnswers(id).then((a) => ((photos = a.photos), a))} back={['#/plugins', 'Plugins']} photo={(k) => photos.get(k)} />

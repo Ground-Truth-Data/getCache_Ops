@@ -7,8 +7,8 @@ import { session } from '../data/auth';
 import { appHome, call } from '../company/central';
 import type { Answers, Definition, Store, Version } from './forms';
 
-export type PluginRow = Version & { pluginId: string; madeBy: string; logo: string | null; copiedFrom: string | null };
-type Draft = Pick<PluginRow, 'pluginId' | 'definition' | 'madeBy' | 'logo' | 'copiedFrom'>;
+export type PluginRow = Version & { pluginId: string; madeBy?: string; logo: string | null; copiedFrom: string | null };
+type Draft = Pick<PluginRow, 'pluginId' | 'definition' | 'logo' | 'copiedFrom'>;
 
 export class SignInNeeded extends Error {
 	constructor() {
@@ -45,8 +45,8 @@ export const live = async (pluginId: string) => (await published([pluginId])).at
 /** What a phone opens to add the plugin: the same link is in its QR code. */
 export const addLink = (pluginId: string) => `${new URL(appHome).origin}/app/plugin?add=${pluginId}`;
 
-/** The builder's store for one plugin; `meta` is the credit and logo the page is showing. */
-export function pluginStore(pluginId: string, meta: () => { madeBy: string; logo: string | null }, loaded: (rows: PluginRow[]) => void): Store {
+/** The builder's store for one plugin; `meta` is the logo the page is showing. */
+export function pluginStore(pluginId: string, meta: () => { logo: string | null }, loaded: (rows: PluginRow[]) => void): Store {
 	let id = pluginId === 'new' ? undefined : pluginId;
 	return {
 		autosave: true,
@@ -65,7 +65,8 @@ export function pluginStore(pluginId: string, meta: () => { madeBy: string; logo
 			if (!session()) throw new SignInNeeded();
 			// An interrupted publish can leave its row unpublished; Central holds one draft per plugin.
 			await call(`plugin?pluginId=eq.${id}&publishedAt=is.null`, 'DELETE');
-			const [row] = await call<PluginRow[]>('plugin', 'POST', d);
+			const { pluginId, definition, logo, copiedFrom } = d;
+			const [row] = await call<PluginRow[]>('plugin', 'POST', { pluginId, definition, logo, copiedFrom });
 			await call(`plugin?id=eq.${row.id}`, 'PATCH', { publishedAt: new Date().toISOString() });
 			keep(d.pluginId, null);
 		},
@@ -77,7 +78,7 @@ export async function copyPlugin(pluginId: string): Promise<string> {
 	const src = (await published([pluginId])).at(-1);
 	if (!src) throw new Error('No published plugin at that link.');
 	const id = crypto.randomUUID();
-	keep(id, { pluginId: id, definition: src.definition, madeBy: src.madeBy, logo: src.logo, copiedFrom: src.id });
+	keep(id, { pluginId: id, definition: src.definition, logo: src.logo, copiedFrom: src.id });
 	return id;
 }
 
