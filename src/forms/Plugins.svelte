@@ -180,15 +180,17 @@
 			{:else if foldable}<span class="rt-row__fold"></span>{/if}
 		{/snippet}
 		{#snippet overlay()}
-			{#if foldable && p.answers}
+			<!-- Always two zones, so every row reads the same; with no answers the left one folds nothing. -->
+			{#if foldable}
 				<span
 					class="rt-row__half rt-row__half--toggle zone"
 					role="button"
 					tabindex="0"
 					aria-label={unfolded.has(p.pluginId) ? 'Hide answers' : 'Show answers'}
 					aria-expanded={unfolded.has(p.pluginId)}
-					onclick={(e) => (e.stopPropagation(), fold(p.pluginId))}
-					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), fold(p.pluginId))}
+					aria-disabled={!p.answers}
+					onclick={(e) => (e.stopPropagation(), p.answers && fold(p.pluginId))}
+					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), p.answers && fold(p.pluginId))}
 					data-fold
 				></span>
 			{/if}
@@ -340,13 +342,6 @@
 	.split :global(.rt-row) {
 		cursor: default;
 		border-color: var(--rt-yellow);
-	}
-	.split :global(.rt-row:hover) {
-		background: var(--rt-surface);
-	}
-	/* The split shows on hover only, never at rest. */
-	.zone {
-		background: transparent;
 	}
 	.rt-row__half--toggle.zone {
 		width: 75%;
