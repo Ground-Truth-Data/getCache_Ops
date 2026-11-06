@@ -17,7 +17,9 @@ export class SignInNeeded extends Error {
 	}
 }
 
-const COLS = 'id,pluginId,version,definition,madeBy,logo,publishedAt,copiedFrom,orgKey';
+// Every column Central has: a plugin row reads the same before and after a column is added (orgKey reads
+// undefined until ops.plugin carries it).
+const COLS = '*';
 const published = (ids: string[]) =>
 	ids.length ? call<PluginRow[]>(`plugin?pluginId=in.(${ids})&publishedAt=not.is.null&select=${COLS}&order=version`) : Promise.resolve([]);
 
@@ -70,7 +72,7 @@ export function pluginStore(pluginId: string, meta: () => { logo: string | null;
 			// An interrupted publish can leave its row unpublished; Central holds one draft per plugin.
 			await call(`plugin?pluginId=eq.${id}&publishedAt=is.null`, 'DELETE');
 			const { pluginId, definition, logo, copiedFrom } = d;
-			const [row] = await call<PluginRow[]>('plugin', 'POST', { pluginId, definition, logo, copiedFrom, orgKey: meta().orgKey });
+			const [row] = await call<PluginRow[]>('plugin', 'POST', { pluginId, definition, logo, copiedFrom, ...(meta().orgKey && { orgKey: meta().orgKey }) });
 			await call(`plugin?id=eq.${row.id}`, 'PATCH', { publishedAt: new Date().toISOString() });
 			keep(d.pluginId, null);
 		},
