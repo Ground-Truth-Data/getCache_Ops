@@ -223,7 +223,6 @@
 			</div>
 		{:else}
 			<button class="more" onclick={() => (picking = { at, group: !!group })} data-foot={group ? 'group' : 'section'}><span class="plus">+</span>{group ? 'Add to' : 'Add question to'} {label}</button>
-			{#if group}<button class="done" onclick={() => folded.add(group)} data-done>Done, fold list</button>{/if}
 		{/if}
 	</div>
 {/snippet}
@@ -260,7 +259,8 @@
 							{#if branchy && f.jumps}
 								<select class="field jump" aria-label="Go to" value={f.jumps[c] ?? ''} onchange={(e) => (e.currentTarget.value ? (f.jumps![c] = e.currentTarget.value) : delete f.jumps![c])} data-jump={k}>
 									<option value="">Continue to next section</option>
-									{#each fields as s, j (s)}{#if s.kind === 'section'}<option value={s.key}>{sectionNo[j]}. {s.label || `Section ${sectionNo[j]}`}</option>{/if}{/each}
+									<!-- A skip only goes forward, so only later sections are offered. -->
+									{#each fields as s, j (s)}{#if s.kind === 'section' && j > i}<option value={s.key}>{sectionNo[j]}. {s.label || `Section ${sectionNo[j]}`}</option>{/if}{/each}
 									<option value="submit">Submit form</option>
 								</select>
 							{/if}
@@ -280,7 +280,7 @@
 					{/if}
 					{#if branchy}
 						<button class="branch ml-auto" class:on={f.jumps} aria-pressed={!!f.jumps} aria-label="Go to section based on answer" title="Go to section based on answer" onclick={() => (f.jumps = f.jumps ? undefined : {})} data-branch>
-							<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 7h3c3 0 5 2.5 7 5s4 5 7 5h1.5M17.5 14l3 3-3 3M2 17h3c1.5 0 2.8-.6 4-1.6M13 8.6c1.2-1 2.5-1.6 4-1.6h3.5M17.5 4l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+							<img src={f.jumps ? 'redirect_icon_gold.webp' : 'redirect_icon_rust.webp'} alt="" />
 						</button>
 					{/if}
 				</div>
@@ -646,16 +646,18 @@
 		opacity: 0.35;
 	}
 	.branch {
-		display: grid;
-		place-items: center;
-		width: 48px;
+		width: 66px;
+		padding: 4px 6px;
 		border-color: #4a4540;
-		color: #8c857a;
+	}
+	.branch img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
 	}
 	.branch.on {
-		border-color: var(--rt-rust);
-		background: #3a2618;
-		color: #e08a52;
+		border-color: var(--accent);
+		background: #2a2410;
 	}
 	.nth {
 		padding: 0.15rem 0.6rem;
@@ -691,7 +693,6 @@
 		--tone: var(--rt-sage);
 	}
 	.more,
-	.done,
 	.picker {
 		border: 2px solid var(--tone);
 		border-radius: 1rem;
@@ -721,13 +722,6 @@
 	.foot.sage .plus {
 		--plus: 32px;
 		font-size: 24px;
-	}
-	.done {
-		padding: 0 1.1rem;
-		border-color: color-mix(in srgb, var(--tone) 45%, transparent);
-		background: transparent;
-		color: var(--tone);
-		font-weight: 700;
 	}
 	.picker {
 		flex: 1;
