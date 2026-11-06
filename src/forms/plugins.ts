@@ -31,11 +31,15 @@ function withDraft(rows: PluginRow[], pluginId: string): PluginRow[] {
 	return d ? [...rows, { ...d, id: 'local', version: (rows.at(-1)?.version ?? 0) + 1, publishedAt: null }] : rows;
 }
 
+// A draft lives only in this browser: Central being unreachable or a sign-in expiring must never hide it or stop it
+// saving, so Central's half of a read comes back empty, loudly.
+const orNone = <T>(p: Promise<T[]>) => p.catch((e): T[] => (console.warn("[plugins] Central unreachable; showing this browser's drafts only", e), []));
+
 /** This browser's plugins, and the signed-in maker's from anywhere: each one's versions, oldest first. */
 export async function myPlugins(authId?: string): Promise<PluginRow[][]> {
 	const ids = new Set(Object.keys(kept()));
-	if (authId) for (const r of await call<{ pluginId: string }[]>(`plugin?createdBy=eq.${authId}&select=pluginId`)) ids.add(r.pluginId);
-	const rows = await published([...ids]);
+	if (authId) for (const r of await orNone(call<{ pluginId: string }[]>(`plugin?createdBy=eq.${authId}&select=pluginId`))) ids.add(r.pluginId);
+	const rows = await orNone(published([...ids]));
 	return [...ids].map((id) => withDraft(rows.filter((r) => r.pluginId === id), id)).filter((v) => v.length);
 }
 
@@ -47,20 +51,19 @@ export const addLink = (pluginId: string) => `${new URL(appHome).origin}/app/plu
 
 /** The builder's store for one plugin; `meta` is the logo the page is showing. */
 export function pluginStore(pluginId: string, meta: () => { logo: string | null }, loaded: (rows: PluginRow[]) => void): Store {
-	let id = pluginId === 'new' ? undefined : pluginId;
+	const id = pluginId;
 	return {
 		autosave: true,
 		async load() {
-			const rows = id ? withDraft(await published([id]), id) : [];
+			const rows = withDraft(await orNone(published([id])), id);
 			loaded(rows);
 			return rows;
 		},
 		async save(definition: Definition) {
-			if (!id) history.replaceState(null, '', `#/plugins/edit/${(id = crypto.randomUUID())}`);
 			keep(id, { pluginId: id, definition, ...meta(), copiedFrom: kept()[id]?.copiedFrom ?? null });
 		},
 		async publish() {
-			const d = id && kept()[id];
+			const d = kept()[id];
 			if (!d) return;
 			if (!(await fresh())) throw new SignInNeeded();
 			// An interrupted publish can leave its row unpublished; Central holds one draft per plugin.

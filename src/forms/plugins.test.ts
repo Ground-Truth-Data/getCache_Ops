@@ -5,7 +5,7 @@ vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setI
 vi.stubGlobal('history', { replaceState: () => {} });
 const fetch = vi.fn(async (_url: string, _init?: RequestInit) => Response.json([]));
 vi.stubGlobal('fetch', fetch);
-const { pluginStore } = await import('./plugins');
+const { myPlugins, pluginStore } = await import('./plugins');
 
 const def = { title: 'Tree check', elements: [{ type: 'text', name: 'block' }] };
 const meta = () => ({ logo: null });
@@ -13,7 +13,7 @@ const sent = () => fetch.mock.calls.filter(([, init]) => init?.method && init.me
 afterEach(() => (mem.clear(), fetch.mockClear()));
 
 test('a plugin is made and saved with no account, and nothing leaves the browser', async () => {
-	const store = pluginStore('new', meta, () => {});
+	const store = pluginStore('p1', meta, () => {});
 	await store.save(def);
 	const [draft] = await store.load();
 	expect(draft).toMatchObject({ version: 1, definition: def, publishedAt: null });
@@ -21,8 +21,17 @@ test('a plugin is made and saved with no account, and nothing leaves the browser
 	expect(sent()).toEqual([]);
 });
 
+test("a draft is listed and reopens when Central can't be reached", async () => {
+	await pluginStore('p1', meta, () => {}).save(def);
+	fetch.mockImplementation(async () => Response.json({ message: 'JWT expired' }, { status: 401 }));
+	vi.spyOn(console, 'warn').mockImplementation(() => {});
+	expect((await myPlugins('me')).map((v) => v.at(-1)?.definition)).toEqual([def]);
+	expect((await pluginStore('p1', meta, () => {}).load()).at(-1)?.definition).toEqual(def);
+	fetch.mockImplementation(async () => Response.json([]));
+});
+
 test('publishing asks for a sign-in and sends nothing without one', async () => {
-	const store = pluginStore('new', meta, () => {});
+	const store = pluginStore('p2', meta, () => {});
 	await store.save(def);
 	await expect(store.publish('local')).rejects.toThrow(/sign in/i);
 	expect(sent()).toEqual([]);

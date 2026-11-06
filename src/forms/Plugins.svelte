@@ -55,8 +55,12 @@
 	let logo = $state<string | null>(null);
 	// Set when Publish needs an account: the sign-in shows then, and goes once the session is back.
 	let asking = $state(false);
+	// A new plugin gets its id in the address before anything is typed, so a reload or remount reopens the draft.
+	$effect(() => {
+		if (sub === 'edit' && id === 'new') location.replace(`#/plugins/edit/${crypto.randomUUID()}`);
+	});
 	const store = $derived.by(() => {
-		if (sub !== 'edit' || !id) return undefined;
+		if (sub !== 'edit' || !id || id === 'new') return undefined;
 		const s = pluginStore(id, () => ({ logo }), (rows) => {
 			logo = rows.at(-1)?.logo ?? null;
 			madeBy = rows.findLast((r) => r.publishedAt)?.madeBy;
