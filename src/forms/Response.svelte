@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { El } from '../../_rapper/gc/form';
-	import { columns, current, download, sections, sheets } from './answers';
+	import { ago, columns, current, download, sections, sheets } from './answers';
 	import type { Answers, At } from './forms';
 	import Value from './Value.svelte';
 
@@ -24,10 +24,6 @@
 	const lists = $derived(cols.filter((c) => c.type === 'paneldynamic'));
 	const entries = (group: string) => got!.rows.filter((r) => r.answer === id && r.groupKey === group);
 
-	function ago(iso: string) {
-		const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
-		return m < 60 ? `${m}m` : m < 1440 ? `${Math.round(m / 60)}h` : `${Math.round(m / 1440)}d`;
-	}
 	const saved = (iso: string) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 </script>
 

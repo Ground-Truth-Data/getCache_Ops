@@ -3,7 +3,9 @@
 	import SignIn from '../company/SignIn.svelte';
 	import { mine as memberships } from '../company/central';
 	import Builder from './Builder.svelte';
-	import { nthForm } from './forms';
+	import { keys, nthForm, type Answers, type Definition } from './forms';
+	import { ago, current } from './answers';
+	import { SvelteMap } from 'svelte/reactivity';
 	import Report from './Report.svelte';
 	import Response from './Response.svelte';
 	import { session } from '../data/auth';
@@ -33,7 +35,6 @@
 		void [sub, id];
 		load().catch((e) => (note = e.message));
 	});
-	const answers = $derived(new Map(inbox.map((p) => [p.pluginId, p.answers])));
 	// Plugins made elsewhere whose answers came in a sent file: their tile opens the answers.
 	const others = $derived(inbox.filter((p) => !mine.some((v) => v[0].pluginId === p.pluginId)));
 
@@ -98,14 +99,23 @@
 	}
 
 	// The home is the inbox: All or You, a search, then rows the maker drags into his own order.
+	const questions = (d: Definition) => keys(d).filter((k) => k.type !== 'paneldynamic').length;
 	const items = $derived([
 		...mine.map((versions) => {
 			const last = versions.at(-1)!;
 			const live = versions.findLast((v) => v.publishedAt);
-			return { pluginId: last.pluginId, mine: true, title: last.definition.title ?? '', maker: live?.madeBy ?? 'You', version: live ? `v${live.version} live` : 'draft', answers: answers.get(last.pluginId) ?? 0, href: `#/plugins/edit/${last.pluginId}` };
+			const got = inbox.find((p) => p.pluginId === last.pluginId);
+			return { pluginId: last.pluginId, mine: true, title: last.definition.title ?? '', maker: live?.madeBy ?? 'You', version: live ? `v${live.version} live` : 'draft', live: !!live, questions: questions(last.definition), answers: got?.answers ?? 0, lastAt: got?.lastAt ?? null, href: `#/plugins/edit/${last.pluginId}` };
 		}),
-		...others.map((p) => ({ pluginId: p.pluginId, mine: false, title: p.title, maker: p.madeBy, version: '', answers: p.answers, href: `#/plugins/answers/${p.pluginId}` })),
+		...others.map((p) => ({ pluginId: p.pluginId, mine: false, title: p.title, maker: p.madeBy, version: '', live: true, questions: questions(p.definition), answers: p.answers, lastAt: p.lastAt, href: `#/plugins/answers/${p.pluginId}` })),
 	]);
+	// A plugin with answers folds open on its left chevron: its answers as rust rows, each opening its response.
+	const unfolded = new SvelteMap<string, Answers['answers']>();
+	function fold(pluginId: string) {
+		if (unfolded.delete(pluginId)) return;
+		receivedAnswers(pluginId).then((a) => unfolded.set(pluginId, current(a).answers.toReversed()), (e) => (note = e.message));
+	}
+	const saved = (iso: string) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 	// This browser's order; a plugin it hasn't placed yet goes on top.
 	const ORDER = 'ops-plugins-order';
 	let order = $state<string[]>(JSON.parse(localStorage.getItem(ORDER) ?? '[]'));
@@ -148,6 +158,42 @@
 
 {#snippet gcIcon()}<img src="gc_logo.webp" alt="" class="h-10 w-auto" />{/snippet}
 {#snippet pluginIcon()}<img src="plugin_white.webp" alt="" class="h-8 w-auto" />{/snippet}
+
+{#snippet go()}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg>{/snippet}
+
+<!-- One pill colour per fact, so the eye learns them: questions white, answers rust, live sage, a draft dim. -->
+{#snippet pluginRow(p: (typeof items)[number], href: string, foldable: boolean)}
+	<RowShell title={p.title || 'Untitled'} {href} tier="top">
+		{#snippet lead()}
+			{#if foldable && p.answers}
+				<span
+					class="rt-row__fold pointer-events-auto! cursor-pointer"
+					class:rt-row__fold--shut={!unfolded.has(p.pluginId)}
+					role="button"
+					tabindex="0"
+					aria-label={unfolded.has(p.pluginId) ? 'Hide answers' : 'Show answers'}
+					aria-expanded={unfolded.has(p.pluginId)}
+					onclick={(e) => (e.preventDefault(), e.stopPropagation(), fold(p.pluginId))}
+					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), fold(p.pluginId))}
+					data-fold
+					><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg></span
+				>
+			{:else if foldable}<span class="rt-row__fold"></span>{/if}
+		{/snippet}
+		{#snippet glyph()}<img src="plugin_gold.webp" alt="" class="rt-row__glyph-img" />{/snippet}
+		{#snippet subtitle()}
+			<IdentityPill who={pill(p)} />
+			{#if p.version}<span class="rt-row__badge {p.live ? 'border-(--rt-sage)! text-(--rt-sage)!' : 'border-[#8a857b]! text-[#8a857b]!'}" data-version>{p.version}</span>{/if}
+			<span class="rt-row__badge border-(--rt-cream)! text-(--rt-cream)!" data-questions>{p.questions} {p.questions === 1 ? 'question' : 'questions'}</span>
+			{#if p.answers}<span class="rt-row__badge border-(--rt-rust)! text-(--rt-rust)!" data-answers>{p.answers} {p.answers === 1 ? 'answer' : 'answers'}</span>{/if}
+		{/snippet}
+		{#snippet end()}
+			<span class="rt-row__cell rt-row__cell--chevron" aria-hidden="true"
+				>{#if p.lastAt}<span class="rt-row__when text-(--rt-sage)!" title="Last answered {saved(p.lastAt)}" data-last>{ago(p.lastAt)}</span>{/if}{@render go()}</span
+			>
+		{/snippet}
+	</RowShell>
+{/snippet}
 
 {#snippet mark(src: string | null, size: string)}
 	<img src={src ?? 'plugin_gold.webp'} alt="" class="{size} shrink-0 rounded-2xl object-contain" />
@@ -194,6 +240,9 @@
 			>
 		{/if}
 	</header>
+	{@const row = items.find((p) => p.pluginId === id)}
+	<!-- The plugin as its list shows it: a tap goes back to that list. -->
+	{#if row}<div class="mb-10 max-w-3xl print:hidden [&_.rt-row]:border-(--rt-yellow)!" data-share-row>{@render pluginRow(row, '#/plugins', false)}</div>{/if}
 	<div class="flex flex-wrap items-center justify-center gap-16 print:hidden" data-share>
 		<div class="aspect-square w-full max-w-90 rounded-[1.75rem] bg-[#f4efe6] p-7" data-qr>{@html renderSVG(link)}</div>
 		<div class="flex w-full max-w-md flex-col gap-5">
@@ -235,32 +284,29 @@
 				style:transform={moving ? `translateY(${drag!.deltaY}px)` : shift ? `translateY(${shift}px)` : undefined}
 				style:transition={shift && !moving ? 'transform 200ms ease' : undefined}
 			>
-			<RowShell title={p.title || 'Untitled'} href={p.href} tier="top">
-				{#snippet glyph()}<img src="plugin_gold.webp" alt="" class="rt-row__glyph-img" />{/snippet}
-				{#snippet subtitle()}
-					<IdentityPill who={pill(p)} />
-					{#if p.version}<span class="rt-row__badge rt-row__badge--gold">{p.version}</span>{/if}
-				{/snippet}
-				{#snippet end()}
-					<span class="rt-row__cell rt-row__cell--chevron" aria-hidden="true"
-						><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg></span
-					>
-				{/snippet}
-			</RowShell>
-			{#if p.answers}
-				<!-- Beside the row, not in it: the row is already a link, and one link can't hold another. -->
-				<a
-					class="absolute top-1/2 right-16 z-1 -translate-y-1/2 rounded-full bg-(--rt-sage) px-3 py-1 text-sm font-extrabold text-[#161a10] hover:brightness-110"
-					href="#/plugins/answers/{p.pluginId}"
-					data-answers-link>{p.answers} {p.answers === 1 ? 'answer' : 'answers'}</a
-				>
-			{/if}
+			{@render pluginRow(p, p.href, true)}
 			<RowGrip
 				label="Drag to reorder"
 				dragging={moving}
 				attach={(el) => rowDragHandle(el, { rowId: p.pluginId, index: i, count: shown.length, drag: () => drag, move: (d) => (drag = d), drop }).destroy}
 			/>
 			</div>
+			{@const got = unfolded.get(p.pluginId)}
+			{#if got}
+				<!-- mr-6 ends them where the row above ends, left of its grip. -->
+				<div class="mr-6 ml-10 flex flex-col gap-(--rt-space-2) [&_.rt-row]:border-(--rt-rust)!" data-answer-rows>
+					{#each got as a (a.id)}
+						{@const said = Object.values(a.data).filter((v) => typeof v === 'string' || typeof v === 'number').slice(0, 3).join(' · ')}
+						<RowShell title={saved(a.filledAt)} href="#/plugins/answers/{p.pluginId}/{a.id}" tier="child">
+							{#snippet subtitle()}{#if said}<span class="rt-row__num">{said}</span>{/if}{/snippet}
+							{#snippet end()}
+								<span class="rt-row__cell rt-row__cell--chevron" aria-hidden="true"><span class="rt-row__when text-(--rt-sage)!">{ago(a.filledAt)}</span>{@render go()}</span>
+							{/snippet}
+						</RowShell>
+					{/each}
+					<a class="small-btn self-start" href="#/plugins/answers/{p.pluginId}" data-answers-link>All answers as a table</a>
+				</div>
+			{/if}
 		{/each}
 	</div>
 	<input bind:this={pick} type="file" accept=".getcache" class="hidden" onchange={(e) => open(e.currentTarget.files?.[0])} data-sent-file />

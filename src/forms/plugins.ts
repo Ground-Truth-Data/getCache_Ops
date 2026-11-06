@@ -173,15 +173,17 @@ export async function receive(bytes: Uint8Array): Promise<Record<string, number>
 }
 
 /** Each plugin any sent file held, its newest version's title and credit, and how many answers came in. */
-export async function received(): Promise<{ pluginId: string; title: string; madeBy: string; answers: number }[]> {
+export async function received(): Promise<{ pluginId: string; title: string; madeBy: string; answers: number; lastAt: string | null; definition: Definition }[]> {
 	const { db } = await answersDb();
 	if (!rows(db, "SELECT 1 FROM sqlite_schema WHERE name = 'plugin'").length) return [];
 	return rows(
 		db,
-		`SELECT p.pluginId, json_extract(p.definition, '$.title') AS title, p.madeBy,
-			(SELECT count(*) FROM answer a JOIN plugin v ON v.id = a.plugin WHERE v.pluginId = p.pluginId) AS answers
+		`SELECT p.pluginId, json_extract(p.definition, '$.title') AS title, p.madeBy, p.definition,
+			(SELECT count(*) FROM answer a JOIN plugin v ON v.id = a.plugin WHERE v.pluginId = p.pluginId
+				AND a.id NOT IN (SELECT replaces FROM answer WHERE replaces IS NOT NULL)) AS answers,
+			(SELECT max(a.filledAt) FROM answer a JOIN plugin v ON v.id = a.plugin WHERE v.pluginId = p.pluginId) AS lastAt
 		FROM plugin p WHERE p.version = (SELECT max(version) FROM plugin WHERE pluginId = p.pluginId) ORDER BY title`,
-	) as never;
+	).map((r) => ({ ...r, definition: JSON.parse(r.definition as string) })) as never;
 }
 
 /** One plugin's answers, every version, and its photos as object URLs keyed as the answers name them. */
