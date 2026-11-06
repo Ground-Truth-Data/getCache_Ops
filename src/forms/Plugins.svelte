@@ -201,8 +201,9 @@
 		{#each shown as p, i (p.pluginId)}
 			{@const moving = drag?.rowId === p.pluginId}
 			{@const shift = rowShift(drag, p.pluginId, i)}
+			<!-- Gold and inset: plugins sit one level in, under the white company row. -->
 			<div
-				class="rt-row-track rt-row-track--grip"
+				class="rt-row-track rt-row-track--grip ml-4 [&_.rt-row]:border-(--rt-yellow)!"
 				class:rt-row-track--dragging={moving}
 				data-row-id={p.pluginId}
 				style:transform={moving ? `translateY(${drag!.deltaY}px)` : shift ? `translateY(${shift}px)` : undefined}
