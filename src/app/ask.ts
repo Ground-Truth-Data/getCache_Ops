@@ -6,6 +6,7 @@ const DOMAIN = `How tree planting works in this file:
 - Requests are usually loose ("the top 10 planting days this season"): they rarely say whose tallies, or whether money matters. Never pick one reading silently; answer so every reading can be read off the result, and put each choice in a column name, e.g. "Trees (everyone)".
 - Every figure must say whose it is. "My", "mine" or "I" means the file's owner only. Otherwise count everyone, and add a "Planters" column (COUNT DISTINCT planters) so a crew's day is never read as one person's. When it counts more than one planter, also add a "Top planter" and "Their trees" column, so the planter asking can find their own day in it.
 - Trees are the measure unless money is asked for, but an "Earnings" column beside trees costs nothing and answers the next question.
+- Count planting work only unless the request names fruit, cones or seeds; never a column per work mode. A planter reads the result on a phone: about 8 columns at most, the answer first.
 - The file's owner ("me", "my") is personIdTable.personKey where personId = (SELECT personId FROM userProfile WHERE userProfileId = 'singleton').
 - A person's name is COALESCE(NULLIF(username, ''), alias) in personView; follow sameAsKey when set (that person turned out to be another one).
 - Blocks: blockView.blockName via blockKey. A per-day or per-planter figure gets a "Blocks" column (COUNT DISTINCT blockKey). allocatedQty is the trees a block was given; compare it with trees planted.
@@ -28,9 +29,18 @@ export function prompt(query: Query, request: string) {
 	].join('\n\n');
 }
 
+/** The SQL in a pasted LLM reply: its fenced block when it has one, else the whole paste. */
+export function sqlOf(reply: string) {
+	return reply.match(/```(?:sql)?\s*([\s\S]*?)```/i)?.[1].trim() ?? reply;
+}
+
 /** Why `sql` won't run here, or undefined: Ops runs one SELECT (or WITH) and nothing else. */
 export function refusal(sql: string) {
-	const one = sql.trim().replace(/;\s*$/, '');
+	// A ';' or "SELECT" inside a string or comment is not SQL: GROUP_CONCAT(x, '; ') is common.
+	const one = sql
+		.replace(/'(?:[^']|'')*'|"(?:[^"]|"")*"|--[^\n]*|\/\*[\s\S]*?\*\//g, (m) => (m[0] === "'" || m[0] === '"' ? "''" : ' '))
+		.trim()
+		.replace(/;\s*$/, '');
 	if (!/^(select|with)\b/i.test(one)) return 'Only a SELECT (or WITH … SELECT) runs here.';
 	if (one.includes(';')) return 'One statement at a time.';
 }

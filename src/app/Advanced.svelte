@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Ops } from '../plugin/api';
 	import Pill from '../../_rapper/rt/admin/Pill.svelte';
-	import { prompt, refusal } from './ask';
+	import { prompt, refusal, sqlOf } from './ask';
 	import DataTable from './DataTable.svelte';
 
 	type Saved = { name: string; description: string; sql: string };
@@ -43,7 +43,7 @@
 	}
 
 	function run() {
-		sql = sql.match(/```(?:sql)?\s*([\s\S]*?)```/i)?.[1].trim() ?? sql;
+		sql = sqlOf(sql);
 		const why = refusal(sql);
 		try {
 			result = why ? { error: why } : { rows: ops.query(sql) };

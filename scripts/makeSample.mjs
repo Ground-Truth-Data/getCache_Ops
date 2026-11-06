@@ -63,6 +63,9 @@ for (const [p, username, color] of [
 	insert('personEntity', { personKey: p, createdAt: SEASON_START });
 	insert('personTable', { versionKey: key('op'), personKey: p, username, color, createdAt: SEASON_START });
 }
+// Sam owns the phone, so "my" and "me" in a request mean Sam.
+insert('personIdTable', { personId: 'sample-owner', personKey: planter, createdAt: SEASON_START });
+insert('userProfile', { userProfileId: 'singleton', displayName: 'Sam Planter', personId: 'sample-owner' });
 
 const mapKey = key('map');
 born('map', mapKey, SEASON_START, planter, { mapName: 'Sample contract — spring 2026' });
