@@ -22,7 +22,8 @@ export function columns(versions: Version[]): Column[] {
 	return [...cols.values()];
 }
 
-/** Where a response or an entry was filled: the first GPS question in its scope, as the phone stores it. */
+/** Where a response or an entry was filled: the GPS stamp in its scope, the form's at the top and an entry's
+ *  `<group>_gps` in its group, as the phone stores it. */
 export const where = (cols: Column[], group?: string) => cols.find((c) => c.type === 'gps' && c.group === group);
 export const spot = (v: unknown) => (typeof (v as Spot)?.lat === 'number' ? (v as Spot) : undefined);
 

@@ -11,7 +11,7 @@ const definition = {
 			type: 'panel', name: 'section_1', title: 'Measurements',
 			elements: [
 				{ type: 'text', inputType: 'number', name: 'height', title: 'Height' },
-				{ type: 'paneldynamic', name: 'trees', title: 'Trees', templateElements: [{ type: 'text', name: 'dbh', title: 'DBH' }, { type: 'gps', name: 'spot' }] },
+				{ type: 'paneldynamic', name: 'trees', title: 'Trees', templateElements: [{ type: 'text', name: 'dbh', title: 'DBH' }, { type: 'gps', name: 'trees_gps' }] },
 			],
 		},
 	],
@@ -25,7 +25,7 @@ const got: Answers = {
 	],
 	rows: [
 		{ id: 'e2', answer: 'r1', groupKey: 'trees', n: 2, replaces: null, data: { dbh: 51 } },
-		{ id: 'e1', answer: 'r1', groupKey: 'trees', n: 1, replaces: null, data: { dbh: 34, spot: { lat: -19.4113, lng: 146.8172, accuracy: 5 } } },
+		{ id: 'e1', answer: 'r1', groupKey: 'trees', n: 1, replaces: null, data: { dbh: 34, trees_gps: { lat: -19.4113, lng: 146.8172, accuracy: 5 } } },
 		{ id: 'e3', answer: 'r2b', groupKey: 'trees', n: 1, replaces: null, data: { dbh: 28 } },
 	],
 };
