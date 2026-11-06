@@ -17,7 +17,7 @@
 	import FormView from '../../_rapper/gc/FormView.svelte';
 	import { isOpen, query } from '../data/db';
 	import { type RowDrag, rowDragHandle, rowShift } from '../../_rapper/gc/rowDrag';
-	import { addLink, copyPlugin, live, myPlugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
+	import { addLink, copyPlugin, type Filed, keepAnswer, live, myPlugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
 
 	let { me, sub, id, answer, signedInNow }: { me: { authId: string } | null; sub?: string; id?: string; answer?: string; signedInNow: () => void } = $props();
 
@@ -107,10 +107,30 @@
 			const last = versions.at(-1)!;
 			const live = versions.findLast((v) => v.publishedAt);
 			const got = inbox.find((p) => p.pluginId === last.pluginId);
-			return { pluginId: last.pluginId, mine: true, title: last.definition.title ?? '', maker: live?.madeBy ?? 'You', version: live ? `v${live.version} live` : 'draft', live: !!live, questions: questions(last.definition), answers: got?.answers ?? 0, lastAt: got?.lastAt ?? null, href: `#/plugins/fill/${last.pluginId}`, definition: last.definition };
+			const filed = live && ({ ...live, madeBy: live.madeBy!, publishedAt: live.publishedAt! } as Filed);
+			return { pluginId: last.pluginId, mine: true, title: last.definition.title ?? '', maker: live?.madeBy ?? 'You', version: live ? `v${live.version} live` : 'draft', live: !!live, questions: questions(last.definition), answers: got?.answers ?? 0, lastAt: got?.lastAt ?? null, href: `#/plugins/fill/${last.pluginId}`, definition: last.definition, filed };
 		}),
-		...others.map((p) => ({ pluginId: p.pluginId, mine: false, title: p.title, maker: p.madeBy, version: '', live: true, questions: questions(p.definition), answers: p.answers, lastAt: p.lastAt, href: `#/plugins/fill/${p.pluginId}`, definition: p.definition })),
+		...others.map((p) => ({ pluginId: p.pluginId, mine: false, title: p.title, maker: p.madeBy, version: '', live: true, questions: questions(p.definition), answers: p.answers, lastAt: p.lastAt, href: `#/plugins/fill/${p.pluginId}`, definition: p.definition, filed: p as Filed })),
 	]);
+	// A form filled here is kept as a phone keeps one, under the live version; its photos wait here until it is.
+	let picked = new Map<string, File>();
+	const pickPhoto = async (f: File) => {
+		const key = crypto.randomUUID();
+		picked.set(key, f);
+		return key;
+	};
+	const fill = (v: Filed | undefined, answers: Record<string, unknown>) =>
+		run(async () => {
+			if (!v) throw new Error('Publish it to keep answers: a draft has no version to file them under.');
+			const self = isOpen() ? (query("SELECT selfKey FROM appState WHERE appStateId = 'singleton'")[0]?.selfKey as string | undefined) : undefined;
+			const by = self ?? me?.authId;
+			if (!by) throw new Error('Sign in, or open your Get Cache file, to sign this answer.');
+			await keepAnswer(v, answers, picked, by);
+			picked = new Map();
+			unfolded.delete(v.pluginId);
+			await load();
+			location.hash = '#/plugins';
+		})();
 	// A plugin with answers folds open on its left chevron: its answers as rust rows, each opening its response.
 	const unfolded = new SvelteMap<string, Answers['answers']>();
 	function fold(pluginId: string) {
@@ -258,7 +278,7 @@
 	<Report load={() => receivedAnswers(id).then((a) => ((photos = a.photos), a))} back={['#/plugins', 'Plugins']} photo={(k) => photos.get(k)} open={(a) => `#/plugins/answers/${id}/${a}`} />
 {:else if sub === 'fill' && id}
 	{@const row = items.find((p) => p.pluginId === id)}
-	<!-- Edit lives inside the form, and only on your own. Answers are kept on a phone, so filling here tries the form out. -->
+	<!-- Edit lives inside the form, and only on your own. -->
 	<header class="mb-8 flex max-w-3xl flex-wrap items-center gap-4" data-fill>
 		<a class="small-btn" href="#/plugins" data-back
 			><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>Plugins</a
@@ -267,7 +287,7 @@
 		{#if row?.mine}<a class="small-btn" href="#/plugins/edit/{id}" data-edit>Edit</a>{/if}
 		{#if row?.live}<a class="small-btn" href={addLink(id)} data-add-phone>Add to phone</a>{/if}
 	</header>
-	{#if row}<div class="phone" data-fill-form><FormView definition={row.definition} onsubmit={() => (location.hash = '#/plugins')} /></div>{/if}
+	{#if row}<div class="phone" data-fill-form><FormView definition={row.filed?.definition ?? row.definition} keep={pickPhoto} onsubmit={(a) => fill(row.filed, a)} /></div>{/if}
 {:else if sub === 'share' && id}
 	{@const link = addLink(id)}
 	<header class="mb-8 flex flex-wrap items-center gap-4 border-b border-rule pb-5 print:hidden">

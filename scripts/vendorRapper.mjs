@@ -16,6 +16,7 @@ const files = [
 	'gc/rowShell.css',
 	'gc/fancyButton.css',
 	'gc/form.ts',
+	'gc/pluginsFile.ts',
 	'gc/formSurvey.ts',
 	'gc/FormView.svelte',
 	// The inbox's furniture: Plugins draws through it.

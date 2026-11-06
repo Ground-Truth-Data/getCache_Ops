@@ -1,8 +1,10 @@
 // Plugins: a form anyone adds to their phone from a link. A plugin is made, edited and copied in this browser with
 // no account; Publish alone needs one, and writes the version to Central's ops.plugin, where triggers lock it and
 // keep the maker's credit. Answers never go to Central: a phone sends its plugins file, and Ops keeps every row of
-// every file it is given, in this browser.
+// every file it is given, and every form filled here, in this browser.
 import sqlite3InitModule, { type Database } from '@sqlite.org/sqlite-wasm';
+import { refused, split } from '../../_rapper/gc/form';
+import { pluginsDdl } from '../../_rapper/gc/pluginsFile';
 import { fresh } from '../data/auth';
 import { appHome, call } from '../company/central';
 import type { Answers, Definition, Store, Version } from './forms';
@@ -174,13 +176,46 @@ export async function receive(bytes: Uint8Array): Promise<Record<string, number>
 	}
 }
 
-/** Each plugin any sent file held, its newest version's title and credit, and how many answers came in. */
-export async function received(): Promise<{ pluginId: string; title: string; madeBy: string; answers: number; lastAt: string | null; definition: Definition }[]> {
+/** A published version an answer is filed under. */
+export type Filed = Pick<PluginRow, 'id' | 'pluginId' | 'version' | 'definition' | 'logo'> & { madeBy: string; publishedAt: string };
+
+/** A form filled here, kept as a phone keeps one, beside every sent file's answers; `by` signs it. */
+export async function keepAnswer(v: Filed, answers: Record<string, unknown>, photos: Map<string, File>, by: string): Promise<void> {
+	const { data, fix, rows: entries } = split(v.definition, answers);
+	const why = refused(v.definition, data) ?? entries.map((r) => refused(v.definition, r.data, r.groupKey)).find(Boolean);
+	if (why) throw new Error(why);
+	const { sqlite3, db } = await answersDb();
+	const now = new Date().toISOString();
+	const at = (f: typeof fix) => [f?.lat ?? null, f?.lng ?? null, f?.accuracyM ?? null];
+	const pictures = await Promise.all([...photos].map(async ([key, f]) => [key, f.type, new Uint8Array(await f.arrayBuffer()), now]));
+	const id = crypto.randomUUID();
+	db.transaction(() => {
+		if (!rows(db, "SELECT 1 FROM sqlite_schema WHERE name = 'plugin'").length) db.exec(pluginsDdl);
+		db.exec({
+			sql: 'INSERT INTO plugin (id, pluginId, version, definition, madeBy, logo, publishedAt, addedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING',
+			bind: [v.id, v.pluginId, v.version, JSON.stringify(v.definition), v.madeBy, v.logo, v.publishedAt, now],
+		});
+		for (const p of pictures) db.exec({ sql: 'INSERT INTO photo (key, type, bytes, takenAt) VALUES (?, ?, ?, ?)', bind: p as never });
+		db.exec({
+			sql: 'INSERT INTO answer (id, plugin, filledAt, data, editedByKey, lat, lng, accuracyM) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+			bind: [id, v.id, now, JSON.stringify(data), by, ...at(fix)] as never,
+		});
+		for (const r of entries)
+			db.exec({
+				sql: 'INSERT INTO answerRow (id, answer, groupKey, n, data, lat, lng, accuracyM) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+				bind: [crypto.randomUUID(), id, r.groupKey, r.n, JSON.stringify(r.data), ...at(r.fix)] as never,
+			});
+	});
+	await save(KEPT, sqlite3.capi.sqlite3_js_db_export(db, 'main'));
+}
+
+/** Each plugin any sent file held, its newest version, and how many answers came in. */
+export async function received(): Promise<(Filed & { title: string; answers: number; lastAt: string | null })[]> {
 	const { db } = await answersDb();
 	if (!rows(db, "SELECT 1 FROM sqlite_schema WHERE name = 'plugin'").length) return [];
 	return rows(
 		db,
-		`SELECT p.pluginId, json_extract(p.definition, '$.title') AS title, p.madeBy, p.definition,
+		`SELECT p.id, p.pluginId, p.version, p.logo, p.publishedAt, json_extract(p.definition, '$.title') AS title, p.madeBy, p.definition,
 			(SELECT count(*) FROM answer a JOIN plugin v ON v.id = a.plugin WHERE v.pluginId = p.pluginId
 				AND a.id NOT IN (SELECT replaces FROM answer WHERE replaces IS NOT NULL)) AS answers,
 			(SELECT max(a.filledAt) FROM answer a JOIN plugin v ON v.id = a.plugin WHERE v.pluginId = p.pluginId) AS lastAt
