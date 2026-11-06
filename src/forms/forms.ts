@@ -61,6 +61,13 @@ function el(f: Field): El {
 	}
 	return out;
 }
+/** The name a form is born with when nobody names it, as a map is: n one past the forms there are, stepped over names taken. */
+export function nthForm(taken: readonly string[]) {
+	const names = new Set(taken);
+	let n = taken.length + 1;
+	while (names.has(`Form ${n}`)) n++;
+	return `Form ${n}`;
+}
 /** Only a one-answer question outside a nested group can send the form to another section. */
 export const branches = (f: Field) => f.kind === 'dropdown' || f.kind === 'radiogroup';
 // "Go to section based on answer" is written as SurveyJS's own triggers, so the definition stays standard.

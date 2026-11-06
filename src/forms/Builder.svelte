@@ -6,8 +6,10 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { blank, branches, CENTRAL_KEY, fromDefinition, keyFor, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
 
-	let { store, back, logo, byline, meta }: {
+	let { store, back, logo, byline, meta, born = '' }: {
 		store: Store;
+		/** The name it saves under while the title is left empty, shown greyed in the empty title. */
+		born?: string;
 		back: [href: string, label: string];
 		logo?: Snippet;
 		byline?: Snippet;
@@ -35,7 +37,8 @@
 	const draft = $derived(latest && !latest.publishedAt ? latest : undefined);
 	// A key is locked once any version holding it is published.
 	const locked = $derived(new Set(versions.filter((v) => v.publishedAt).flatMap((v) => keys(v.definition).map((k) => k.key))));
-	const definition = $derived(toDefinition(title, fields, rest));
+	const definition = $derived(toDefinition(title.trim() || born, fields, rest));
+	let titleBox = $state<HTMLInputElement>();
 
 	// What the store holds: an autosaving store is written only when this changes.
 	let kept = '';
@@ -44,6 +47,7 @@
 	async function load() {
 		versions = await store.load();
 		if (latest) ({ title, fields, rest } = fromDefinition(latest.definition));
+		if (!title) titleBox?.focus();
 		kept = now();
 	}
 	$effect(() => void load().catch((e) => (note = e.message)));
@@ -291,7 +295,7 @@
 	>
 	{@render logo?.()}
 	<div class="flex min-w-56 flex-1 flex-col gap-1">
-		<input class="title" placeholder="Name" bind:value={title} data-title />
+		<input class="title" placeholder={born || 'Name'} bind:value={title} bind:this={titleBox} data-title />
 		{@render byline?.()}
 	</div>
 	{#if !store.autosave}<button class="small-btn" onclick={() => save()} data-save>Save draft</button>{/if}
@@ -313,7 +317,7 @@
 				<div class="flex items-center gap-3">
 					{@render fold('head', held(-1))}
 					{@render tile('section', 'gold')}
-					<input class="label" placeholder="Name" bind:value={title} />
+					<input class="label" placeholder={born || 'Name'} bind:value={title} />
 					{@render nth(1)}
 				</div>
 				<input class="field" placeholder="Description (optional)" bind:value={rest.description} data-form-description />
@@ -323,7 +327,7 @@
 				{@render fold('head', held(-1))}
 				<button class="pick" onclick={() => (selected = 'head')} data-head>
 					{@render tile('section', 'gold')}
-					{@render text(title || 'Name', rest.description ?? '', false, 1)}
+					{@render text(title || born || 'Name', rest.description ?? '', false, 1)}
 				</button>
 			</div>
 		{/if}
@@ -751,6 +755,8 @@
 		align-self: start;
 		max-height: 44rem;
 		overflow-y: auto;
+		/* A phone shows none, and the bar ran up past the rounded corner. */
+		scrollbar-width: none;
 		padding: 1.1rem;
 		border: 3px solid #3a352e;
 		border-radius: 2.25rem;

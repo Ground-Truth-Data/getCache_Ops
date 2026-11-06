@@ -2,6 +2,7 @@
 	import { renderSVG } from 'uqr';
 	import SignIn from '../company/SignIn.svelte';
 	import Builder from './Builder.svelte';
+	import { nthForm } from './forms';
 	import Report from './Report.svelte';
 	import Response from './Response.svelte';
 	import { session } from '../data/auth';
@@ -148,7 +149,7 @@
 	{#snippet byline()}
 		{#if madeBy}<span class="text-[#c9c3b7]" data-credit>Made by {madeBy}</span>{/if}
 	{/snippet}
-	{#key id}<Builder {store} back={['#/plugins', 'Plugins']} logo={logoPick} {byline} meta={logo} />{/key}
+	{#key id}<Builder {store} back={['#/plugins', 'Plugins']} logo={logoPick} {byline} meta={logo} born={nthForm(mine.filter((v) => v[0].pluginId !== id).map((v) => v.at(-1)!.definition.title ?? ''))} />{/key}
 	{#if asking}<div class="mt-6" data-publish-signin><SignIn done={() => ((asking = false), signedInNow())} /></div>{/if}
 {:else if sub === 'answers' && id && answer}
 	<Response load={() => receivedAnswers(id).then((a) => ((photos = a.photos), a))} id={answer} back={[`#/plugins/answers/${id}`, 'Answers']} photo={(k) => photos.get(k)} />
