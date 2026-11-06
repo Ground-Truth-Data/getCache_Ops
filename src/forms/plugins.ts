@@ -88,7 +88,8 @@ export async function copyPlugin(pluginId: string): Promise<string> {
 // Every sent file's rows, merged into one file in this browser's storage. Rows keep the phone's ids, so a file
 // given twice adds nothing; the phone's insert-only triggers come across with its tables.
 const KEPT = 'plugin-answers.sqlite3';
-const OLDER = 'plugin-answers.older.sqlite3';
+// Each set-aside file is named for when it was set aside, so a later one never overwrites it.
+const older = () => `plugin-answers.older-${new Date().toISOString().replaceAll(':', '')}.sqlite3`;
 const TABLES = ['plugin', 'photo', 'answer', 'answerRow'];
 type Sqlite = Awaited<ReturnType<typeof sqlite3InitModule>>;
 let opened: Promise<{ sqlite3: Sqlite; db: Database }> | undefined;
@@ -120,13 +121,14 @@ const columns = (db: Database, schema: string, t: string) => rows(db, 'SELECT na
 // A kept file older than a sent one is never altered (rapper/DB_LAW.md law 1): it is kept aside, and a fresh file
 // from the sent schema takes its rows. A row the fresh file refuses (an answer from before editedByKey) stays aside.
 async function renew(sqlite3: Sqlite, old: Database, schema: string[]) {
-	const older = sqlite3.capi.sqlite3_js_db_export(old, 'main');
-	await save(OLDER, older);
+	const aside = older();
+	const bytes = sqlite3.capi.sqlite3_js_db_export(old, 'main');
+	await save(aside, bytes);
 	old.close();
 	const db = new sqlite3.oo1.DB();
 	for (const sql of schema) db.exec(sql);
 	db.exec("ATTACH ':memory:' AS old");
-	load(sqlite3, db, 'old', older);
+	load(sqlite3, db, 'old', bytes);
 	const refused = TABLES.flatMap((t) => {
 		const cols = columns(db, 'old', t).filter((c) => columns(db, 'main', t).includes(c)).map((c) => `"${c}"`).join(', ');
 		db.exec(`INSERT OR IGNORE INTO main."${t}" (${cols}) SELECT ${cols} FROM old."${t}"`);
@@ -134,7 +136,7 @@ async function renew(sqlite3: Sqlite, old: Database, schema: string[]) {
 		return n ? [`${n} ${t}`] : [];
 	});
 	db.exec('DETACH old');
-	if (refused.length) console.warn(`[plugins] ${refused.join(', ')} the fresh kept file refused; still in`, OLDER);
+	if (refused.length) console.warn(`[plugins] ${refused.join(', ')} the fresh kept file refused; still in`, aside);
 	return db;
 }
 
