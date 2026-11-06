@@ -4,7 +4,7 @@
 	import type { Snippet } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { blank, CENTRAL_KEY, fromDefinition, keyFor, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
+	import { blank, branches, CENTRAL_KEY, fromDefinition, keyFor, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
 
 	let { store, back, logo, byline, meta }: {
 		store: Store;
@@ -173,17 +173,33 @@
 		section: '',
 		nested: '',
 	};
-	const input = 'rounded-lg border border-rule bg-surface px-3 py-2';
-	// Drawn icons fill a card's fixed height (--row) instead of padding it taller.
-	const TALL: Partial<Record<Kind, number>> = { section: 72, nested: 72 };
+	const tone = (f: Field, i: number) => (f.kind === 'section' ? 'gold' : f.kind === 'nested' || depths[i] === 2 ? 'sage' : 'rust');
+	const lists = $derived(fields.filter((f) => f.kind === 'nested').map((f) => f.label || 'list'));
+	// A renamed choice keeps where it goes.
+	function rename(f: Field, k: number, v: string) {
+		const was = f.choices[k];
+		f.choices[k] = v;
+		if (f.jumps && was in f.jumps) ((f.jumps[v] = f.jumps[was]), delete f.jumps[was]);
+	}
+	const GEM = 'M6 4h12l4 5-10 11L2 9z M2 9h20 M9 4l-2 5 5 11 5-11-2-5';
 </script>
 
-{#snippet icon(kind: Kind, size = 22, tall?: number)}
-	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon, Nested's three bars tallest. -->
-	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_flow_icon.webp'} alt="" style:height="{tall ?? size * 2}px" style:width="auto" />
+{#snippet icon(kind: Kind, size = 22)}
+	<!-- Section and Nested are the form's shape: drawn bigger than any one field's icon. -->
+	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_flow_icon.webp'} alt="" style:height="{size * 2}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
+{#snippet tile(kind: Kind, tone: string)}<span class={['mark', tone]}>{@render icon(kind, 30)}</span>{/snippet}
+{#snippet gem(size: number, stroke: string, label?: string)}
+	<svg width={size} height={size} viewBox="0 0 24 24" class="flex-none" role={label ? 'img' : undefined} aria-label={label} aria-hidden={!label}><path d={GEM} fill="none" {stroke} stroke-width="1.6" stroke-linejoin="round" /></svg>
+{/snippet}
 {#snippet nth(n: number)}<span class="nth">Section {n} of {sections}</span>{/snippet}
+{#snippet text(name: string, description: string, required = false, n = 0)}
+	<span class="text">
+		<span class="line"><span class="name">{name}{#if required}<span class="req">*</span>{/if}</span>{#if n}{@render nth(n)}{/if}</span>
+		<span class="desc" class:none={!description}>{description || 'Add a description'}</span>
+	</span>
+{/snippet}
 
 {#snippet fold(key: Field | 'head', n: number, sage = false)}
 	{@const shut = folded.has(key)}
@@ -222,33 +238,58 @@
 		{#if section || f.kind === 'nested'}{@render fold(f, held(i), f.kind === 'nested')}{/if}
 		<div class="body">
 		{#if on}
-			<div class="flex flex-wrap items-center gap-3">
-				{@render icon(f.kind, 22, TALL[f.kind])}
+			{@const branchy = branches(f) && depths[i] === 1}
+			<div class="flex items-center gap-3">
+				{@render tile(f.kind, tone(f, i))}
 				<input class="label" placeholder={KINDS.find(([k]) => k === f.kind)?.[1]} value={f.label} oninput={(e) => relabel(f, e.currentTarget.value)} data-label />
 				{#if !section && f.kind !== 'nested'}
 					<button class="star" class:on={f.required} aria-pressed={f.required} aria-label="Required" title="Required" onclick={() => (f.required = !f.required)} data-required>*</button>
 				{/if}
 				{#if section}{@render nth(sectionNo[i])}{/if}
 				<button class="trash" onclick={() => (fields.splice(i, 1), (selected = undefined))} aria-label="Remove field" data-remove-field>
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg>
 				</button>
 			</div>
-			<input class="{input} w-full" placeholder="Description (optional)" bind:value={f.description} data-description />
-			{#if f.kind === 'number'}
-				<div class="flex flex-wrap items-center gap-3 text-sm">
-					<input class="{input} w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
-					<input class="{input} w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
+			<input class="field" placeholder="Description (optional)" bind:value={f.description} data-description />
+			{#if f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox'}
+				<div class="flex flex-col gap-2" data-choices>
+					{#each f.choices as c, k (k)}
+						<div class="flex items-center gap-2.5">
+							<span class="num">{k + 1}.</span>
+							<input class="field min-w-0 flex-1" value={c} oninput={(e) => rename(f, k, e.currentTarget.value)} aria-label="Option" data-option={k} />
+							{#if branchy && f.jumps}
+								<select class="field jump" aria-label="Go to" value={f.jumps[c] ?? ''} onchange={(e) => (e.currentTarget.value ? (f.jumps![c] = e.currentTarget.value) : delete f.jumps![c])} data-jump={k}>
+									<option value="">Continue to next section</option>
+									{#each fields as s, j (s)}{#if s.kind === 'section'}<option value={s.key}>{sectionNo[j]}. {s.label || `Section ${sectionNo[j]}`}</option>{/if}{/each}
+									<option value="submit">Submit form</option>
+								</select>
+							{/if}
+						</div>
+					{/each}
+					<div class="ml-9 flex gap-2">
+						<button class="row-btn" onclick={() => f.choices.push(`Option ${f.choices.length + 1}`)} data-add-option>+ row</button>
+						<button class="row-btn" disabled={f.choices.length < 2} onclick={() => f.choices.pop()} aria-label="Remove last option" data-remove-option>− row</button>
+					</div>
 				</div>
 			{/if}
-			{#if f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox'}
-				<textarea class="{input} w-full max-w-sm text-base" rows="4" placeholder="One choice per line" value={f.choices.join('\n')}
-					oninput={(e) => (f.choices = e.currentTarget.value.split('\n').map((c) => c.trim()).filter(Boolean))} data-choices></textarea>
+			{#if f.kind === 'number' || branchy}
+				<div class="flex flex-wrap items-center gap-2">
+					{#if f.kind === 'number'}
+						<input class="field w-24" type="number" placeholder="min" value={f.min ?? ''} onchange={(e) => (f.min = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-min />
+						<input class="field w-24" type="number" placeholder="max" value={f.max ?? ''} onchange={(e) => (f.max = e.currentTarget.value === '' ? undefined : +e.currentTarget.value)} data-max />
+					{/if}
+					{#if branchy}
+						<button class="branch ml-auto" class:on={f.jumps} aria-pressed={!!f.jumps} aria-label="Go to section based on answer" title="Go to section based on answer" onclick={() => (f.jumps = f.jumps ? undefined : {})} data-branch>
+							<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 7h3c3 0 5 2.5 7 5s4 5 7 5h1.5M17.5 14l3 3-3 3M2 17h3c1.5 0 2.8-.6 4-1.6M13 8.6c1.2-1 2.5-1.6 4-1.6h3.5M17.5 4l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+						</button>
+					{/if}
+				</div>
 			{/if}
 		{:else}
 			<button class="pick" onclick={() => (selected = f)} data-pick>
-				{@render icon(f.kind, 22, TALL[f.kind])}
-				{#if section}{@render nth(sectionNo[i])}{/if}
-				<span class="flex-1 text-left">{f.label || KINDS.find(([k]) => k === f.kind)?.[1]}{#if f.required}<span class="req">*</span>{/if}{#if f.description}<span class="block text-sm font-normal text-muted">{f.description}</span>{:else if f.kind === 'nested'}<span class="block text-sm font-normal text-muted">Repeating list · each entry asks these questions</span>{/if}</span>
+				{@render tile(f.kind, tone(f, i))}
+				{@render text(f.label || KINDS.find(([k]) => k === f.kind)![1], f.description, f.required, section ? sectionNo[i] : 0)}
+				{#if f.kind === 'nested' && hasGps}{@render gem(22, '#ede7da', 'Each entry is GPS stamped')}{/if}
 			</button>
 		{/if}
 		</div>
@@ -281,27 +322,28 @@
 	</aside>
 	<section class="flex min-w-0 flex-col gap-3" aria-label="The form" data-fields>
 		<button class="stamp" class:on={hasGps} role="switch" aria-checked={hasGps} onclick={stamp} data-gps-stamp>
-			<img src="locate_icon_gold.webp" alt="" class="h-10 w-auto" />
-			<span class="flex-1 text-left text-xl font-semibold">GPS stamp<span class="block text-sm font-normal text-muted">{hasGps ? 'Stamped when they save.' : 'Off. No location saved with answers.'}</span></span>
+			{@render gem(30, hasGps ? '#ede7da' : '#6e675e')}
+			<span class="flex-1 text-left text-xl font-bold">Request GPS<span class="block text-sm font-normal text-muted"
+					>{hasGps ? `Stamped when they save.${lists.length ? ` Each ${lists.join(', ')} entry gets its own stamp.` : ''}` : 'Off. No location saved with answers.'}</span
+				></span>
 			<span class="slot"><span class="knob"></span></span>
 		</button>
 		{#if selected === 'head'}
 			<div class="card depth-0 on" data-head>
-				<div class="flex flex-wrap items-center gap-3">
+				<div class="flex items-center gap-3">
 					{@render fold('head', held(-1))}
-					<img src="plugin_gold.webp" alt="" class="h-8 w-8 object-contain" />
+					<span class="mark gold"><img src="plugin_gold.webp" alt="" /></span>
 					<input class="label" placeholder="Name" bind:value={title} />
 					{@render nth(1)}
 				</div>
-				<input class="{input} w-full" placeholder="Description (optional)" bind:value={rest.description} data-form-description />
+				<input class="field" placeholder="Description (optional)" bind:value={rest.description} data-form-description />
 			</div>
 		{:else}
 			<div class="card depth-0 head">
 				{@render fold('head', held(-1))}
 				<button class="pick" onclick={() => (selected = 'head')} data-head>
-					<img src="plugin_gold.webp" alt="" class="h-8 w-8 object-contain" />
-					<span class="flex-1 text-left">{title || 'Name'}{#if rest.description}<span class="block text-sm font-normal text-muted">{rest.description}</span>{/if}</span>
-					{@render nth(1)}
+					<span class="mark gold"><img src="plugin_gold.webp" alt="" /></span>
+					{@render text(title || 'Name', rest.description ?? '', false, 1)}
 				</button>
 			</div>
 		{/if}
@@ -363,8 +405,9 @@
 	.stamp {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
-		padding: 0.9rem 1.2rem;
+		gap: 0.9rem;
+		min-height: 4.75rem;
+		padding: 0.9rem 1.1rem;
 		border: 2px solid #3a3632;
 		border-radius: 1.1rem;
 		background: #171615;
@@ -376,28 +419,90 @@
 	.slot {
 		position: relative;
 		flex: none;
-		width: 3.25rem;
-		height: 1.9rem;
+		width: 52px;
+		height: 30px;
 		border-radius: 999px;
 		background: #3a3632;
 		transition: background 0.15s;
 	}
 	.knob {
 		position: absolute;
-		top: 0.2rem;
-		left: 0.2rem;
-		width: 1.5rem;
-		height: 1.5rem;
+		top: 3px;
+		left: 3px;
+		width: 24px;
+		height: 24px;
 		border-radius: 999px;
 		background: #8c857a;
 		transition: left 0.15s;
 	}
 	.stamp.on .slot {
-		background: var(--accent);
+		background: #ede7da;
 	}
 	.stamp.on .knob {
-		left: 1.55rem;
+		left: 25px;
 		background: #121212;
+	}
+	.mark {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 52px;
+		height: 52px;
+		overflow: hidden;
+		border-radius: 14px;
+	}
+	.mark.gold {
+		background: #3a3215;
+	}
+	.mark.rust {
+		--accent: #e08a52;
+		background: #2e2118;
+	}
+	.mark.sage {
+		--accent: #b9cc95;
+		background: #262b1e;
+	}
+	.mark img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+	.text {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		text-align: left;
+	}
+	.line {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+	}
+	.name {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		font-size: 1.4rem;
+		font-weight: 700;
+		line-height: 28px;
+	}
+	.desc {
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		color: #bdb6a8;
+		font-size: 1rem;
+		font-weight: 400;
+		line-height: 22px;
+	}
+	.desc.none {
+		color: #8c857a;
+		font-style: italic;
 	}
 	.add {
 		display: flex;
@@ -414,9 +519,9 @@
 	.add img {
 		margin-block: -0.6rem;
 	}
-	/* Every card and add button in the list is one height, room for a title and a line below it. */
+	/* Every folded card in the list is one height: a title line and two lines of description. */
 	[data-fields] {
-		--row: 5.5rem;
+		--row: 104px;
 	}
 	.add.section {
 		border-color: var(--accent);
@@ -476,10 +581,81 @@
 	.fold.sage .count {
 		background: var(--rt-sage);
 	}
+	/* The open card glows in its own colour: gold a section, rust a question, sage inside a list. */
 	.card.on {
-		padding: 1rem 1.25rem;
-		border-color: var(--accent);
+		--edge: var(--accent);
+		--line: var(--accent);
+		--glow: color-mix(in srgb, var(--accent) 30%, transparent);
+		--well: #14120d;
+		--rim: #5a4e2c;
+		padding: 18px 20px;
+		border: 2.5px solid var(--edge);
 		background: #1f1c14;
+		box-shadow: 0 0 0 5px var(--glow), 0 14px 30px rgb(0 0 0 / 0.55);
+	}
+	.card.on.depth-1 {
+		--edge: #f0a06c;
+		--line: var(--rt-rust);
+		--glow: rgb(201 123 74 / 0.3);
+		--well: #14100d;
+		--rim: #5a3e2c;
+		background: #261c15;
+	}
+	.card.on.depth-2 {
+		--edge: #c8dca4;
+		--line: var(--rt-sage);
+		--glow: rgb(159 178 127 / 0.3);
+		--well: #10130d;
+		--rim: #4a5640;
+		background: #20261a;
+	}
+	.field {
+		height: 48px;
+		padding: 0 14px;
+		border: 1.5px solid var(--rim);
+		border-radius: 12px;
+		background: var(--well);
+		font-size: 1.05rem;
+	}
+	.num {
+		flex: none;
+		width: 26px;
+		color: #b7b0a2;
+		font-size: 1.05rem;
+		text-align: right;
+	}
+	.jump {
+		flex: none;
+		width: 15rem;
+		padding: 0 10px;
+	}
+	.row-btn,
+	.branch {
+		height: 44px;
+		border: 1.5px solid var(--rim);
+		border-radius: 12px;
+	}
+	.row-btn {
+		min-width: 88px;
+		padding: 0 16px;
+		background: color-mix(in srgb, var(--edge) 15%, #121212);
+		color: var(--edge);
+		font-weight: 700;
+	}
+	.row-btn:disabled {
+		opacity: 0.35;
+	}
+	.branch {
+		display: grid;
+		place-items: center;
+		width: 48px;
+		border-color: #4a4540;
+		color: #8c857a;
+	}
+	.branch.on {
+		border-color: var(--rt-rust);
+		background: #3a2618;
+		color: #e08a52;
 	}
 	.nth {
 		padding: 0.15rem 0.6rem;
@@ -527,18 +703,24 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.6rem;
-		min-height: var(--row);
+		min-height: 3.75rem;
 		font-size: 1.1rem;
 		font-weight: 700;
 	}
 	.plus {
-		width: 1.7rem;
-		height: 1.7rem;
+		--plus: 34px;
+		width: var(--plus);
+		height: var(--plus);
 		border-radius: 999px;
 		background: var(--tone);
 		color: #161a10;
-		font-size: 1.3rem;
-		line-height: 1.7rem;
+		font-size: 26px;
+		font-weight: 700;
+		line-height: var(--plus);
+	}
+	.foot.sage .plus {
+		--plus: 32px;
+		font-size: 24px;
 	}
 	.done {
 		padding: 0 1.1rem;
@@ -574,30 +756,32 @@
 	.pick {
 		display: flex;
 		align-items: center;
-		gap: 0.9rem;
+		gap: 1rem;
 		width: 100%;
-		min-height: var(--row);
+		min-width: 0;
+		/* Less the card's border, so the folded card is exactly --row. */
+		height: calc(var(--row) - 4px);
 		padding: 0 1.25rem;
-		font-size: 1.3rem;
-		font-weight: 600;
 	}
 	.label {
 		flex: 1;
-		min-width: 10rem;
+		min-width: 0;
+		height: 48px;
 		background: transparent;
 		border: none;
-		border-bottom: 2px solid var(--accent);
+		border-bottom: 2px solid var(--line);
 		outline: none;
-		font-size: 1.3rem;
-		font-weight: 600;
+		font-size: 1.45rem;
+		font-weight: 700;
 	}
 	.trash {
+		flex: none;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 2.75rem;
-		height: 2.75rem;
-		border: 1px solid #4a443c;
+		width: 44px;
+		height: 44px;
+		border: 1.5px solid var(--rim);
 		border-radius: 0.75rem;
 		color: #c9c3b7;
 	}
