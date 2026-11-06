@@ -43,6 +43,7 @@
 	}
 
 	function run() {
+		sql = sql.match(/```(?:sql)?\s*([\s\S]*?)```/i)?.[1].trim() ?? sql;
 		const why = refusal(sql);
 		try {
 			result = why ? { error: why } : { rows: ops.query(sql) };
@@ -107,7 +108,7 @@
 				<a {href} target="_blank" rel="noopener" class="rounded-lg border-2 border-(--accent) px-5 py-2 font-display text-xl text-ink hover:bg-(--accent)/15">{name} {@render arrow(-135)}</a>
 			{/each}
 		</div>
-		<label for="sql" class="mb-2 block font-display text-2xl text-ink">4 · Paste the SQL it gives you back here {@render arrow(0)}{@render arrow(0)}{@render arrow(0)}</label>
+		<label for="sql" class="mb-2 block font-display text-2xl text-ink">4 · Paste the entire SQL response in here {@render arrow(0)}{@render arrow(0)}{@render arrow(0)}</label>
 		<textarea id="sql" class="{box} font-mono text-sm" rows="8" bind:value={sql} placeholder="SELECT ..." data-sql></textarea>
 		<div class="my-3 flex gap-2">
 			<button class={btn} onclick={run} data-run>Run</button>
