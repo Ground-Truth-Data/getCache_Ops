@@ -1,5 +1,6 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 
 export default defineConfig(({ command, isPreview }) => ({
@@ -11,6 +12,8 @@ export default defineConfig(({ command, isPreview }) => ({
 	// Supabase's public names keep their Bitwarden spelling, PUBLIC_ prefix and all.
 	envPrefix: ['VITE_', 'PUBLIC_'],
 	plugins: [svelte(), tailwindcss()],
+	// rapper's $parent is whichever app serves it: Ops answers for its own strings, as Get Cache does for its.
+	resolve: { alias: { $parent: fileURLToPath(new URL('.', import.meta.url)) } },
 	// Pre-bundling breaks the WASM file's relative URL.
 	optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
 }));

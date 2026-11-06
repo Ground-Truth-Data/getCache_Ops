@@ -8,6 +8,8 @@
 	import InboxChrome from '../../_rapper/gc/InboxChrome.svelte';
 	import RowGrip from '../../_rapper/gc/RowGrip.svelte';
 	import RowShell from '../../_rapper/gc/RowShell.svelte';
+	import IdentityPill, { type Identity } from '../../_rapper/gc/IdentityPill.svelte';
+	import { isOpen, query } from '../data/db';
 	import { type RowDrag, rowDragHandle, rowShift } from '../../_rapper/gc/rowDrag';
 	import { addLink, copyPlugin, live, myPlugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
 
@@ -81,17 +83,26 @@
 		...mine.map((versions) => {
 			const last = versions.at(-1)!;
 			const live = versions.findLast((v) => v.publishedAt);
-			return { pluginId: last.pluginId, mine: true, title: last.definition.title ?? '', logo: last.logo, maker: live?.madeBy ?? 'You', version: live ? `v${live.version} live` : 'draft', answers: answers.get(last.pluginId) ?? 0, href: `#/plugins/edit/${last.pluginId}` };
+			return { pluginId: last.pluginId, mine: true, title: last.definition.title ?? '', maker: live?.madeBy ?? 'You', version: live ? `v${live.version} live` : 'draft', answers: answers.get(last.pluginId) ?? 0, href: `#/plugins/edit/${last.pluginId}` };
 		}),
-		...others.map((p) => ({ pluginId: p.pluginId, mine: false, title: p.title, logo: null, maker: p.madeBy, version: '', answers: p.answers, href: `#/plugins/answers/${p.pluginId}` })),
+		...others.map((p) => ({ pluginId: p.pluginId, mine: false, title: p.title, maker: p.madeBy, version: '', answers: p.answers, href: `#/plugins/answers/${p.pluginId}` })),
 	]);
 	// This browser's order; a plugin it hasn't placed yet goes on top.
 	const ORDER = 'ops-plugins-order';
 	let order = $state<string[]>(JSON.parse(localStorage.getItem(ORDER) ?? '[]'));
 	const sorted = $derived(items.toSorted((x, y) => order.indexOf(x.pluginId) - order.indexOf(y.pluginId)));
+	// A maker wears their pill from the open Get Cache file's contacts, as every Get Cache screen draws them.
+	const people = new Map(
+		(isOpen() ? query('SELECT username, color, colorPickedAt FROM personView') : []).map((r) => [r.username as string, r]),
+	);
+	const pill = (p: { mine: boolean; maker: string }): Identity => {
+		if (p.mine) return { label: 'you', color: 'var(--accent)', self: true, picked: false };
+		const c = people.get(p.maker);
+		return { label: p.maker, color: (c?.color as string) ?? '', self: false, picked: !!c?.colorPickedAt };
+	};
 	let you = $state(false);
-	let query = $state('');
-	const q = $derived(query.trim().toLowerCase());
+	let search = $state('');
+	const q = $derived(search.trim().toLowerCase());
 	const shown = $derived(sorted.filter((p) => (!you || p.mine) && (!q || `${p.title} ${p.maker}`.toLowerCase().includes(q))));
 	let drag = $state<RowDrag | null>(null);
 	function drop(d: RowDrag) {
@@ -182,7 +193,7 @@
 		{/if}
 	</div>
 	<div class="flex max-w-3xl flex-col gap-(--rt-space-2)" data-plugins>
-		<InboxChrome rows={pills} onpill={(k) => (you = k === 'you')} bind:query placeholder="Search plugins and makers" clearLabel="Clear" {buttons} />
+		<InboxChrome rows={pills} onpill={(k) => (you = k === 'you')} bind:query={search} placeholder="Search plugins and makers" clearLabel="Clear" {buttons} />
 		{#each shown as p, i (p.pluginId)}
 			{@const moving = drag?.rowId === p.pluginId}
 			{@const shift = rowShift(drag, p.pluginId, i)}
@@ -194,10 +205,10 @@
 				style:transition={shift && !moving ? 'transform 200ms ease' : undefined}
 			>
 			<RowShell title={p.title || 'Untitled'} href={p.href} tier="top">
-				{#snippet glyph()}<img src={p.logo ?? 'plugin_gold.webp'} alt="" class="rt-row__glyph-img" />{/snippet}
+				{#snippet glyph()}<img src="plugin_gold.webp" alt="" class="rt-row__glyph-img" />{/snippet}
 				{#snippet subtitle()}
+					<IdentityPill who={pill(p)} />
 					{#if p.version}<span class="rt-row__badge rt-row__badge--gold">{p.version}</span>{/if}
-					<span class="rt-row__num">Made by {p.maker}</span>
 				{/snippet}
 				{#snippet end()}
 					<span class="rt-row__cell rt-row__cell--chevron" aria-hidden="true"

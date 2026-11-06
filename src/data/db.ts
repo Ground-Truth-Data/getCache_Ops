@@ -37,6 +37,8 @@ export async function openDatabase(data: ArrayBuffer | Uint8Array): Promise<void
 	db.exec('PRAGMA query_only = 1');
 }
 
+export const isOpen = () => !!db;
+
 export function query(sql: string, bind?: unknown[]): Record<string, unknown>[] {
 	if (!db) throw new Error('No database open');
 	return db.exec({ sql, bind: bind as never, rowMode: 'object', returnValue: 'resultRows' });
