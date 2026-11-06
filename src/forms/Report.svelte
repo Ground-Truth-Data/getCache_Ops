@@ -16,9 +16,7 @@
 
 	const cols = $derived(columns(got.versions));
 	const groups = $derived(cols.filter((c) => c.type === 'paneldynamic'));
-	// A GPS stamp is not a question: the CSV and the response carry it.
-	const asked = $derived(cols.filter((c) => c.type !== 'gps'));
-	const plain = $derived(asked.filter((c) => !c.group && c.type !== 'paneldynamic'));
+	const plain = $derived(cols.filter((c) => !c.group && c.type !== 'paneldynamic'));
 	const version = $derived(new Map(got.versions.map((v) => [v.id, v.version])));
 	const when = $derived(new Map(got.answers.map((a) => [a.id, a.filledAt.slice(0, 16).replace('T', ' ')])));
 	const td = 'border-b border-rule py-1 pr-4 align-top';
@@ -49,7 +47,7 @@
 </div>
 
 {#each groups as g (g.key)}
-	{@const own = asked.filter((c) => c.group === g.key)}
+	{@const own = cols.filter((c) => c.group === g.key)}
 	<h2 class="mt-8 mb-2 font-display text-2xl">{g.label}</h2>
 	<div class="overflow-x-auto">
 		<table class="text-left text-sm" data-group-report={g.key}>

@@ -23,6 +23,7 @@ const files = [
 	'gc/rowDrag.ts',
 	'gc/iconPaths.ts',
 	...['pen_edit_icon_white', 'note_icon_white'].map((f) => `gc/assets/${f}.webp`),
+	'rig/assets/arrowIconGold.webp',
 ];
 
 // Written in place and only when changed: a deleted and recreated folder drops out of Vite's watcher, which then serves the old kit.

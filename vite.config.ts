@@ -13,7 +13,7 @@ export default defineConfig(({ command, isPreview }) => ({
 	envPrefix: ['VITE_', 'PUBLIC_'],
 	plugins: [svelte(), tailwindcss()],
 	// rapper's $parent is whichever app serves it: Ops answers for its own strings, as Get Cache does for its.
-	resolve: { alias: { $parent: fileURLToPath(new URL('.', import.meta.url)) } },
+	resolve: { alias: { $parent: fileURLToPath(new URL('.', import.meta.url)), $rig: fileURLToPath(new URL('./_rapper/rig', import.meta.url)) } },
 	// Pre-bundling breaks the WASM file's relative URL.
 	optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
 }));

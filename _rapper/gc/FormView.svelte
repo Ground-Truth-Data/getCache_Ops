@@ -1,11 +1,18 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { Model, PanelModel, Question } from 'survey-core';
-	import type { Definition, Trigger } from './form';
+	import { type Definition, FIX, type Fix, type Trigger } from './form';
 	import { loadSurvey } from './formSurvey';
+	import arrow from '$rig/assets/arrowIconGold.webp';
 
-	let { definition, onsubmit, keep = async (f: File) => f.name }: {
+	type Draft = { data: Record<string, unknown>; path: number[] };
+	let { definition, onsubmit, keep = async (f: File) => f.name, draft, onchange }: {
 		definition: Definition;
 		onsubmit: (data: Record<string, unknown>) => void;
+		/** Where the planter left off: the form opens on it. */
+		draft?: Draft;
+		/** Every answer or page turn, so the host can keep the form across a closed app. */
+		onchange?: (d: Draft) => void;
 		/** Saves a photo and returns its blob key: answers never hold the picture itself. */
 		keep?: (file: File) => Promise<string>;
 	} = $props();
@@ -25,8 +32,7 @@
 			const m = new Model(def);
 			m.onValueChanged.add(() => tick++);
 			m.onDynamicPanelAdded.add((_, { panel }) => {
-				const q = panel.questions.find((q: Question) => !asked(q));
-				if (q) void locate().then((s) => s && set(q, s));
+				void fixEntry(panel);
 				tick++;
 			});
 			m.onDynamicPanelRemoved.add(() => tick++);
@@ -34,10 +40,22 @@
 				const run = new ExpressionRunner(t.expression);
 				return { ...t, holds: (data) => run.runValues(data) === true, on: run.getVariables() };
 			});
+			const from = untrack(() => draft);
+			if (from) m.data = from.data;
+			// An entry the form opens with is never "added", so it is located here; a draft's keep their fix.
+			for (const q of m.getAllQuestions()) for (const p of (q.panels ?? []) as PanelModel[]) if (!fixOf(p)) void fixEntry(p);
 			model = m;
-			path = [0];
+			path = from?.path.length ? from.path : [0];
+			opened = JSON.stringify({ data: m.data, path });
 			tick++;
 		}, (e) => (failed = e.message));
+	});
+	// A form as it opened is not a change: an untouched one never becomes a draft.
+	let opened = '';
+	$effect(() => {
+		if (!tick || !model) return;
+		const d = { data: model.data, path: [...path] };
+		if (JSON.stringify(d) !== opened) untrack(() => onchange?.(d));
 	});
 
 	type View = { q: Question; type: string; input: string; title: string; description: string; required: boolean; visible: boolean; value: unknown; errors: string[];
@@ -47,15 +65,12 @@
 		required: q.isRequired, visible: q.isVisible, value: q.value,
 		errors: q.errors.map((e) => e.getText()),
 		choices: (q.visibleChoices ?? []).map((c: { value: unknown; text: string }) => ({ value: c.value, text: c.text })),
-		panels: (q.panels ?? []).map((p: PanelModel) => ({ p, items: p.questions.filter(asked).map(view), stamped: p.questions.some((x) => !asked(x) && x.value) })),
+		panels: (q.panels ?? []).map((p: PanelModel) => ({ p, items: p.questions.map(view), stamped: !!fixOf(p) })),
 	});
 	// One page per section: the form's head and its loose fields first, then each panel; a loose field after a
 	// panel stays on that panel's page, so the builder's order holds. A fresh view each change: survey-core's
 	// objects are not reactive.
 	type Page = { name?: string; title?: string; description?: string; items: View[] };
-	// GPS is never asked: the form's is stamped as the planter saves, an entry's as it is added.
-	const asked = (q: Question) => q.getType() !== 'gps';
-	const gps = $derived(tick && model ? model.getAllQuestions().find((q) => !asked(q)) : undefined);
 	// A refused or missing fix leaves the answer unstamped; it never stops the form.
 	const locate = () =>
 		new Promise<{ lat: number; lng: number; accuracy: number } | undefined>((done) => {
@@ -67,18 +82,27 @@
 				{ enableHighAccuracy: true, timeout: 20_000 },
 			);
 		});
-	async function stamp() {
-		const empty = [gps, ...pages.flatMap((p) => p.items).flatMap((v) => v.panels.map((e) => e.p.questions.find((q) => !asked(q))))].filter((q) => q && !q.value);
-		if (!empty.length) return;
+	const fixOf = (p: PanelModel) => (p.data as unknown as { getValue: (k: string) => unknown }).getValue(FIX);
+	const toFix = (s: { lat: number; lng: number; accuracy: number }): Fix => ({ lat: s.lat, lng: s.lng, accuracyM: s.accuracy });
+	// An entry is located once, as it is added.
+	async function fixEntry(panel: PanelModel) {
 		const s = await locate();
-		if (s) for (const q of empty) set(q!, s);
+		if (!s) return;
+		(panel.data as unknown as { setValue: (k: string, v: unknown) => void }).setValue(FIX, toFix(s));
+		tick++;
+	}
+	// The answer is located as it is saved.
+	async function stamp() {
+		const s = await locate();
+		if (!s) return;
+		model!.setValue(FIX, toFix(s));
 	}
 	const pages = $derived.by<Page[]>(() => {
 		if (!tick || !model) return [];
 		const out: Page[] = [{ title: definition.title, description: definition.description, items: [] }];
 		for (const e of model.pages[0].elements) {
-			if (e.isPanel) out.push({ name: e.name, title: (e as PanelModel).title, description: (e as PanelModel).description, items: (e as PanelModel).questions.filter(asked).map(view) });
-			else if (asked(e as Question)) out.at(-1)!.items.push(view(e as Question));
+			if (e.isPanel) out.push({ name: e.name, title: (e as PanelModel).title, description: (e as PanelModel).description, items: (e as PanelModel).questions.map(view) });
+			else out.at(-1)!.items.push(view(e as Question));
 		}
 		return out.length > 1 && !out[0].items.length ? out.slice(1) : out;
 	});
@@ -104,6 +128,8 @@
 	const toggle = (v: View, c: unknown, on: boolean) => set(v.q, on ? [...((v.value as unknown[]) ?? []), c] : ((v.value as unknown[]) ?? []).filter((x) => x !== c));
 	// The picture itself stays on the device; the thumbnail is this page's own copy of it.
 	let thumbs = $state<Record<string, string>>({});
+	// The photo's ⓘ: said only when asked.
+	let told = $state<Record<string, boolean>>({});
 	async function photo(q: Question, file?: File) {
 		if (!file) return;
 		set(q, [{ name: file.name, type: file.type, content: await keep(file) }]);
@@ -170,6 +196,7 @@
 					{/each}
 				</div>
 			{:else if v.type === 'file'}
+				<div class="shot">
 				<label class="big camera" data-camera>
 					<input type="file" accept="image/*" capture="environment" aria-label={v.title} onchange={(e) => photo(v.q, e.currentTarget.files?.[0])} />
 					{#if thumbs[v.q.id] && v.value}
@@ -180,6 +207,9 @@
 						>
 					{/if}
 				</label>
+				<button type="button" class="info" aria-label="Where this photo is kept" aria-expanded={!!told[v.q.id]} onclick={() => (told[v.q.id] = !told[v.q.id])} data-photo-info>i</button>
+				</div>
+				{#if told[v.q.id]}<span class="muted" data-photo-note>Only on this phone until you send it.</span>{/if}
 			{:else if v.type === 'paneldynamic'}
 				{#each v.panels as entry, i (entry.p.id)}
 					{@const shown = isOpen(entry, i, v.panels.length)}
@@ -231,10 +261,10 @@
 			{#if page.description}<span class="desc">{page.description}</span>{/if}
 		</div>
 		{#each page.items as v (v.q.id)}{@render field(v)}{/each}
-		{#if gps}<span class="muted stamped" data-gps-stamp>Your location is stamped when you save</span>{/if}
+		{#if tick && !model.getValue(FIX)}<span class="muted stamped" data-gps-stamp>Your location is stamped when you save</span>{/if}
 		<div class="nav">
 			{#if at > 0}<button type="button" class="back font-display" onclick={() => (path = path.slice(0, -1))} data-back>Back</button>{/if}
-			<button class="rt-fancy-btn next" data-next>{last ? 'Save' : 'Next'}</button>
+			<button class="rt-fancy-btn next" data-next>{last ? 'Save' : 'Next'}{#if !last}<span class="go" style="--src: url({arrow})"></span>{/if}</button>
 		</div>
 	</form>
 {/if}
@@ -273,6 +303,8 @@
 		border-radius: 0.75rem; color: var(--rt-yellow); cursor: pointer;
 	}
 	.camera { width: 7rem; height: 7rem; overflow: hidden; }
+	.shot { display: flex; align-items: flex-end; gap: 0.6rem; }
+	.info { width: 1.25rem; height: 1.25rem; border: 1.5px solid var(--rt-yellow); border-radius: 999px; color: var(--rt-yellow); font: 700 0.75rem/1 serif; font-style: italic; }
 	.camera input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 	.camera svg { width: 3.5rem; height: 3.5rem; }
 	.camera img { width: 100%; height: 100%; object-fit: cover; }
@@ -302,6 +334,8 @@
 	.nav { display: flex; gap: 0.6rem; padding-top: 0.5rem; }
 	.nav button { min-height: 3.4rem; border-radius: 1rem; font-size: 1.1rem; }
 	.back { padding: 0 1.4rem; border: 2px solid var(--rt-fg-muted); }
-	.next { flex: 1; }
+	.nav .next { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.6rem; font-size: 1.45rem; }
+	/* The back button's drawn arrow, mirrored: a mask so it takes the label's colour. */
+	.go { width: 2rem; height: 1.5rem; background: currentColor; mask: var(--src) center / contain no-repeat; transform: scaleX(-1); }
 	.stamped { align-self: center; padding-top: 0.5rem; }
 </style>

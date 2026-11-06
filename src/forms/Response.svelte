@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { El } from '../../_rapper/gc/form';
-	import { columns, current, spot, sections, where, type Spot } from './answers';
-	import type { Answers } from './forms';
+	import { columns, current, sections } from './answers';
+	import type { Answers, At } from './forms';
 	import Value from './Value.svelte';
 
 	let {
@@ -18,8 +18,7 @@
 	const a = $derived(got?.answers.find((x) => x.id === id));
 	const v = $derived(got?.versions.find((x) => x.id === a?.form));
 	const cols = $derived(v ? columns([v]) : []);
-	const here = $derived(where(cols));
-	const at = $derived(a && here ? spot(a.data[here.key]) : undefined);
+	const at = $derived(a?.lat != null ? a : undefined);
 	const entries = (group: string) => got!.rows.filter((r) => r.answer === id && r.groupKey === group);
 
 	function ago(iso: string) {
@@ -29,17 +28,17 @@
 	const saved = (iso: string) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 </script>
 
-{#snippet gem(size: number, s?: Spot)}
+{#snippet gem(size: number, s?: At)}
 	<svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label="GPS stamped" class="shrink-0" data-gps-mark>
-		{#if s}<title>{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</title>{/if}
+		{#if s}<title>{s.lat?.toFixed(5)}, {s.lng?.toFixed(5)}</title>{/if}
 		<path d="M6 4h12l4 5-10 11L2 9z M2 9h20 M9 4l-2 5 5 11 5-11-2-5" fill="none" stroke="#EDE7DA" stroke-width="1.7" stroke-linejoin="round" />
 	</svg>
 {/snippet}
 
 {#snippet group(g: El)}
-	{@const own = cols.filter((c) => c.group === g.name && c !== where(cols, g.name))}
-	{@const gps = where(cols, g.name)}
+	{@const own = cols.filter((c) => c.group === g.name)}
 	{@const list = entries(g.name)}
+	{@const gps = list.some((r) => r.lat != null)}
 	{@const grid = `grid-template-columns: 2rem repeat(${own.length}, minmax(0, 1fr)) ${gps ? '1.5rem' : ''}`}
 	<div class="flex flex-col gap-2 rounded-xl border-[1.5px] border-(--rt-rust)/60 bg-[#1c1916] px-3 py-2.5" data-group={g.name}>
 		<div class="flex items-center gap-2">
@@ -51,7 +50,7 @@
 				<span>#</span>{#each own as c (c.key)}<span class="truncate">{c.label}</span>{/each}{#if gps}<span></span>{/if}
 			</div>
 			{#each list as r (r.id)}
-				{@const s = gps && spot(r.data[gps.key])}
+				{@const s = r.lat != null ? r : undefined}
 				<div class="grid items-center gap-1.5 rounded-[10px] border-[1.5px] border-(--rt-sage)/60 bg-[#1a1d16] px-2 py-2" style={grid} data-entry={r.n}>
 					<span class="font-bold text-[#b9cc95]">{r.n}</span>
 					{#each own as c (c.key)}<span class="min-w-0 break-words"><Value v={r.data[c.key]} {photo} /></span>{/each}
@@ -85,13 +84,13 @@
 		</div>
 
 		<div class="flex items-center gap-2 px-1 text-sm text-[#cfc8ba]" data-where>
-			{#if at}{@render gem(16)}{at.lat.toFixed(4)}, {at.lng.toFixed(4)}{at.accuracy != null ? ` · ±${Math.round(at.accuracy)} m` : ''}{' · '}{/if}saved {saved(a.filledAt)}
+			{#if at}{@render gem(16)}{at.lat?.toFixed(4)}, {at.lng?.toFixed(4)}{at.accuracyM != null ? ` · ±${Math.round(at.accuracyM)} m` : ''}{' · '}{/if}saved {saved(a.filledAt)}
 		</div>
 
 		{#each sections(v.definition) as s, i (i)}
 			<div class="flex flex-col gap-2.5 rounded-[18px] border-2 border-(--rt-yellow) bg-[#1c1a12] px-4 py-3.5" data-section={s.title}>
 				<span class="self-start rounded-full bg-[#3a3215] px-2.5 py-0.5 text-[13px] font-bold text-(--rt-yellow)">{s.title}</span>
-				{#each s.elements.filter((e) => e.name !== here?.key) as e (e.name)}
+				{#each s.elements as e (e.name)}
 					{#if e.type === 'paneldynamic'}
 						{@render group(e)}
 					{:else}

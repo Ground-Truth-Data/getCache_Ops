@@ -49,11 +49,11 @@ describe('the builder keeps what it does not edit', () => {
 		expect(keyFor('', 'text', fields)).toBe('text_2');
 		expect(keyFor('!!!', 'nested', [])).toBe('nested');
 		expect(keyFor('123 Trees!', 'number', [])).toBe('trees');
-		for (const kind of ['text', 'section', 'gps', 'nested'] as const) expect(keyFor('', kind, [])).toMatch(central);
+		for (const kind of ['text', 'section', 'nested'] as const) expect(keyFor('', kind, [])).toMatch(central);
 	});
 	it('a draft kept before keys were born gets one on load', () => {
-		const d: Definition = { elements: [{ type: 'text', name: '', title: 'Tree height' }, { type: 'panel', name: '' }, { type: 'gps', name: '' }] };
-		expect(fromDefinition(d).fields.map((f) => f.key)).toEqual(['tree_height', expect.stringMatching(/^section_/), 'gps']);
+		const d: Definition = { elements: [{ type: 'text', name: '', title: 'Tree height' }, { type: 'panel', name: '' }] };
+		expect(fromDefinition(d).fields.map((f) => f.key)).toEqual(['tree_height', expect.stringMatching(/^section_/)]);
 	});
 	it('a question saved after a nested group stays out of it', () => {
 		const d: Definition = { elements: [{ type: 'paneldynamic', name: 'trees', templateElements: [{ type: 'text', name: 'species' }] }, { type: 'text', name: 'weather' }] };
@@ -89,14 +89,15 @@ describe('the builder keeps what it does not edit', () => {
 		expect(toDefinition('', back.fields, back.rest).triggers).toEqual([other, ours[0]]);
 		expect(toDefinition('', back.fields.slice(1), back.rest).triggers).toEqual([other]);
 	});
-	it('GPS on stamps each nested entry with its own hidden field', () => {
-		const fields = [{ ...blank('gps'), key: 'gps' }, { ...blank('nested'), key: 'trees' }, { ...blank('number'), key: 'dbh' }];
+	it('a hidden gps field is dropped on load; Request GPS is only its own flag', () => {
 		const dbh = { type: 'text', inputType: 'number', name: 'dbh' };
-		const d = toDefinition('', fields);
-		expect(d.elements[1].templateElements).toEqual([{ type: 'gps', name: 'trees_gps' }, dbh]);
-		const back = fromDefinition(structuredClone(d)).fields;
-		expect(back.map((f) => f.key)).toEqual(['gps', 'trees', 'dbh']);
-		expect(toDefinition('', back.slice(1)).elements[0].templateElements).toEqual([dbh]);
+		const d = {
+			requestGps: true,
+			elements: [{ type: 'gps', name: 'gps' }, { type: 'paneldynamic', name: 'trees', templateElements: [{ type: 'gps', name: 'trees_gps' }, dbh] }],
+		};
+		const { fields, rest } = fromDefinition(d);
+		expect(fields.map((f) => f.key)).toEqual(['trees', 'dbh']);
+		expect(toDefinition('', fields, rest)).toEqual({ requestGps: true, elements: [{ type: 'paneldynamic', name: 'trees', templateElements: [dbh] }] });
 	});
 	it('a nested group sits in its section and owns the fields after it, up to the next section', () => {
 		const fields = [blank('section'), blank('text'), blank('nested'), blank('number'), blank('text'), blank('section'), blank('date')];

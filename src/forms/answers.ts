@@ -1,9 +1,8 @@
 // A form's answers as they are read: the latest of each, a response's sections, and the spreadsheets.
 import type { El } from '../../_rapper/gc/form';
-import { keys, type Answers, type Definition, type Version } from './forms';
+import { keys, type Answers, type At, type Definition, type Version } from './forms';
 
 export type Column = ReturnType<typeof keys>[number];
-export type Spot = { lat: number; lng: number; accuracy?: number };
 
 /** The answers as they stand: a fix replaces the row it names; entries follow their answer's order. */
 export function current(got: Answers): Answers {
@@ -22,16 +21,10 @@ export function columns(versions: Version[]): Column[] {
 	return [...cols.values()];
 }
 
-/** Where a response or an entry was filled: the GPS stamp in its scope, the form's at the top and an entry's
- *  `<group>_gps` in its group, as the phone stores it. */
-export const where = (cols: Column[], group?: string) => cols.find((c) => c.type === 'gps' && c.group === group);
-export const spot = (v: unknown) => (typeof (v as Spot)?.lat === 'number' ? (v as Spot) : undefined);
-
 export function text(v: unknown): string {
 	if (v == null) return '';
 	if (Array.isArray(v)) return v.map((x) => (typeof x === 'object' ? ((x as { name?: string }).name ?? '') : String(x))).join(', ');
-	const g = spot(v);
-	return g ? `${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}` : String(v);
+	return String(v);
 }
 
 /** A version's questions as a response shows them: those outside any section first, then each section. */
@@ -47,32 +40,30 @@ export function sections(d: Definition): { title: string; elements: El[] }[] {
 const esc = (v: string) => (/[",\r\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v);
 
 /** responses.csv, one row per response, and <group>.csv per repeating group, one row per entry linked by
- *  response id. lat, lon and acc_m come from the first GPS question, only when some row answered it. */
+ *  response id. lat, lon and acc_m are where each was saved or added, only when some row has a fix. */
 export function sheets(got: Answers): Record<string, string> {
 	const { versions, answers, rows } = current(got);
 	const cols = columns(versions);
-	const sheet = (group: string | undefined, lead: string[], tail: string[], items: { data: Record<string, unknown>; lead: string[]; tail: string[] }[]) => {
-		const at = where(cols, group);
-		const own = cols.filter((c) => c.group === group && c !== at && c.type !== 'paneldynamic');
-		const spots = items.map((x) => spot(at && x.data[at.key]));
-		const gps = spots.some(Boolean);
+	const sheet = (group: string | undefined, lead: string[], tail: string[], items: (At & { data: Record<string, unknown>; lead: string[]; tail: string[] })[]) => {
+		const own = cols.filter((c) => c.group === group && c.type !== 'paneldynamic');
+		const gps = items.some((x) => x.lat != null);
 		const lines = [
 			[...lead, ...own.map((c) => c.key), ...(gps ? ['lat', 'lon', 'acc_m'] : []), ...tail],
-			...items.map((x, i) => [
+			...items.map((x) => [
 				...x.lead,
 				...own.map((c) => text(x.data[c.key])),
-				...(gps ? [spots[i]?.lat, spots[i]?.lng, spots[i]?.accuracy].map((n) => (n == null ? '' : String(n))) : []),
+				...(gps ? [x.lat, x.lng, x.accuracyM].map((n) => (n == null ? '' : String(n))) : []),
 				...x.tail,
 			]),
 		];
 		return lines.map((l) => l.map(esc).join(',') + '\r\n').join('');
 	};
 	return {
-		'responses.csv': sheet(undefined, ['id'], ['saved'], answers.map((a) => ({ data: a.data, lead: [a.id], tail: [a.filledAt] }))),
+		'responses.csv': sheet(undefined, ['id'], ['saved'], answers.map((a) => ({ ...a, lead: [a.id], tail: [a.filledAt] }))),
 		...Object.fromEntries(
 			cols
 				.filter((c) => c.type === 'paneldynamic')
-				.map((g) => [`${g.key}.csv`, sheet(g.key, ['response_id', 'n'], [], rows.filter((r) => r.groupKey === g.key).map((r) => ({ data: r.data, lead: [r.answer, String(r.n)], tail: [] })))]),
+				.map((g) => [`${g.key}.csv`, sheet(g.key, ['response_id', 'n'], [], rows.filter((r) => r.groupKey === g.key).map((r) => ({ ...r, lead: [r.answer, String(r.n)], tail: [] })))]),
 		),
 	};
 }

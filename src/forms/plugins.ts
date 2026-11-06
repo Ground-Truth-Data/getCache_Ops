@@ -157,9 +157,9 @@ export async function receivedAnswers(pluginId: string): Promise<Answers & { pho
 	const versions = json<Version>(rows(db, 'SELECT id, version, definition, publishedAt FROM plugin WHERE pluginId = ? ORDER BY version', [pluginId]), 'definition');
 	const ids = versions.map((v) => v.id);
 	const marks = ids.map(() => '?').join(', ');
-	const answers = json<Answers['answers'][number]>(rows(db, `SELECT id, plugin AS form, filledAt, replaces, data FROM answer WHERE plugin IN (${marks}) ORDER BY filledAt`, ids), 'data');
+	const answers = json<Answers['answers'][number]>(rows(db, `SELECT id, plugin AS form, filledAt, replaces, data, lat, lng, accuracyM FROM answer WHERE plugin IN (${marks}) ORDER BY filledAt`, ids), 'data');
 	const all = json<Answers['rows'][number]>(
-		rows(db, `SELECT r.id, r.answer, r.groupKey, r.n, r.replaces, r.data FROM answerRow r JOIN answer a ON a.id = r.answer WHERE a.plugin IN (${marks})`, ids),
+		rows(db, `SELECT r.id, r.answer, r.groupKey, r.n, r.replaces, r.data, r.lat, r.lng, r.accuracyM FROM answerRow r JOIN answer a ON a.id = r.answer WHERE a.plugin IN (${marks})`, ids),
 		'data',
 	);
 	const photos = new Map(rows(db, 'SELECT key, type, bytes FROM photo').map((p) => [p.key as string, URL.createObjectURL(new Blob([p.bytes as Uint8Array<ArrayBuffer>], { type: p.type as string }))]));

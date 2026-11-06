@@ -80,12 +80,10 @@
 		e.preventDefault();
 		if (dragging !== i) (fields.splice(i, 0, ...fields.splice(dragging, 1)), (dragging = i));
 	}
-	// GPS is a switch on the whole form, not a question: on, the form carries one GPS field at its top.
-	const hasGps = $derived(fields.some((f) => f.kind === 'gps'));
+	const hasGps = $derived(!!rest.requestGps);
 	function stamp() {
-		const i = fields.findIndex((f) => f.kind === 'gps');
-		if (i >= 0) fields.splice(i, 1);
-		else fields.unshift({ ...blank('gps'), key: keyFor('GPS', 'gps', fields), label: 'GPS' });
+		if (rest.requestGps) delete rest.requestGps;
+		else rest.requestGps = true;
 	}
 	// As in the inbox: the form's head and each section are gold parents, every question is rust, and a nested
 	// group's repeated questions sit a level deeper in sage.
@@ -169,7 +167,6 @@
 		checkbox: 'M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM8 12l3 3 5-6',
 		date: 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 10h18M8 3v4M16 3v4',
 		file: 'M4 8h3l2-3h6l2 3h3v11H4zM15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z',
-		gps: '',
 		section: '',
 		nested: '',
 	};
@@ -350,7 +347,7 @@
 		{#if !folded.has('head') && (!fields.length || fields[0].kind === 'section')}{@render foot(0, title || 'Section 1')}{/if}
 		{#each fields as f, i (f)}
 			{@const { sec, group } = owners[i]}
-			{#if !hidden[i] && f.kind !== 'gps'}{@render card(f, i)}{/if}
+			{#if !hidden[i]}{@render card(f, i)}{/if}
 			<!-- Every nested group and every section ends in its own add button: what it adds lands there, as its last. -->
 			{#if group && depths[i + 1] !== 2 && !folded.has(sec) && !folded.has(group)}{@render foot(i + 1, group.label || 'this list', group)}{/if}
 			{#if (i + 1 === fields.length || fields[i + 1].kind === 'section') && !folded.has(sec)}

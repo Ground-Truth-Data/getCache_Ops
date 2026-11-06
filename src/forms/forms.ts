@@ -4,9 +4,10 @@ import type { Definition as Base, El } from '../../_rapper/gc/form';
 import { call } from '../company/central';
 
 type Trigger = { type: string; expression?: string; gotoName?: string };
-export type Definition = Base & { triggers?: Trigger[] };
+/** `requestGps` is the builder's Request GPS switch; nothing reads it yet. */
+export type Definition = Base & { triggers?: Trigger[]; requestGps?: boolean };
 
-export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'gps' | 'section' | 'nested';
+export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'section' | 'nested';
 /** `src` is the element as loaded (or a new field's defaults): saving writes the edited keys onto it, so every
  *  property the builder has no control for survives each version. The builder's list is flat: a section owns
  *  what follows it up to the next section, and a nested group (a little form repeated per tree, say) owns the
@@ -14,18 +15,20 @@ export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'che
  *  to a section's key or to 'submit'; a choice it leaves out continues to the next section. */
 export type Field = { kind: Kind; key: string; label: string; description: string; required: boolean; choices: string[]; min?: number; max?: number; jumps?: Record<string, string>; src: El };
 export type FormRow = { id: string; formId: string; version: number; definition: Definition; publishedAt: string | null; copiedFrom: string | null };
-export type Answer = { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
-export type AnswerRow = { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
+/** Where an answer was saved or an entry added, from the phone's columns; null without a fix. */
+export type At = { lat?: number | null; lng?: number | null; accuracyM?: number | null };
+export type Answer = At & { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
+export type AnswerRow = At & { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
 
 export const KINDS: [Kind, string][] = [
 	['text', 'Text'], ['number', 'Number'], ['dropdown', 'Dropdown'], ['radiogroup', 'Multiple choice'], ['checkbox', 'Checkboxes'],
-	['date', 'Date'], ['file', 'Photo'], ['gps', 'GPS'], ['section', 'Section'], ['nested', 'Nested'],
+	['date', 'Date'], ['file', 'Photo'], ['section', 'Section'], ['nested', 'Nested'],
 ];
 
 const NEW: Record<Kind, Omit<El, 'name'>> = {
 	text: { type: 'text' }, number: { type: 'text', inputType: 'number' }, date: { type: 'text', inputType: 'date' },
 	dropdown: { type: 'dropdown' }, radiogroup: { type: 'radiogroup' }, checkbox: { type: 'checkbox' },
-	file: { type: 'file', storeDataAsText: false, acceptedTypes: 'image/*' }, gps: { type: 'gps' }, section: { type: 'panel' },
+	file: { type: 'file', storeDataAsText: false, acceptedTypes: 'image/*' }, section: { type: 'panel' },
 	nested: { type: 'paneldynamic', panelCount: 1 },
 };
 const choiceText = (c: unknown) => String(typeof c === 'object' ? (c as { value: unknown }).value : c);
@@ -63,12 +66,10 @@ function el(f: Field): El {
 export const branches = (f: Field) => f.kind === 'dropdown' || f.kind === 'radiogroup';
 // "Go to section based on answer" is written as SurveyJS's own triggers, so the definition stays standard.
 const JUMP = /^\{(\w+)\} = '(.*)'$/;
-const per = (group: string) => `${group}_gps`;
 
 export const toDefinition = (title: string, fields: Field[], rest: Partial<Definition> = {}): Definition => {
 	const elements: El[] = [];
 	const triggers: Trigger[] = [...(rest.triggers ?? [])];
-	const gps = fields.some((f) => f.kind === 'gps');
 	const sections = new Set(fields.filter((f) => f.kind === 'section').map((f) => f.key));
 	let section: El[] | undefined;
 	let nested: El[] | undefined;
@@ -80,8 +81,7 @@ export const toDefinition = (title: string, fields: Field[], rest: Partial<Defin
 			nested = undefined;
 		} else if (f.kind === 'nested') {
 			(section ?? elements).push(e);
-			// GPS on: each entry of a list carries its own stamp.
-			nested = e.templateElements = gps ? [{ type: 'gps', name: per(f.key) }] : [];
+			nested = e.templateElements = [];
 		} else (nested ?? section ?? elements).push(e);
 		if (!nested && f.jumps && branches(f))
 			for (const c of f.choices) {
@@ -108,7 +108,9 @@ function field(e: El): Field {
 	};
 }
 const flat = (e: El): Field[] => {
-	const kids = (e.type === 'panel' ? e.elements : e.type === 'paneldynamic' ? (e.templateElements as El[]).filter((k) => k.name !== per(e.name)) : undefined) as El[] | undefined;
+	// Location lives in the answer's own columns; a hidden gps field from before is never written again.
+	if (e.type === 'gps') return [];
+	const kids = (e.type === 'panel' ? e.elements : e.type === 'paneldynamic' ? e.templateElements : undefined) as El[] | undefined;
 	return kids ? [field({ ...e, elements: undefined, templateElements: undefined }), ...flatAll(kids)] : [field(e)];
 };
 // In the flat list a nested group swallows every question after it, so a question that sat after one in the
