@@ -176,3 +176,42 @@ body {
 		background: color-mix(in srgb, var(--accent) 15%, transparent);
 	}
 }
+
+/* Every button answers the pointer: a lighter fill or a brighter edge, never a jump. */
+@layer components {
+	.nav-pill,
+	.small-btn,
+	.big-btn,
+	.tile,
+	[data-info] {
+		transition:
+			background 120ms ease,
+			border-color 120ms ease,
+			color 120ms ease,
+			filter 120ms ease;
+	}
+	@media (hover: hover) {
+		.nav-pill:hover {
+			background: color-mix(in srgb, var(--accent) 10%, transparent);
+		}
+		.small-btn:hover {
+			border-color: #7a7368;
+			background: rgb(255 255 255 / 0.06);
+		}
+		.big-btn:hover {
+			border-color: #6b6458;
+			background: #232323;
+		}
+		.big-btn.gold:hover,
+		.tile-gold:hover {
+			background: var(--accent);
+			filter: brightness(1.1);
+		}
+		.tile:hover {
+			background: #212121;
+		}
+		[data-info]:hover {
+			background: color-mix(in srgb, var(--accent) 20%, transparent);
+		}
+	}
+}
