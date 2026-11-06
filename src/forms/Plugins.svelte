@@ -123,7 +123,8 @@
 		run(async () => {
 			if (!v) throw new Error('Publish it to keep answers: a draft has no version to file them under.');
 			const self = isOpen() ? (query("SELECT selfKey FROM appState WHERE appStateId = 'singleton'")[0]?.selfKey as string | undefined) : undefined;
-			const by = self ?? me?.authId;
+			// The session, not `me`: an account with no cloud file is signed in yet has no `me`.
+			const by = self ?? session()?.user.id;
 			if (!by) throw new Error('Sign in, or open your Get Cache file, to sign this answer.');
 			await keepAnswer(v, answers, picked, by);
 			picked = new Map();
