@@ -180,7 +180,7 @@ export async function keepAnswer(v: PluginRow, answers: Record<string, unknown>,
 	const pictures = await Promise.all([...photos].map(async ([key, f]) => [key, f.type, new Uint8Array(await f.arrayBuffer()), now]));
 	const id = crypto.randomUUID();
 	db.transaction(() => {
-		if (!rows(db, "SELECT 1 FROM sqlite_schema WHERE name = 'plugin'").length) db.exec(pluginsDdl);
+		if (!rows(db, "SELECT 1 FROM sqlite_schema WHERE name = 'plugin'").length) for (const sql of pluginsDdl.split('--> statement-breakpoint')) db.exec(sql);
 		db.exec({
 			sql: 'INSERT INTO plugin (id, definition, madeBy, logo, publishedAt, addedAt) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING',
 			bind: [v.id, JSON.stringify(v.definition), v.madeBy!, v.logo, v.publishedAt!, now],

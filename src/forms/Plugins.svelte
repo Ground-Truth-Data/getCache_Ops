@@ -46,7 +46,10 @@
 		try {
 			await fn();
 		} catch (e) {
-			note = (e as Error).message;
+			// SQLite's own words are for Chris, never the screen.
+			if ((e as Error).name !== 'SQLite3Error') return void (note = (e as Error).message);
+			console.error('[ops] plugins', e);
+			note = "Couldn't keep that in this browser. Try again, or reload.";
 		}
 	};
 	const copy = (source: string) => run(async () => (location.hash = `#/plugins/edit/${await copyPlugin(source)}`));
