@@ -115,6 +115,13 @@
 		if (unfolded.delete(pluginId)) return;
 		receivedAnswers(pluginId).then((a) => unfolded.set(pluginId, current(a).answers.toReversed()), (e) => (note = e.message));
 	}
+	// The open zone presses in and flashes gold for a second before the page changes, so the jump reads as the tap's doing.
+	let opening = $state<string | null>(null);
+	function press(pluginId: string, href: string) {
+		if (opening) return;
+		opening = pluginId;
+		setTimeout(() => ((opening = null), (location.hash = href)), 1000);
+	}
 	const saved = (iso: string) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 	// This browser's order; a plugin it hasn't placed yet goes on top.
 	const ORDER = 'ops-plugins-order';
@@ -143,7 +150,7 @@
 		order = sorted.map((p) => (ids.includes(p.pluginId) ? ids[k++] : p.pluginId));
 		localStorage.setItem(ORDER, JSON.stringify(order));
 	}
-	const pills = $derived([[{ key: 'all', label: 'All', on: !you }, { key: 'you', label: 'You', on: you }]]);
+	const pills = $derived([[{ key: 'all', label: 'All', on: !you, tone: 'var(--rt-cream)' }, { key: 'you', label: 'You', on: you, tone: 'var(--rt-yellow)' }]]);
 	const buttons = $derived([
 		{ label: 'Import plugin', icon: gcIcon, ring: true, onclick: () => pick?.click() },
 		{ label: 'New', icon: pluginIcon, hug: true, href: '#/plugins/edit/new' },
@@ -163,22 +170,36 @@
 
 <!-- One pill colour per fact, so the eye learns them: questions white, answers rust, live sage, a draft dim. -->
 {#snippet pluginRow(p: (typeof items)[number], href: string, foldable: boolean)}
-	<RowShell title={p.title || 'Untitled'} {href} tier="top">
+	<!-- Split as the inbox row is: the left three quarters fold the answers open, the right quarter opens the plugin. -->
+	<RowShell title={p.title || 'Untitled'} tier="top">
 		{#snippet lead()}
 			{#if foldable && p.answers}
+				<span class="rt-row__fold" class:rt-row__fold--shut={!unfolded.has(p.pluginId)}
+					><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg></span
+				>
+			{:else if foldable}<span class="rt-row__fold"></span>{/if}
+		{/snippet}
+		{#snippet overlay()}
+			{#if foldable && p.answers}
 				<span
-					class="rt-row__fold pointer-events-auto! cursor-pointer"
-					class:rt-row__fold--shut={!unfolded.has(p.pluginId)}
+					class="rt-row__half rt-row__half--toggle zone"
 					role="button"
 					tabindex="0"
 					aria-label={unfolded.has(p.pluginId) ? 'Hide answers' : 'Show answers'}
 					aria-expanded={unfolded.has(p.pluginId)}
-					onclick={(e) => (e.preventDefault(), e.stopPropagation(), fold(p.pluginId))}
+					onclick={(e) => (e.stopPropagation(), fold(p.pluginId))}
 					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), fold(p.pluginId))}
 					data-fold
-					><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg></span
-				>
-			{:else if foldable}<span class="rt-row__fold"></span>{/if}
+				></span>
+			{/if}
+			<a
+				class="rt-row__half rt-row__half--open zone"
+				class:pressed={opening === p.pluginId}
+				{href}
+				aria-label="Open {p.title || 'Untitled'}"
+				onclick={(e) => (e.preventDefault(), e.stopPropagation(), press(p.pluginId, href))}
+				data-open
+			></a>
 		{/snippet}
 		{#snippet glyph()}<img src="plugin_gold.webp" alt="" class="rt-row__glyph-img" />{/snippet}
 		{#snippet subtitle()}
@@ -242,7 +263,7 @@
 	</header>
 	{@const row = items.find((p) => p.pluginId === id)}
 	<!-- The plugin as its list shows it: a tap goes back to that list. -->
-	{#if row}<div class="mb-10 max-w-3xl print:hidden [&_.rt-row]:border-(--rt-yellow)!" data-share-row>{@render pluginRow(row, '#/plugins', false)}</div>{/if}
+	{#if row}<div class="split mb-10 max-w-3xl print:hidden [&_.rt-row]:border-(--rt-yellow)!" data-share-row>{@render pluginRow(row, '#/plugins', false)}</div>{/if}
 	<div class="flex flex-wrap items-center justify-center gap-16 print:hidden" data-share>
 		<div class="aspect-square w-full max-w-90 rounded-[1.75rem] bg-[#f4efe6] p-7" data-qr>{@html renderSVG(link)}</div>
 		<div class="flex w-full max-w-md flex-col gap-5">
@@ -278,7 +299,7 @@
 			{@const shift = rowShift(drag, p.pluginId, i)}
 			<!-- Gold and inset: plugins sit one level in, under the white company row. -->
 			<div
-				class="rt-row-track rt-row-track--grip ml-4 [&_.rt-row]:border-(--rt-yellow)!"
+				class="split rt-row-track rt-row-track--grip ml-4 [&_.rt-row]:border-(--rt-yellow)!"
 				class:rt-row-track--dragging={moving}
 				data-row-id={p.pluginId}
 				style:transform={moving ? `translateY(${drag!.deltaY}px)` : shift ? `translateY(${shift}px)` : undefined}
@@ -312,3 +333,36 @@
 	<input bind:this={pick} type="file" accept=".getcache" class="hidden" onchange={(e) => open(e.currentTarget.files?.[0])} data-sent-file />
 {/if}
 {#if note}<p class="mt-4 text-lg text-muted" data-note>{note}</p>{/if}
+
+<style>
+	/* Only the zones are live: the row itself neither lights nor points. */
+	.split :global(.rt-row) {
+		cursor: default;
+	}
+	.split :global(.rt-row:hover) {
+		background: var(--rt-surface);
+	}
+	/* The split shows on hover only, never at rest. */
+	.zone {
+		background: transparent;
+	}
+	.rt-row__half--toggle.zone {
+		width: 75%;
+	}
+	.rt-row__half--open.zone {
+		width: 25%;
+	}
+	.pressed {
+		animation: press 1s ease-out;
+	}
+	@keyframes press {
+		0% {
+			box-shadow: inset 0 3px 10px rgb(0 0 0 / 0.6);
+			background: color-mix(in srgb, var(--rt-yellow) 45%, transparent);
+		}
+		100% {
+			box-shadow: inset 0 0 0 rgb(0 0 0 / 0);
+			background: color-mix(in srgb, var(--rt-yellow) 10%, transparent);
+		}
+	}
+</style>
