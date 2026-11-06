@@ -1,4 +1,4 @@
-// Company forms: a version is one SurveyJS JSON definition in Central's ops.form. The builder edits a flat field
+// Company forms: a form is one SurveyJS JSON definition in Central's ops.form. The builder edits a flat field
 // list and writes only our field types, so a form can never reach the network (no choicesByUrl).
 import type { Definition as Base, El } from '../../_rapper/gc/form';
 import { call } from '../company/central';
@@ -8,16 +8,15 @@ export type Definition = Base & { triggers?: Trigger[] };
 
 export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'section' | 'nested';
 /** `src` is the element as loaded (or a new field's defaults): saving writes the edited keys onto it, so every
- *  property the builder has no control for survives each version. The builder's list is flat: a section owns
+ *  property the builder has no control for survives each save. The builder's list is flat: a section owns
  *  what follows it up to the next section, and a nested group (a little form repeated per tree, say) owns the
  *  fields after it up to the next nested group or section. `jumps`, set while branching is on, sends a choice
  *  to a section's key or to 'submit'; a choice it leaves out continues to the next section. */
 export type Field = { kind: Kind; key: string; label: string; description: string; required: boolean; choices: string[]; min?: number; max?: number; jumps?: Record<string, string>; src: El };
-export type FormRow = { id: string; formId: string; version: number; definition: Definition; publishedAt: string | null; copiedFrom: string | null };
 /** Where an answer was saved or an entry added, from the phone's columns; null without a fix. */
 export type At = { lat?: number | null; lng?: number | null; accuracyM?: number | null };
-export type Answer = At & { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
-export type AnswerRow = At & { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
+type Answer = At & { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
+type AnswerRow = At & { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
 
 export const KINDS: [Kind, string][] = [
 	['text', 'Text'], ['number', 'Number'], ['dropdown', 'Dropdown'], ['radiogroup', 'Multiple choice'], ['checkbox', 'Checkboxes'],
@@ -158,39 +157,43 @@ export const keys = (d: Definition) => {
 	return walk(d.elements);
 };
 
-/** One version as the builder and the report see it, whoever keeps it: a company form or a plugin. */
-export type Version = { id: string; version: number; definition: Definition; publishedAt: string | null };
-/** `autosave`: saving costs nothing (kept in this browser), so every change is saved and there is no Save button. */
+/** A form as the builder and the report see it, whoever keeps it: a company form or a plugin. Edited in place
+ *  until `lockedAt`; `replacedBy` is the form made from it once it locked. */
+export type Form = { id: string; definition: Definition; publishedAt: string | null; lockedAt?: string | null; replacedBy?: { id: string; title: string } | null };
+/** `autosave`: every change is saved and there is no Save button. `copy` makes a new open form from this one and
+ *  returns its id. */
 export type Store = {
-	load: () => Promise<Version[]>;
-	save: (definition: Definition, draftId?: string) => Promise<unknown>;
-	publish: (draftId?: string) => Promise<unknown>;
+	load: () => Promise<Form | undefined>;
+	save: (definition: Definition) => Promise<unknown>;
+	publish: () => Promise<unknown>;
+	copy: () => Promise<string>;
 	autosave?: boolean;
 };
-export type Answers = { versions: Version[]; answers: Answer[]; rows: AnswerRow[] };
+export type Answers = { definition: Definition; answers: Answer[]; rows: AnswerRow[] };
+
+const FORM = 'id,definition,publishedAt,copiedFrom,lockedAt,replacedBy';
+export type FormRow = Form & { copiedFrom: string | null };
 
 export function orgStore(orgKey: string, formId: string): Store {
-	// A new form gets its id when its first draft is saved.
+	// A new form gets its id when it is first saved.
 	let id = formId === 'new' ? undefined : formId;
 	return {
-		load: async () => (id ? (await forms(orgKey)).filter((f) => f.formId === id) : []),
-		async save(definition, draftId) {
-			const made = await saveDraft(orgKey, definition, id, draftId);
-			if (!id && Array.isArray(made)) history.replaceState(null, '', `#/company/form/${(id = made[0].formId)}`);
+		load: async () => (id ? (await call<FormRow[]>(`form?id=eq.${id}&select=${FORM}`))[0] : undefined),
+		async save(definition) {
+			if (id) return call(`form?id=eq.${id}`, 'PATCH', { definition });
+			const [made] = await call<FormRow[]>('form', 'POST', { orgKey, definition });
+			history.replaceState(null, '', `#/company/form/${(id = made.id)}`);
 		},
-		publish: (draftId) => publish(draftId!),
+		publish: () => call(`form?id=eq.${id}`, 'PATCH', { publishedAt: new Date().toISOString() }),
+		copy: () => copyForm(id!, orgKey),
 	};
 }
-export async function orgAnswers(orgKey: string, formId: string): Promise<Answers> {
-	const versions = (await forms(orgKey)).filter((f) => f.formId === formId && f.publishedAt);
-	const all = await answers(versions.map((v) => v.id));
-	return { versions, answers: all, rows: await answerRows(all.map((a) => a.id)) };
+export async function orgAnswers(formId: string): Promise<Answers> {
+	const [{ definition }] = await call<FormRow[]>(`form?id=eq.${formId}&select=definition`);
+	const all = await call<Answer[]>(`answer?form=eq.${formId}&order=filledAt`);
+	return { definition, answers: all, rows: await answerRows(all.map((a) => a.id)) };
 }
 
-export const forms = (orgKey: string) =>call<FormRow[]>(`form?orgKey=eq.${orgKey}&select=id,formId,version,definition,publishedAt,copiedFrom&order=formId,version`);
-export const saveDraft = (orgKey: string, definition: Definition, formId?: string, draftId?: string) =>
-	draftId ? call(`form?id=eq.${draftId}`, 'PATCH', { definition }) : call<FormRow[]>('form', 'POST', { orgKey, definition, ...(formId && { formId }) });
-export const publish = (id: string) => call(`form?id=eq.${id}`, 'PATCH', { publishedAt: new Date().toISOString() });
+export const forms = (orgKey: string) => call<FormRow[]>(`form?orgKey=eq.${orgKey}&select=${FORM}&order=createdAt`);
 export const copyForm = (source: string, org: string) => call<string>('rpc/copy_form', 'POST', { source, org });
-const answers = (ids: string[]) => call<Answer[]>(`answer?form=in.(${ids})&order=filledAt`);
 const answerRows = (ids: string[]) => (ids.length ? call<AnswerRow[]>(`answerRow?answer=in.(${ids})&order=n`) : Promise.resolve([]));

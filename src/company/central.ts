@@ -56,7 +56,15 @@ export const members = (orgKey: string) => call<Member[]>(`orgMember?orgKey=eq.$
 export const setRole = (orgKey: string, authId: string, role: Role) => call(`orgMember?orgKey=eq.${orgKey}&authId=eq.${authId}`, 'PATCH', { role });
 export const remove = (orgKey: string, authId: string) => call(`orgMember?orgKey=eq.${orgKey}&authId=eq.${authId}`, 'DELETE');
 
-export const inviteToken = async (orgKey: string) => (await one(call<{ token: string }[]>(`orgInvite?orgKey=eq.${orgKey}&select=token`)))?.token;
+/** The company's public suite link: every form it publishes, read-only, no sign-in. */
+export const suiteLink = async (orgKey: string) => {
+	const key = (await one(call<{ suiteKey: string }[]>(`orgSpace?orgKey=eq.${orgKey}&select=suiteKey`)))?.suiteKey;
+	return key && `${new URL(appHome).origin}/app/plugin?suite=${key}`;
+};
+/** A dropped form greys on phones; nothing is deleted, and it can come back. */
+export const dropFromSuite = (form: string, dropped: boolean) => call('rpc/drop_from_suite', 'POST', { form, dropped });
+
+export const inviteToken =async (orgKey: string) => (await one(call<{ token: string }[]>(`orgInvite?orgKey=eq.${orgKey}&select=token`)))?.token;
 /** A new link; the old one stops working at once. */
 export const resetInvite = (orgKey: string) => call<string>('rpc/reset_invite', 'POST', { org: orgKey });
 

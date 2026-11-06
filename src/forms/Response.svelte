@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { El } from '../../_rapper/gc/form';
-	import { ago, columns, current, download, sections, sheets } from './answers';
-	import type { Answers, At } from './forms';
+	import { ago, current, download, sections, sheets } from './answers';
+	import { keys, type Answers, type At } from './forms';
 	import Value from './Value.svelte';
 
 	let {
@@ -16,11 +16,10 @@
 	$effect(() => void load().then((g) => (got = current(g)), (e) => (note = e.message)));
 
 	const a = $derived(got?.answers.find((x) => x.id === id));
-	const v = $derived(got?.versions.find((x) => x.id === a?.form));
-	const cols = $derived(v ? columns([v]) : []);
+	const cols = $derived(got ? keys(got.definition) : []);
 	const at = $derived(a?.lat != null ? a : undefined);
 	// This response's lines in each sheet; Export hands over every response.
-	const mine = $derived(a && got ? sheets({ versions: got.versions, answers: [a], rows: got.rows.filter((r) => r.answer === a.id) }) : {});
+	const mine = $derived(a && got ? sheets({ definition: got.definition, answers: [a], rows: got.rows.filter((r) => r.answer === a.id) }) : {});
 	const lists = $derived(cols.filter((c) => c.type === 'paneldynamic'));
 	const entries = (group: string) => got!.rows.filter((r) => r.answer === id && r.groupKey === group);
 
@@ -64,7 +63,7 @@
 {#if note}<p class="text-muted" data-note>{note}</p>{/if}
 {#if got && !a}<p class="text-muted" data-note>This response isn't in the answers kept here.</p>{/if}
 
-{#if a && v}
+{#if a && got}
 	<div class="flex max-w-xl flex-col gap-3.5" data-response={a.id}>
 		<div class="flex items-start gap-3.5 rounded-[20px] border-2 border-[#e8e2d4] bg-[#1e1b19] p-4">
 			<div class="flex h-13.5 w-13.5 shrink-0 items-center justify-center rounded-[14px] border-2 border-(--rt-yellow)">
@@ -73,8 +72,7 @@
 				>
 			</div>
 			<div class="flex flex-1 flex-col gap-1.5">
-				<span class="text-[21px] font-extrabold">{v.definition.title || 'Untitled'}</span>
-				<span class="self-start rounded-full border-2 border-(--rt-yellow) px-3 text-[15px] font-bold text-(--rt-yellow)">v{v.version}</span>
+				<span class="text-[21px] font-extrabold">{got.definition.title || 'Untitled'}</span>
 			</div>
 			<div class="flex flex-col items-end gap-2">
 				<span class="text-sm text-(--rt-sage)" title={a.filledAt}>{ago(a.filledAt)}</span>
@@ -86,7 +84,7 @@
 			{#if at}{@render gem(16)}{at.lat?.toFixed(4)}, {at.lng?.toFixed(4)}{at.accuracyM != null ? ` · ±${Math.round(at.accuracyM)} m` : ''}{' · '}{/if}saved {saved(a.filledAt)}
 		</div>
 
-		{#each sections(v.definition) as s, i (i)}
+		{#each sections(got.definition) as s, i (i)}
 			<div class="flex flex-col gap-2.5 rounded-[18px] border-2 border-(--rt-yellow) bg-[#1c1a12] px-4 py-3.5" data-section={s.title}>
 				<span class="self-start rounded-full bg-[#3a3215] px-2.5 py-0.5 text-[13px] font-bold text-(--rt-yellow)">{s.title}</span>
 				{#each s.elements as e (e.name)}

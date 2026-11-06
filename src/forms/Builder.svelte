@@ -4,10 +4,12 @@
 	import type { Snippet } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { blank, branches, CENTRAL_KEY, fromDefinition, keyFor, keys, KINDS, toDefinition, type Field, type Kind, type Store, type Version } from './forms';
+	import { blank, branches, CENTRAL_KEY, fromDefinition, keyFor, keys, KINDS, toDefinition, type Field, type Form, type Kind, type Store } from './forms';
 
-	let { store, back, logo, byline, meta, born = '' }: {
+	let { store, edit, back, logo, byline, meta, born = '' }: {
 		store: Store;
+		/** Where another form of this kind opens: the one that replaced this one, or a new one made from it. */
+		edit: (id: string) => string;
 		/** The name it saves under while the title is left empty, shown greyed in the empty title. */
 		born?: string;
 		back: [href: string, label: string];
@@ -17,7 +19,7 @@
 		meta?: unknown;
 	} = $props();
 
-	let versions = $state<Version[]>([]);
+	let form = $state<Form>();
 	let title = $state('');
 	let fields = $state<Field[]>([]);
 	let rest = $state<ReturnType<typeof fromDefinition>['rest']>({});
@@ -33,10 +35,8 @@
 	}
 	/** The field being edited, or 'head': the form's own title and description, which are section 1. */
 	let selected = $state<Field | 'head'>();
-	const latest = $derived(versions.at(-1));
-	const draft = $derived(latest && !latest.publishedAt ? latest : undefined);
-	// A key is locked once any version holding it is published.
-	const locked = $derived(new Set(versions.filter((v) => v.publishedAt).flatMap((v) => keys(v.definition).map((k) => k.key))));
+	// A question's key is its answers' identity: once published, a rename changes only its title.
+	let fixed = new Set<string>();
 	const definition = $derived(toDefinition(title.trim() || born, fields, rest));
 	let titleBox = $state<HTMLInputElement>();
 
@@ -45,8 +45,9 @@
 	const now = () => JSON.stringify([$state.snapshot(definition), meta]);
 
 	async function load() {
-		versions = await store.load();
-		if (latest) ({ title, fields, rest } = fromDefinition(latest.definition));
+		form = await store.load();
+		if (form) ({ title, fields, rest } = fromDefinition(form.definition));
+		fixed = new Set(form?.publishedAt ? keys(form.definition).map((k) => k.key) : []);
 		if (!title) titleBox?.focus();
 		kept = now();
 	}
@@ -54,12 +55,13 @@
 
 	$effect(() => {
 		const key = now();
-		if (!store.autosave || !kept || key === kept) return;
+		if (!store.autosave || !kept || key === kept || form?.lockedAt) return;
 		const t = setTimeout(async () => {
 			try {
 				kept = key;
-				await store.save(JSON.parse(key)[0], draft?.id);
-				versions = await store.load();
+				await store.save(JSON.parse(key)[0]);
+				note = 'Saved.';
+				refusals = 0;
 			} catch (e) {
 				refused(e, 'autosave');
 			}
@@ -69,7 +71,7 @@
 
 	// The key is never shown: it follows the title until published.
 	function relabel(f: Field, label: string) {
-		if (f.kind !== 'section' && !locked.has(f.key)) f.key = keyFor(label, f.kind, fields, f);
+		if (f.kind !== 'section' && !fixed.has(f.key)) f.key = keyFor(label, f.kind, fields, f);
 		f.label = label;
 	}
 	// Dragged by its grip, a card takes each place it passes: where it lands decides its section and group.
@@ -139,14 +141,21 @@
 	async function save(then?: 'publish') {
 		note = '';
 		try {
-			if (!store.autosave || now() !== kept) await store.save($state.snapshot(definition), draft?.id);
-			versions = await store.load();
-			if (then) await store.publish(draft?.id);
+			if (!store.autosave || now() !== kept) await store.save($state.snapshot(definition));
+			if (then) await store.publish();
 			await load();
-			note = then ? `Published version ${latest?.version}.` : `Saved draft version ${latest?.version}.`;
+			note = then ? 'Published.' : 'Saved.';
 			refusals = 0;
 		} catch (e) {
 			refused(e, then ?? 'save');
+		}
+	}
+	async function copy() {
+		note = '';
+		try {
+			location.hash = edit(await store.copy());
+		} catch (e) {
+			refused(e, 'copy');
 		}
 	}
 	function refused(e: unknown, what: string) {
@@ -295,14 +304,24 @@
 	>
 	{@render logo?.()}
 	<div class="flex min-w-56 flex-1 flex-col gap-1">
-		<input class="title" aria-label="Name" placeholder={born || 'Name'} bind:value={title} bind:this={titleBox} data-title />
+		<input class="title" aria-label="Name" placeholder={born || 'Name'} bind:value={title} bind:this={titleBox} readonly={!!form?.lockedAt} data-title />
 		{@render byline?.()}
 	</div>
-	{#if !store.autosave}<button class="small-btn" onclick={() => save()} data-save>Save draft</button>{/if}
-	<button class="view" onclick={view} aria-label="View the form" data-view><img src={blink || 'eye.webp'} alt="" /></button>
-	<button class="rt-fancy-btn rounded-2xl px-9 py-3 font-display text-2xl" onclick={() => save('publish')} data-publish>Publish</button>
+	{#if form?.replacedBy}<a class="text-lg text-(--accent) underline" href={edit(form.replacedBy.id)} data-replaced-by>Replaced by {form.replacedBy.title || 'Untitled'}</a>{/if}
+	{#if form?.lockedAt}
+		<button class="rt-fancy-btn rounded-2xl px-9 py-3 font-display text-2xl" onclick={copy} data-copy-form>Make a new form from this one</button>
+	{:else}
+		{#if !store.autosave}<button class="small-btn" onclick={() => save()} data-save>Save</button>{/if}
+		<button class="view" onclick={view} aria-label="View the form" data-view><img src={blink || 'eye.webp'} alt="" /></button>
+		{#if !form?.publishedAt}<button class="rt-fancy-btn rounded-2xl px-9 py-3 font-display text-2xl" onclick={() => save('publish')} data-publish>Publish</button>{/if}
+	{/if}
 </header>
 {#if note}{#key refusals}<p class="-mt-3 mb-4 {refusals ? 'refused' : 'text-muted'}" data-note>{note}</p>{/key}{/if}
+
+{#if form?.lockedAt}
+	<p class="mb-6 text-lg text-muted" data-locked>Locked: two people other than its maker have sent answers, so it never changes again.</p>
+	<div class="phone w-96" data-preview><FormView {definition} onsubmit={() => {}} /></div>
+{:else}
 
 <div class="grid gap-6 lg:grid-cols-[12.5rem_minmax(0,1fr)_20rem]">
 	<aside class="flex flex-wrap gap-2.5 self-start rounded-2xl border-2 border-dashed border-[#6b6458] p-3 lg:flex-col" aria-label="Add a field">
@@ -346,6 +365,7 @@
 		<FormView {definition} onsubmit={() => {}} />
 	</aside>
 </div>
+{/if}
 <dialog bind:this={viewer} class="viewer" closedby="any" data-viewer>
 	<button class="small-btn close" onclick={() => viewer?.close()}>Close</button>
 	<div class="phone"><FormView {definition} onsubmit={() => viewer?.close()} /></div>

@@ -17,11 +17,13 @@
 	import FormView from '../../_rapper/gc/FormView.svelte';
 	import { isOpen, query } from '../data/db';
 	import { type RowDrag, rowDragHandle, rowShift } from '../../_rapper/gc/rowDrag';
-	import { addLink, copyPlugin, type Filed, keepAnswer, live, myPlugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
+	import { addLink, copyPlugin, keepAnswer, live, myPlugins, plugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
 
 	let { me, sub, id, answer, signedInNow }: { me: { authId: string } | null; sub?: string; id?: string; answer?: string; signedInNow: () => void } = $props();
 
-	let mine = $state<PluginRow[][]>([]);
+	let mine = $state<PluginRow[]>([]);
+	// Plugins made elsewhere whose answers came in a sent file, as Central holds them: their tile opens the answers.
+	let others = $state<PluginRow[]>([]);
 	let inbox = $state<Awaited<ReturnType<typeof received>>>([]);
 	let note = $state('');
 	let info = $state(false);
@@ -31,14 +33,13 @@
 	async function load() {
 		inbox = await received();
 		mine = await myPlugins(me?.authId);
+		others = await plugins(inbox.map((p) => p.id).filter((i) => !mine.some((m) => m.id === i)));
 		shared = sub === 'share' && id ? await live(id) : undefined;
 	}
 	$effect(() => {
 		void [sub, id];
 		load().catch((e) => (note = e.message));
 	});
-	// Plugins made elsewhere whose answers came in a sent file: their tile opens the answers.
-	const others = $derived(inbox.filter((p) => !mine.some((v) => v[0].pluginId === p.pluginId)));
 
 	const run = (fn: () => Promise<unknown>) => async () => {
 		note = '';
@@ -48,17 +49,17 @@
 			note = (e as Error).message;
 		}
 	};
-	const copy = (pluginId: string) => run(async () => (location.hash = `#/plugins/edit/${await copyPlugin(pluginId)}`));
+	const copy = (source: string) => run(async () => (location.hash = `#/plugins/edit/${await copyPlugin(source)}`));
 
 	async function open(file?: File) {
 		if (file) await run(async () => (await receive(new Uint8Array(await file.arrayBuffer())), await load()))();
 		if (pick) pick.value = '';
 	}
 
-	// The credit is the publishing account's name, set by Central; the logo travels with every version.
+	// The credit is the publishing account's name, set by Central.
 	let madeBy = $state<string>();
 	let logo = $state<string | null>(null);
-	// The company a plugin publishes as: picked before its first version, then fixed by Central.
+	// The company a plugin publishes as: picked before it is published, then fixed by Central.
 	let orgKey = $state<string | null>(null);
 	let isPublished = $state(false);
 	let spaces = $state<{ orgKey: string; name: string }[]>([]);
@@ -71,22 +72,22 @@
 	const company = $derived(spaces.find((s) => s.orgKey === orgKey)?.name);
 	// Set when Publish needs an account: the sign-in shows then, and goes once the session is back.
 	let asking = $state(false);
-	// A new plugin gets its id in the address before anything is typed, so a reload or remount reopens the draft.
+	// A new plugin gets its id in the address before anything is typed, so a reload or remount reopens it.
 	$effect(() => {
 		if (sub === 'edit' && id === 'new') location.replace(`#/plugins/edit/${crypto.randomUUID()}`);
 	});
 	const store = $derived.by(() => {
 		if (sub !== 'edit' || !id || id === 'new') return undefined;
-		const s = pluginStore(id, () => ({ logo, orgKey }), (rows) => {
-			logo = rows.at(-1)?.logo ?? null;
-			madeBy = rows.findLast((r) => r.publishedAt)?.madeBy;
-			isPublished = rows.some((r) => r.publishedAt);
-			orgKey = rows.at(-1)?.orgKey ?? null;
+		const s = pluginStore(id, () => ({ logo, orgKey }), (row) => {
+			logo = row?.logo ?? null;
+			madeBy = row?.madeBy;
+			isPublished = !!row?.publishedAt;
+			orgKey = row?.orgKey ?? null;
 		});
 		return {
 			...s,
-			publish: (d?: string) =>
-				s.publish(d).then(
+			publish: () =>
+				s.publish().then(
 					() => (location.hash = `#/plugins/share/${location.hash.split('/').at(-1)}`),
 					(e) => ((asking = e instanceof SignInNeeded), Promise.reject(e)),
 				),
@@ -102,42 +103,47 @@
 
 	// The home is the inbox: All or You, a search, then rows the maker drags into his own order.
 	const questions = (d: Definition) => keys(d).filter((k) => k.type !== 'paneldynamic').length;
-	const items = $derived([
-		...mine.map((versions) => {
-			const last = versions.at(-1)!;
-			const live = versions.findLast((v) => v.publishedAt);
-			const got = inbox.find((p) => p.pluginId === last.pluginId);
-			const filed = live && ({ ...live, madeBy: live.madeBy!, publishedAt: live.publishedAt! } as Filed);
-			return { pluginId: last.pluginId, mine: true, title: last.definition.title ?? '', maker: live?.madeBy ?? 'You', version: live ? `v${live.version} live` : 'draft', live: !!live, questions: questions(last.definition), answers: got?.answers ?? 0, lastAt: got?.lastAt ?? null, href: `#/plugins/fill/${last.pluginId}`, definition: last.definition, filed };
-		}),
-		...others.map((p) => ({ pluginId: p.pluginId, mine: false, title: p.title, maker: p.madeBy, version: '', live: true, questions: questions(p.definition), answers: p.answers, lastAt: p.lastAt, href: `#/plugins/fill/${p.pluginId}`, definition: p.definition, filed: p as Filed })),
-	]);
-	// A form filled here is kept as a phone keeps one, under the live version; its photos wait here until it is.
+	const item = (p: PluginRow, mine: boolean) => ({
+		...p,
+		mine,
+		title: p.definition.title ?? '',
+		maker: p.madeBy ?? 'You',
+		questions: questions(p.definition),
+		answers: inbox.find((r) => r.id === p.id)?.answers ?? 0,
+		href: `#/plugins/fill/${p.id}`,
+	});
+	const items = $derived([...mine.map((p) => item(p, true)), ...others.map((p) => item(p, false))]);
+	// A form filled here is kept as a phone keeps one; its photos wait here until it is.
 	let picked = new Map<string, File>();
 	const pickPhoto = async (f: File) => {
 		const key = crypto.randomUUID();
 		picked.set(key, f);
 		return key;
 	};
-	const fill = (v: Filed | undefined, answers: Record<string, unknown>) =>
+	const fill = (v: PluginRow, answers: Record<string, unknown>) =>
 		run(async () => {
-			if (!v) throw new Error('Publish it to keep answers: a draft has no version to file them under.');
+			if (!v.publishedAt) throw new Error('Publish it to keep answers.');
 			const self = isOpen() ? (query("SELECT selfKey FROM appState WHERE appStateId = 'singleton'")[0]?.selfKey as string | undefined) : undefined;
 			// The session, not `me`: an account with no cloud file is signed in yet has no `me`.
 			const by = self ?? session()?.user.id;
 			if (!by) throw new Error('Sign in, or open your Get Cache file, to sign this answer.');
 			await keepAnswer(v, answers, picked, by);
 			picked = new Map();
-			unfolded.delete(v.pluginId);
+			unfolded.delete(v.id);
 			await load();
 			location.hash = '#/plugins';
 		})();
 	// A plugin with answers folds open on its left chevron: its answers as rust rows, each opening its response.
 	const unfolded = new SvelteMap<string, Answers['answers']>();
-	function fold(pluginId: string) {
-		if (unfolded.delete(pluginId)) return;
-		receivedAnswers(pluginId).then((a) => unfolded.set(pluginId, current(a).answers.toReversed()), (e) => (note = e.message));
+	function fold(p: PluginRow) {
+		if (unfolded.delete(p.id)) return;
+		receivedAnswers(p.id, p.definition).then((a) => unfolded.set(p.id, current(a).answers.toReversed()), (e) => (note = e.message));
 	}
+	const answersOf = (pid: string) => {
+		const p = items.find((x) => x.id === pid);
+		return p ? receivedAnswers(pid, p.definition).then((a) => ((photos = a.photos), a)) : Promise.reject(new Error('No such plugin here.'));
+	};
+	const published = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 	// A tapped half presses in and flashes gold for a second before it acts, so a slip of the finger reads as what it did.
 	let pressing = $state<string | null>(null);
 	function press(key: string, act: () => void) {
@@ -149,7 +155,7 @@
 	// This browser's order; a plugin it hasn't placed yet goes on top.
 	const ORDER = 'ops-plugins-order';
 	let order = $state<string[]>(JSON.parse(localStorage.getItem(ORDER) ?? '[]'));
-	const sorted = $derived(items.toSorted((x, y) => order.indexOf(x.pluginId) - order.indexOf(y.pluginId)));
+	const sorted = $derived(items.toSorted((x, y) => order.indexOf(x.id) - order.indexOf(y.id)));
 	// A maker wears their pill from the open Get Cache file's contacts, as every Get Cache screen draws them.
 	const people = new Map(
 		(isOpen() ? query('SELECT username, color, colorPickedAt FROM personView') : []).map((r) => [r.username as string, r]),
@@ -167,10 +173,10 @@
 	function drop(d: RowDrag) {
 		drag = null;
 		if (d.fromIndex === d.targetIndex) return;
-		const ids = shown.map((p) => p.pluginId);
+		const ids = shown.map((p) => p.id);
 		ids.splice(d.targetIndex, 0, ...ids.splice(d.fromIndex, 1));
 		let k = 0;
-		order = sorted.map((p) => (ids.includes(p.pluginId) ? ids[k++] : p.pluginId));
+		order = sorted.map((p) => (ids.includes(p.id) ? ids[k++] : p.id));
 		localStorage.setItem(ORDER, JSON.stringify(order));
 	}
 	const pills = $derived([[{ key: 'all', label: 'All', on: !you, chain: true }, { key: 'you', label: 'You', on: you, chain: true }]]);
@@ -197,7 +203,7 @@
 	<RowShell title={p.title || 'Untitled'} tier="top">
 		{#snippet lead()}
 			{#if foldable}
-				<span class="rt-row__fold" class:rt-row__fold--shut={!unfolded.has(p.pluginId)} class:none={!p.answers}
+				<span class="rt-row__fold" class:rt-row__fold--shut={!unfolded.has(p.id)} class:none={!p.answers}
 					><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg></span
 				>
 			{/if}
@@ -207,23 +213,23 @@
 			{#if foldable}
 				<span
 					class="rt-row__half rt-row__half--toggle zone"
-					class:pressed={pressing === `${p.pluginId}:fold`}
+					class:pressed={pressing === `${p.id}:fold`}
 					role="button"
 					tabindex="0"
-					aria-label={unfolded.has(p.pluginId) ? 'Hide submissions' : 'Show submissions'}
-					aria-expanded={unfolded.has(p.pluginId)}
+					aria-label={unfolded.has(p.id) ? 'Hide submissions' : 'Show submissions'}
+					aria-expanded={unfolded.has(p.id)}
 					aria-disabled={!p.answers}
-					onclick={(e) => (e.stopPropagation(), p.answers && press(`${p.pluginId}:fold`, () => fold(p.pluginId)))}
-					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), p.answers && press(`${p.pluginId}:fold`, () => fold(p.pluginId)))}
+					onclick={(e) => (e.stopPropagation(), p.answers && press(`${p.id}:fold`, () => fold(p)))}
+					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), p.answers && press(`${p.id}:fold`, () => fold(p)))}
 					data-fold
 				></span>
 			{/if}
 			<a
 				class="rt-row__half rt-row__half--open zone"
-				class:pressed={pressing === p.pluginId}
+				class:pressed={pressing === p.id}
 				{href}
 				aria-label="Fill out {p.title || 'Untitled'}"
-				onclick={(e) => (e.preventDefault(), e.stopPropagation(), press(p.pluginId, () => (location.hash = href)))}
+				onclick={(e) => (e.preventDefault(), e.stopPropagation(), press(p.id, () => (location.hash = href)))}
 				data-open
 			></a>
 		{/snippet}
@@ -232,16 +238,26 @@
 			{#if p.answers}<span class="rt-count-badge" aria-label="{p.answers} {p.answers === 1 ? 'submission' : 'submissions'}" data-answers>{p.answers}</span>{/if}
 		{/snippet}
 		{#snippet subtitle()}
-			<IdentityPill who={pill(p)} />
-			{#if !p.live}<span class="rt-row__badge border-[#8a857b]! text-[#8a857b]!" data-version>draft</span>{/if}
+			{#if !p.publishedAt}<span class="rt-row__badge border-[#8a857b]! text-[#8a857b]!" data-unpublished>not published</span>{/if}
 			<span class="questions" data-questions>{p.questions} {p.questions === 1 ? 'question' : 'questions'}</span>
+			{#if p.replacedBy}
+				{@const to = `#/plugins/fill/${p.replacedBy.id}`}
+				<!-- A span, not a link: the row is a button, and this sits above its tap zones. -->
+				<span class="replaced" role="link" tabindex="0" onclick={(e) => (e.stopPropagation(), (location.hash = to))} onkeydown={(e) => e.key === 'Enter' && (location.hash = to)} data-replaced-by
+					>Replaced by {p.replacedBy.title || 'Untitled'}</span
+				>
+			{/if}
 		{/snippet}
-		{#snippet end()}
-			<span class="flex items-center" aria-hidden="true"
-				><span class="fill-label">Fill out</span><span class="rt-row__cell rt-row__cell--chevron"
-					>{#if p.lastAt}<span class="rt-row__when text-(--rt-sage)!" title="Last submitted {saved(p.lastAt)}" data-last>{ago(p.lastAt)}</span>{/if}{@render go()}</span
-				></span
+		<span class="foot" data-foot>
+			<span class="flex min-w-0 items-center gap-2"
+				><IdentityPill who={pill(p)} />{#if p.publishedAt}<span data-published>· {published(p.publishedAt)}</span><span data-submissions
+						>· {p.submissions ?? 0} {p.submissions === 1 ? 'submission' : 'submissions'}</span
+					>{/if}</span
 			>
+			{#if p.lastSubmittedAt}<span class="text-(--rt-sage)" title="Last submitted {saved(p.lastSubmittedAt)}" data-last>{ago(p.lastSubmittedAt)}</span>{/if}
+		</span>
+		{#snippet end()}
+			<span class="flex items-center" aria-hidden="true"><span class="fill-label">Fill out</span><span class="rt-row__cell rt-row__cell--chevron">{@render go()}</span></span>
 		{/snippet}
 	</RowShell>
 {/snippet}
@@ -258,7 +274,7 @@
 		</label>
 	{/snippet}
 	{#snippet byline()}
-		{#if madeBy}<span class="text-[#c9c3b7]" data-credit>Made by {madeBy}</span>{/if}
+		{#if madeBy}<span class="text-[#c9c3b7]" data-credit>Made by {madeBy}{#if isPublished}&nbsp;· <a class="underline" href="#/plugins/share/{id}" data-share-link>Share</a>{/if}</span>{/if}
 		{#if isPublished && orgKey}
 			<span class="font-bold text-(--accent)" data-company>{company ?? 'A company'}'s plugin</span>
 		{:else if !isPublished && spaces.length}
@@ -271,14 +287,14 @@
 			>
 		{/if}
 	{/snippet}
-	{#key id}<Builder {store} back={['#/plugins', 'Plugins']} logo={logoPick} {byline} meta={logo} born={nthForm(mine.filter((v) => v[0].pluginId !== id).map((v) => v.at(-1)!.definition.title ?? ''))} />{/key}
+	{#key id}<Builder {store} edit={(i) => `#/plugins/edit/${i}`} back={['#/plugins', 'Plugins']} logo={logoPick} {byline} meta={logo} born={nthForm(mine.filter((p) => p.id !== id).map((p) => p.definition.title ?? ''))} />{/key}
 	{#if asking}<div class="mt-6" data-publish-signin><SignIn done={() => ((asking = false), signedInNow())} /></div>{/if}
 {:else if sub === 'answers' && id && answer}
-	<Response load={() => receivedAnswers(id).then((a) => ((photos = a.photos), a))} id={answer} back={[`#/plugins/answers/${id}`, 'Answers']} photo={(k) => photos.get(k)} />
+	<Response load={() => answersOf(id)} id={answer} back={[`#/plugins/answers/${id}`, 'Answers']} photo={(k) => photos.get(k)} />
 {:else if sub === 'answers' && id}
-	<Report load={() => receivedAnswers(id).then((a) => ((photos = a.photos), a))} back={['#/plugins', 'Plugins']} photo={(k) => photos.get(k)} open={(a) => `#/plugins/answers/${id}/${a}`} />
+	<Report load={() => answersOf(id)} back={['#/plugins', 'Plugins']} photo={(k) => photos.get(k)} open={(a) => `#/plugins/answers/${id}/${a}`} />
 {:else if sub === 'fill' && id}
-	{@const row = items.find((p) => p.pluginId === id)}
+	{@const row = items.find((p) => p.id === id)}
 	<!-- Edit lives inside the form, and only on your own. -->
 	<header class="mb-8 flex max-w-3xl flex-wrap items-center gap-4" data-fill>
 		<a class="small-btn" href="#/plugins" data-back
@@ -286,9 +302,9 @@
 		>
 		<span class="flex-1 font-display text-4xl">{row?.title || 'Untitled'}</span>
 		{#if row?.mine}<a class="small-btn" href="#/plugins/edit/{id}" data-edit>Edit</a>{/if}
-		{#if row?.live}<a class="small-btn" href={addLink(id)} data-add-phone>Add to phone</a>{/if}
+		{#if row?.publishedAt}<a class="small-btn" href={addLink(id)} data-add-phone>Add to phone</a>{/if}
 	</header>
-	{#if row}<div class="phone" data-fill-form><FormView definition={row.filed?.definition ?? row.definition} keep={pickPhoto} onsubmit={(a) => fill(row.filed, a)} /></div>{/if}
+	{#if row}<div class="phone" data-fill-form><FormView definition={row.definition} keep={pickPhoto} onsubmit={(a) => fill(row, a)} /></div>{/if}
 {:else if sub === 'share' && id}
 	{@const link = addLink(id)}
 	<header class="mb-8 flex flex-wrap items-center gap-4 border-b border-rule pb-5 print:hidden">
@@ -299,11 +315,11 @@
 			{@render mark(shared.logo, 'h-16 w-16')}
 			<span class="flex-1 font-display text-4xl">{shared.definition.title}</span>
 			<span class="flex items-center gap-2 rounded-full bg-[#22301f] px-4 py-2 text-lg font-bold text-[#9bd28f]" data-published
-				><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>v{shared.version} published</span
+				><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>Published</span
 			>
 		{/if}
 	</header>
-	{@const row = items.find((p) => p.pluginId === id)}
+	{@const row = items.find((p) => p.id === id)}
 	<!-- The plugin as its list shows it: a tap goes back to that list. -->
 	{#if row}<div class="split mb-10 max-w-3xl print:hidden" data-share-row>{@render pluginRow(row, '#/plugins', false)}</div>{/if}
 	<div class="flex flex-wrap items-center justify-center gap-16 print:hidden" data-share>
@@ -337,13 +353,13 @@
 	</div>
 	<div class="flex max-w-3xl flex-col gap-(--rt-space-2)" data-plugins>
 		<InboxChrome rows={pills} onpill={(k) => (you = k === 'you')} bind:query={search} placeholder="Search plugins and makers" clearLabel="Clear" {buttons} />
-		{#each shown as p, i (p.pluginId)}
-			{@const moving = drag?.rowId === p.pluginId}
-			{@const shift = rowShift(drag, p.pluginId, i)}
+		{#each shown as p, i (p.id)}
+			{@const moving = drag?.rowId === p.id}
+			{@const shift = rowShift(drag, p.id, i)}
 			<div
 				class="split rt-row-track rt-row-track--grip ml-4"
 				class:rt-row-track--dragging={moving}
-				data-row-id={p.pluginId}
+				data-row-id={p.id}
 				style:transform={moving ? `translateY(${drag!.deltaY}px)` : shift ? `translateY(${shift}px)` : undefined}
 				style:transition={shift && !moving ? 'transform 200ms ease' : undefined}
 			>
@@ -351,15 +367,15 @@
 			<RowGrip
 				label="Drag to reorder"
 				dragging={moving}
-				attach={(el) => rowDragHandle(el, { rowId: p.pluginId, index: i, count: shown.length, drag: () => drag, move: (d) => (drag = d), drop }).destroy}
+				attach={(el) => rowDragHandle(el, { rowId: p.id, index: i, count: shown.length, drag: () => drag, move: (d) => (drag = d), drop }).destroy}
 			/>
 			</div>
-			{@const got = unfolded.get(p.pluginId)}
+			{@const got = unfolded.get(p.id)}
 			{#if got}
 				<!-- mr-6 ends them where the row above ends, left of its grip. -->
 				<div class="subs mr-6 ml-10 flex flex-col gap-(--rt-space-2)" data-answer-rows>
 					{#each got as a (a.id)}
-						{@const to = `#/plugins/answers/${p.pluginId}/${a.id}`}
+						{@const to = `#/plugins/answers/${p.id}/${a.id}`}
 						<div class="sub" class:pressed={pressing === a.id}>
 							<RowShell title={p.title || 'Untitled'} tier="child" onclick={() => press(a.id, () => (location.hash = to))}>
 								{#snippet glyph()}<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--rt-rust)" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></svg>{/snippet}
@@ -373,7 +389,7 @@
 							</RowShell>
 						</div>
 					{/each}
-					<a class="small-btn self-start" href="#/plugins/answers/{p.pluginId}" data-answers-link>All submissions as a table</a>
+					<a class="small-btn self-start" href="#/plugins/answers/{p.id}" data-answers-link>All submissions as a table</a>
 				</div>
 			{/if}
 		{/each}
@@ -395,6 +411,23 @@
 	}
 	.none {
 		opacity: 0.3;
+	}
+	.foot {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin-top: 0.4rem;
+		padding-bottom: 0.5rem;
+		color: #c9c3b7;
+		font-size: 0.95rem;
+	}
+	.replaced {
+		position: relative;
+		z-index: 3;
+		color: var(--rt-yellow);
+		text-decoration: underline;
+		cursor: pointer;
 	}
 	.questions {
 		color: var(--rt-rust);

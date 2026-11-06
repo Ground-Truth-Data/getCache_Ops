@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { renderSVG } from 'uqr';
-	import { appHome, inviteToken, join, members, opsHome, remove, resetInvite, setRole, spaceUrl, uploadLogo, type Member, type Space } from './central';
+	import { appHome, dropFromSuite, inviteToken, join, members, opsHome, remove, resetInvite, setRole, spaceUrl, suiteLink, uploadLogo, type Member, type Space } from './central';
+	import { companyPlugins, type PluginRow } from '../forms/plugins';
 	import Info from './Info.svelte';
 	import OrgLogo from './OrgLogo.svelte';
 	import SignIn from './SignIn.svelte';
@@ -20,7 +21,6 @@
 
 	let people = $state<Member[]>([]);
 	let invite = $state<string>();
-	let copied = $state(false);
 	let note = $state('');
 	const admin = $derived(company?.role === 'admin');
 	const requests = $derived(people.filter((p) => p.role === 'requested'));
@@ -30,17 +30,21 @@
 	let hash = $state(location.hash);
 	const [, sub, formId] = $derived(hash.replace(/^#\/?/, '').split('/'));
 
-	async function loadAdmin() {
+	let suite = $state<string>();
+	let suiteForms = $state<PluginRow[]>([]);
+	async function loadSpace() {
+		if (company && (company.role === 'admin' || company.role === 'member'))
+			[suite, suiteForms] = await Promise.all([suiteLink(company.orgKey), companyPlugins(company.orgKey)]);
 		if (company && admin) [people, invite] = await Promise.all([members(company.orgKey), inviteToken(company.orgKey)]);
 	}
-	$effect(() => void loadAdmin().catch((e) => (note = e.message)));
+	$effect(() => void loadSpace().catch((e) => (note = e.message)));
 
 	const act = (run: () => Promise<unknown>) => async () => {
 		note = '';
 		try {
 			await run();
 			await reload();
-			await loadAdmin();
+			await loadSpace();
 		} catch (e) {
 			note = (e as Error).message;
 		}
@@ -53,10 +57,11 @@
 		const file = e.currentTarget.files?.[0];
 		if (file && company) act(() => uploadLogo(company.orgKey, file))();
 	};
-	async function copy() {
-		await navigator.clipboard.writeText(link!);
-		copied = true;
-		setTimeout(() => (copied = false), 1500);
+	let copied = $state('');
+	async function copy(text: string) {
+		await navigator.clipboard.writeText(text);
+		copied = text;
+		setTimeout(() => (copied = ''), 1500);
 	}
 </script>
 
@@ -117,9 +122,9 @@
 		{/if}
 	</div>
 {:else if admin && sub === 'form'}
-	{#key formId}<Builder store={orgStore(company.orgKey, formId)} back={['#/company/forms', 'Forms']} />{/key}
+	{#key formId}<Builder store={orgStore(company.orgKey, formId)} edit={(id) => `#/company/form/${id}`} back={['#/company/forms', 'Forms']} />{/key}
 {:else if admin && sub === 'report'}
-	<Report load={() => orgAnswers(company.orgKey, formId)} back={['#/company/forms', 'Forms']} />
+	<Report load={() => orgAnswers(formId)} back={['#/company/forms', 'Forms']} />
 {:else if admin && sub === 'forms'}
 	{@render back('#/company', company.name)}
 	<Forms orgKey={company.orgKey} />
@@ -133,7 +138,7 @@
 		<div class="flex flex-wrap items-center gap-12 print:hidden" data-invite>
 			<div class="h-80 w-80 rounded-3xl bg-[#f4efe6] p-6" data-qr>{@html renderSVG(link)}</div>
 			<div class="flex w-full max-w-md flex-col gap-5">
-				<button class="big-btn gold rt-fancy-btn" onclick={copy} data-copy-link>{copied ? 'Copied' : 'Copy link'}</button>
+				<button class="big-btn gold rt-fancy-btn" onclick={() => copy(link)} data-copy-link>{copied === link ? 'Copied' : 'Copy link'}</button>
 				<button class="big-btn" onclick={() => print()} data-print>Print poster</button>
 				<button class="small-btn justify-center py-4 text-lg" onclick={act(() => resetInvite(company.orgKey))} data-reset>New link (old one stops working)</button>
 			</div>
@@ -200,8 +205,37 @@
 	{:else}
 		<Info label="Where the forms are">Fill this organization's forms in the Get Cache app, under its button at the bottom.</Info>
 	{/if}
+	{#if suite}
+		<section class="mt-12 flex flex-wrap items-start gap-10" data-suite>
+			<div class="h-56 w-56 shrink-0 rounded-3xl bg-[#f4efe6] p-5" data-suite-qr>{@html renderSVG(suite)}</div>
+			<div class="flex max-w-xl min-w-0 flex-1 flex-col gap-4">
+				<div class="flex items-center gap-4">
+					<h2 class="font-display text-3xl text-(--accent)">The suite</h2>
+					<Info label="What the suite is">Anyone who opens this link or scans the code gets {company.name}'s forms on their phone, with no sign-in. A dropped form greys out there; its answers stay.</Info>
+				</div>
+				<code class="rounded-xl border-2 border-[#3a352e] bg-[#1a1a1a] px-4 py-3 text-lg break-all text-[#d8d2c6]" data-suite-link>{suite}</code>
+				<button class="big-btn gold rt-fancy-btn self-start px-10" onclick={() => copy(suite!)} data-copy-suite>{copied === suite ? 'Copied' : 'Copy link'}</button>
+			</div>
+		</section>
+		<div class="mt-8 flex max-w-3xl flex-col gap-3" data-suite-forms>
+			{#each suiteForms as p (p.id)}
+				<div class="flex flex-wrap items-center gap-4 rounded-2xl border-2 border-[#3a352e] bg-[#1a1a1a] px-6 py-3" data-suite-form={p.id} data-dropped={!!p.droppedAt}>
+					<span class="flex-1 text-xl" class:dropped={p.droppedAt}>{p.definition.title || 'Untitled'}{#if p.droppedAt}<span class="ml-3 text-base">dropped</span>{/if}</span>
+					{#if admin}<button class="small-btn" onclick={act(() => dropFromSuite(p.id, !p.droppedAt))} data-drop>{p.droppedAt ? 'Back in suite' : 'Drop from suite'}</button>{/if}
+				</div>
+			{:else}
+				<p class="text-lg text-muted">No forms published as {company.name} yet.</p>
+			{/each}
+		</div>
+	{/if}
 	<div class="mt-12 flex justify-end">
 		<button class="small-btn" onclick={act(() => remove(company.orgKey, me.authId))} data-leave>Leave</button>
 	</div>
 {/if}
 {#if note}<p class="mt-4 text-lg text-muted" data-note>{note}</p>{/if}
+
+<style>
+	.dropped {
+		color: #6b6458;
+	}
+</style>

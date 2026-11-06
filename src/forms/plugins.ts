@@ -1,92 +1,85 @@
-// Plugins: a form anyone adds to their phone from a link. A plugin is made, edited and copied in this browser with
-// no account; Publish alone needs one, and writes the version to Central's ops.plugin, where triggers lock it and
-// keep the maker's credit. Answers never go to Central: a phone sends its plugins file, and Ops keeps every row of
-// every file it is given, and every form filled here, in this browser.
+// Plugins: a form anyone adds to their phone from a link. A plugin lives only in Central's ops.plugin, so making
+// one needs a sign-in: its first save makes the row. Its maker edits it there in place until two people other
+// than the maker have sent answers; from then on Central refuses every edit, and the way on is a new form made from
+// it. Answers never go to Central: a phone sends its plugins file, and Ops keeps every row of every file it is
+// given, and every form filled here, in this browser.
 import sqlite3InitModule, { type Database } from '@sqlite.org/sqlite-wasm';
 import { refused, split } from '../../_rapper/gc/form';
 import { pluginsDdl } from '../../_rapper/gc/pluginsFile';
 import { fresh } from '../data/auth';
 import { appHome, call } from '../company/central';
-import type { Answers, Definition, Store, Version } from './forms';
+import type { Answers, Definition, Form, Store } from './forms';
 
-/** `orgKey`: the company that publishes it, set by its first version; null for a person's own. */
-export type PluginRow = Version & { pluginId: string; madeBy?: string; logo: string | null; copiedFrom: string | null; orgKey: string | null };
-type Draft = Pick<PluginRow, 'pluginId' | 'definition' | 'logo' | 'copiedFrom'>;
+/** `orgKey`: the company that publishes it; null for a person's own. The counts are the phones' receipts. */
+export type PluginRow = Form & {
+	madeBy?: string;
+	logo: string | null;
+	copiedFrom: string | null;
+	orgKey: string | null;
+	submissions?: number;
+	lastSubmittedAt?: string | null;
+	droppedAt?: string | null;
+};
 
 export class SignInNeeded extends Error {
 	constructor() {
-		super('Sign in to publish.');
+		super('Sign in to save.');
 	}
 }
 
-// Every column Central has: a plugin row reads the same before and after a column is added (orgKey reads
-// undefined until ops.plugin carries it).
-const COLS = '*';
-const published = (ids: string[]) =>
-	ids.length ? call<PluginRow[]>(`plugin?pluginId=in.(${ids})&publishedAt=not.is.null&select=${COLS}&order=version`) : Promise.resolve([]);
+const COLS = '*,lockedAt,replacedBy,submissions,lastSubmittedAt';
+const central = (filter: string) => call<PluginRow[]>(`plugin?${filter}&select=${COLS}`);
+/** Central's rows for these plugins, as a phone adding them would get them. */
+export const plugins = (ids: string[]) => (ids.length ? central(`id=in.(${ids})`) : Promise.resolve([]));
 
-// Every plugin this browser made or copied, with its unpublished draft, or null once that is published.
-const KEY = 'ops-plugins';
-const kept = (): Record<string, Draft | null> => JSON.parse(localStorage.getItem(KEY) ?? '{}');
-const keep = (pluginId: string, d: Draft | null) => localStorage.setItem(KEY, JSON.stringify({ ...kept(), [pluginId]: d }));
+/** The signed-in maker's plugins, from Central only: nothing about a plugin is kept in the browser. */
+export const myPlugins = async (authId?: string): Promise<PluginRow[]> => (authId ? central(`createdBy=eq.${authId}&order=createdAt.desc`) : []);
 
-/** Central's published versions, then this browser's draft as the next one. */
-function withDraft(rows: PluginRow[], pluginId: string): PluginRow[] {
-	const d = kept()[pluginId];
-	return d ? [...rows, { ...d, id: 'local', version: (rows.at(-1)?.version ?? 0) + 1, publishedAt: null, orgKey: rows.at(-1)?.orgKey ?? null }] : rows;
+// Central answers a write it refused under row-level security with no rows, so "Saved." waits for the row itself.
+async function written(rows: Promise<PluginRow[]>): Promise<PluginRow> {
+	const [row] = await rows;
+	if (!row) throw new Error('Central did not save this plugin.');
+	return row;
 }
 
-// A draft lives only in this browser: Central being unreachable or a sign-in expiring must never hide it or stop it
-// saving, so Central's half of a read comes back empty, loudly.
-const orNone = <T>(p: Promise<T[]>) => p.catch((e): T[] => (console.warn("[plugins] Central unreachable; showing this browser's drafts only", e), []));
-
-/** This browser's plugins, and the signed-in maker's from anywhere: each one's versions, oldest first. */
-export async function myPlugins(authId?: string): Promise<PluginRow[][]> {
-	const ids = new Set(Object.keys(kept()));
-	if (authId) for (const r of await orNone(call<{ pluginId: string }[]>(`plugin?createdBy=eq.${authId}&select=pluginId`))) ids.add(r.pluginId);
-	const rows = await orNone(published([...ids]));
-	return [...ids].map((id) => withDraft(rows.filter((r) => r.pluginId === id), id)).filter((v) => v.length);
-}
-
-/** A plugin's newest published version, as a phone adding it would get it. */
-export const live = async (pluginId: string) => (await published([pluginId])).at(-1);
+export const live = async (id: string) => (await central(`id=eq.${id}`))[0];
+/** Every plugin a company published, newest first: its suite. */
+export const companyPlugins = (orgKey: string) => central(`orgKey=eq.${orgKey}&order=publishedAt.desc`);
 
 /** What a phone opens to add the plugin: the same link is in its QR code. */
-export const addLink = (pluginId: string) => `${new URL(appHome).origin}/app/plugin?add=${pluginId}`;
+export const addLink = (id: string) => `${new URL(appHome).origin}/app/plugin?add=${id}`;
 
 /** The builder's store for one plugin; `meta` is the logo the page is showing and the company it publishes as. */
-export function pluginStore(pluginId: string, meta: () => { logo: string | null; orgKey: string | null }, loaded: (rows: PluginRow[]) => void): Store {
-	const id = pluginId;
+export function pluginStore(id: string, meta: () => { logo: string | null; orgKey?: string | null }, loaded: (row: PluginRow | undefined) => void): Store {
+	let row: PluginRow | undefined;
 	return {
 		autosave: true,
 		async load() {
-			const rows = withDraft(await orNone(published([id])), id);
-			loaded(rows);
-			return rows;
+			loaded((row = await live(id)));
+			return row;
 		},
+		// A plugin's first save makes its row on Central; every later one rewrites that row in place.
 		async save(definition: Definition) {
-			keep(id, { pluginId: id, definition, logo: meta().logo, copiedFrom: kept()[id]?.copiedFrom ?? null });
-		},
-		async publish() {
-			const d = kept()[id];
-			if (!d) return;
 			if (!(await fresh())) throw new SignInNeeded();
-			// An interrupted publish can leave its row unpublished; Central holds one draft per plugin.
-			await call(`plugin?pluginId=eq.${id}&publishedAt=is.null`, 'DELETE');
-			const { pluginId, definition, logo, copiedFrom } = d;
-			const [row] = await call<PluginRow[]>('plugin', 'POST', { pluginId, definition, logo, copiedFrom, ...(meta().orgKey && { orgKey: meta().orgKey }) });
-			await call(`plugin?id=eq.${row.id}`, 'PATCH', { publishedAt: new Date().toISOString() });
-			keep(d.pluginId, null);
+			const { logo, orgKey } = meta();
+			row = await written(
+				row
+					? call(`plugin?id=eq.${id}`, 'PATCH', { definition, logo })
+					: call('plugin', 'POST', { id, definition, logo, ...(orgKey && { orgKey }) }),
+			);
 		},
+		publish: async () => {},
+		copy: () => copyPlugin(id),
 	};
 }
 
-/** A new plugin of your own from anyone's published one, made here; Central keeps the original maker's credit. */
-export async function copyPlugin(pluginId: string): Promise<string> {
-	const src = (await published([pluginId])).at(-1);
+/** A new, open plugin of your own from anyone's published one; Central keeps the original maker's credit. */
+export async function copyPlugin(source: string): Promise<string> {
+	const src = await live(source);
 	if (!src) throw new Error('No published plugin at that link.');
+	if (!(await fresh())) throw new SignInNeeded();
 	const id = crypto.randomUUID();
-	keep(id, { pluginId: id, definition: src.definition, logo: src.logo, copiedFrom: src.id });
+	await written(call('plugin', 'POST', { id, definition: src.definition, logo: src.logo, copiedFrom: src.id }));
 	return id;
 }
 
@@ -176,11 +169,8 @@ export async function receive(bytes: Uint8Array): Promise<Record<string, number>
 	}
 }
 
-/** A published version an answer is filed under. */
-export type Filed = Pick<PluginRow, 'id' | 'pluginId' | 'version' | 'definition' | 'logo'> & { madeBy: string; publishedAt: string };
-
 /** A form filled here, kept as a phone keeps one, beside every sent file's answers; `by` signs it. */
-export async function keepAnswer(v: Filed, answers: Record<string, unknown>, photos: Map<string, File>, by: string): Promise<void> {
+export async function keepAnswer(v: PluginRow, answers: Record<string, unknown>, photos: Map<string, File>, by: string): Promise<void> {
 	const { data, fix, rows: entries } = split(v.definition, answers);
 	const why = refused(v.definition, data) ?? entries.map((r) => refused(v.definition, r.data, r.groupKey)).find(Boolean);
 	if (why) throw new Error(why);
@@ -192,8 +182,8 @@ export async function keepAnswer(v: Filed, answers: Record<string, unknown>, pho
 	db.transaction(() => {
 		if (!rows(db, "SELECT 1 FROM sqlite_schema WHERE name = 'plugin'").length) db.exec(pluginsDdl);
 		db.exec({
-			sql: 'INSERT INTO plugin (id, pluginId, version, definition, madeBy, logo, publishedAt, addedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING',
-			bind: [v.id, v.pluginId, v.version, JSON.stringify(v.definition), v.madeBy, v.logo, v.publishedAt, now],
+			sql: 'INSERT INTO plugin (id, definition, madeBy, logo, publishedAt, addedAt) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING',
+			bind: [v.id, JSON.stringify(v.definition), v.madeBy!, v.logo, v.publishedAt!, now],
 		});
 		for (const p of pictures) db.exec({ sql: 'INSERT INTO photo (key, type, bytes, takenAt) VALUES (?, ?, ?, ?)', bind: p as never });
 		db.exec({
@@ -209,32 +199,25 @@ export async function keepAnswer(v: Filed, answers: Record<string, unknown>, pho
 	await save(KEPT, sqlite3.capi.sqlite3_js_db_export(db, 'main'));
 }
 
-/** Each plugin any sent file held, its newest version, and how many answers came in. */
-export async function received(): Promise<(Filed & { title: string; answers: number; lastAt: string | null })[]> {
+/** How many answers each plugin has in the sent files and fills kept here, and when the last was filled. */
+export async function received(): Promise<{ id: string; answers: number; lastAt: string }[]> {
 	const { db } = await answersDb();
 	if (!rows(db, "SELECT 1 FROM sqlite_schema WHERE name = 'plugin'").length) return [];
 	return rows(
 		db,
-		`SELECT p.id, p.pluginId, p.version, p.logo, p.publishedAt, json_extract(p.definition, '$.title') AS title, p.madeBy, p.definition,
-			(SELECT count(*) FROM answer a JOIN plugin v ON v.id = a.plugin WHERE v.pluginId = p.pluginId
-				AND a.id NOT IN (SELECT replaces FROM answer WHERE replaces IS NOT NULL)) AS answers,
-			(SELECT max(a.filledAt) FROM answer a JOIN plugin v ON v.id = a.plugin WHERE v.pluginId = p.pluginId) AS lastAt
-		FROM plugin p WHERE p.version = (SELECT max(version) FROM plugin WHERE pluginId = p.pluginId) ORDER BY title`,
-	).map((r) => ({ ...r, definition: JSON.parse(r.definition as string) })) as never;
+		`SELECT plugin AS id, count(*) FILTER (WHERE id NOT IN (SELECT replaces FROM answer WHERE replaces IS NOT NULL)) AS answers, max(filledAt) AS lastAt
+		FROM answer GROUP BY plugin`,
+	) as never;
 }
 
-/** One plugin's answers, every version, and its photos as object URLs keyed as the answers name them. */
-export async function receivedAnswers(pluginId: string): Promise<Answers & { photos: Map<string, string> }> {
+/** One plugin's answers, read through its form as it is now, and its photos as object URLs keyed as the answers name them. */
+export async function receivedAnswers(id: string, definition: Definition): Promise<Answers & { photos: Map<string, string> }> {
 	const { db } = await answersDb();
-	const json = <T>(list: Record<string, unknown>[], key: string) => list.map((r) => ({ ...r, [key]: JSON.parse(r[key] as string) }) as T);
-	const versions = json<Version>(rows(db, 'SELECT id, version, definition, publishedAt FROM plugin WHERE pluginId = ? ORDER BY version', [pluginId]), 'definition');
-	const ids = versions.map((v) => v.id);
-	const marks = ids.map(() => '?').join(', ');
-	const answers = json<Answers['answers'][number]>(rows(db, `SELECT id, plugin AS form, filledAt, replaces, data, lat, lng, accuracyM FROM answer WHERE plugin IN (${marks}) ORDER BY filledAt`, ids), 'data');
+	const json = <T>(list: Record<string, unknown>[]) => list.map((r) => ({ ...r, data: JSON.parse(r.data as string) }) as T);
+	const answers = json<Answers['answers'][number]>(rows(db, `SELECT id, plugin AS form, filledAt, replaces, data, lat, lng, accuracyM FROM answer WHERE plugin = ? ORDER BY filledAt`, [id]));
 	const all = json<Answers['rows'][number]>(
-		rows(db, `SELECT r.id, r.answer, r.groupKey, r.n, r.replaces, r.data, r.lat, r.lng, r.accuracyM FROM answerRow r JOIN answer a ON a.id = r.answer WHERE a.plugin IN (${marks})`, ids),
-		'data',
+		rows(db, 'SELECT r.id, r.answer, r.groupKey, r.n, r.replaces, r.data, r.lat, r.lng, r.accuracyM FROM answerRow r JOIN answer a ON a.id = r.answer WHERE a.plugin = ?', [id]),
 	);
 	const photos = new Map(rows(db, 'SELECT key, type, bytes FROM photo').map((p) => [p.key as string, URL.createObjectURL(new Blob([p.bytes as Uint8Array<ArrayBuffer>], { type: p.type as string }))]));
-	return { versions, answers, rows: all, photos };
+	return { definition, answers, rows: all, photos };
 }

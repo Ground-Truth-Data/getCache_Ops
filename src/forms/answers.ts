@@ -1,8 +1,6 @@
 // A form's answers as they are read: the latest of each, a response's sections, and the spreadsheets.
 import type { El } from '../../_rapper/gc/form';
-import { keys, type Answers, type At, type Definition, type Version } from './forms';
-
-export type Column = ReturnType<typeof keys>[number];
+import { keys, type Answers, type At, type Definition } from './forms';
 
 /** How long ago, as the inbox writes it: 5m, 3h, 4d, 2w. */
 export function ago(iso: string) {
@@ -17,14 +15,7 @@ export function current(got: Answers): Answers {
 	const rowFixed = new Set(got.rows.map((x) => x.replaces));
 	const at = new Map(answers.map((a, i) => [a.id, i]));
 	const rows = got.rows.filter((x) => at.has(x.answer) && !rowFixed.has(x.id)).sort((x, y) => at.get(x.answer)! - at.get(y.answer)! || x.n - y.n);
-	return { versions: got.versions, answers, rows };
-}
-
-/** Every version's keys joined by key, newest label wins; a key a version lacks reads blank. */
-export function columns(versions: Version[]): Column[] {
-	const cols = new Map<string, Column>();
-	for (const v of versions) for (const k of keys(v.definition)) cols.set(`${k.group ?? ''}/${k.key}`, k);
-	return [...cols.values()];
+	return { definition: got.definition, answers, rows };
 }
 
 export function text(v: unknown): string {
@@ -33,7 +24,7 @@ export function text(v: unknown): string {
 	return String(v);
 }
 
-/** A version's questions as a response shows them: those outside any section first, then each section. */
+/** A form's questions as a response shows them: those outside any section first, then each section. */
 export function sections(d: Definition): { title: string; elements: El[] }[] {
 	const head = d.elements.filter((e) => e.type !== 'panel');
 	const panels = d.elements.filter((e) => e.type === 'panel');
@@ -48,8 +39,8 @@ const esc = (v: string) => (/[",\r\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` 
 /** responses.csv, one row per response, and <group>.csv per repeating group, one row per entry linked by
  *  response id. lat, lon and acc_m are where each was saved or added, only when some row has a fix. */
 export function sheets(got: Answers): Record<string, string> {
-	const { versions, answers, rows } = current(got);
-	const cols = columns(versions);
+	const { definition, answers, rows } = current(got);
+	const cols = keys(definition);
 	const sheet = (group: string | undefined, lead: string[], tail: string[], items: (At & { data: Record<string, unknown>; lead: string[]; tail: string[] })[]) => {
 		const own = cols.filter((c) => c.group === group && c.type !== 'paneldynamic');
 		const gps = items.some((x) => x.lat != null);

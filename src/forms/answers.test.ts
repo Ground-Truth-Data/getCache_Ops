@@ -16,7 +16,7 @@ const definition = {
 	],
 };
 const got: Answers = {
-	versions: [{ id: 'v1', version: 1, definition, publishedAt: '2026-11-01' }],
+	definition,
 	answers: [
 		{ id: 'r1', form: 'v1', filledAt: '2026-11-05T14:41:00Z', replaces: null, data: { species: 'red, "big" cedar', height: 42 }, lat: -19.4114, lng: 146.817, accuracyM: 4 },
 		{ id: 'r2', form: 'v1', filledAt: '2026-11-05T15:00:00Z', replaces: null, data: { species: 'pine' } },

@@ -2,16 +2,11 @@
 	import { copyForm, forms, type FormRow } from './forms';
 
 	let { orgKey }: { orgKey: string } = $props();
-	let list = $state<FormRow[][]>([]);
+	let list = $state<FormRow[]>([]);
 	let paste = $state('');
 	let note = $state('');
 
-	async function load() {
-		const by = new Map<string, FormRow[]>();
-		for (const f of await forms(orgKey)) by.set(f.formId, [...(by.get(f.formId) ?? []), f]);
-		list = [...by.values()];
-	}
-	$effect(() => void load().catch((e) => (note = e.message)));
+	$effect(() => void forms(orgKey).then((f) => (list = f), (e) => (note = e.message)));
 
 	async function copy() {
 		note = '';
@@ -28,15 +23,14 @@
 <section class="mt-8" data-forms>
 	<h2 class="mb-2 font-display text-2xl">Forms</h2>
 	<ul class="mb-3 flex flex-col gap-2">
-		{#each list as versions (versions[0].formId)}
-			{@const last = versions.at(-1)!}
-			{@const live = versions.findLast((v) => v.publishedAt)}
-			<li class="flex flex-wrap items-baseline gap-3" data-form-row={last.definition.title}>
-				<a class="font-display text-lg underline" href="#/company/form/{last.formId}">{last.definition.title || 'Untitled form'}</a>
-				<span class="text-sm text-muted">{live ? `version ${live.version}` : 'not published'}{last.publishedAt ? '' : ' · draft'}{last.copiedFrom || versions[0].copiedFrom ? ' · a copy' : ''}</span>
-				{#if live}
-					<a class="text-sm underline" href="#/company/report/{last.formId}" data-report-link>Answers</a>
-					<span class="text-sm text-muted" title="Give this to another organization's admin to copy the form">copy link: <code data-copy-link>{live.id}</code></span>
+		{#each list as f (f.id)}
+			<li class="flex flex-wrap items-baseline gap-3" class:text-muted={f.replacedBy} data-form-row={f.definition.title}>
+				<a class="font-display text-lg underline" href="#/company/form/{f.id}">{f.definition.title || 'Untitled form'}</a>
+				<span class="text-sm text-muted">{f.publishedAt ? (f.lockedAt ? 'locked' : 'open') : 'not published'}{f.copiedFrom ? ' · a copy' : ''}</span>
+				{#if f.replacedBy}<a class="text-sm underline" href="#/company/form/{f.replacedBy.id}" data-replaced-by>Replaced by {f.replacedBy.title || 'Untitled form'}</a>{/if}
+				{#if f.publishedAt}
+					<a class="text-sm underline" href="#/company/report/{f.id}" data-report-link>Answers</a>
+					<span class="text-sm text-muted" title="Give this to another organization's admin to copy the form">copy link: <code data-copy-link>{f.id}</code></span>
 				{/if}
 			</li>
 		{:else}
