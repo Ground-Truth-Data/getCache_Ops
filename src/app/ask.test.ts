@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, expect, test } from 'vitest';
 import { openDatabase, query } from '../data/db';
-import { prompt, refusal, sqlOf } from './ask';
+import { comment, prompt, refusal, sqlOf } from './ask';
 
 beforeAll(async () => {
 	await openDatabase(readFileSync(new URL('../../public/sample.sqlite', import.meta.url)));
@@ -30,6 +30,14 @@ test('a whole chatty LLM reply runs as its SQL block', () => {
 	const reply = "Sure! Here's the query:\n\n```sql\nSELECT 1 AS One;\n```\n\nIt returns one row.";
 	expect(query(sqlOf(reply))).toEqual([{ One: 1 }]);
 	expect(sqlOf('SELECT 2')).toBe('SELECT 2');
+});
+
+test('a report names itself from the reply’s comment lines', () => {
+	const sql = '-- Name: Big days\n-- Shows: The ten biggest planting days.\nSELECT 1';
+	expect(comment(sql, 'Name')).toBe('Big days');
+	expect(comment(sql, 'Shows')).toBe('The ten biggest planting days.');
+	expect(comment('SELECT 1', 'Name')).toBe('');
+	expect(refusal(sql)).toBeUndefined();
 });
 
 test('the sample has an owner, so "my" in a request finds Sam', () => {

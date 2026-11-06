@@ -22,7 +22,7 @@ export function prompt(query: Query, request: string) {
 		 WHERE m.type = 'view' AND m.name LIKE '%View' GROUP BY m.name ORDER BY m.name`,
 	);
 	return [
-		'You write one SQLite SELECT for Get Cache Ops. Read only the …View views below. Use readable column aliases in the app’s words. Return only the SQL.',
+		'You write one SQLite SELECT for Get Cache Ops. Read only the …View views below. Use readable column aliases in the app’s words. Return only the SQL, and start it with two comment lines: "-- Name: <a 2–4 word report name, like Big days>" and "-- Shows: <one sentence on what the result shows>".',
 		DOMAIN,
 		views.map((v) => `${v.name}(${v.cols})`).join('\n'),
 		`Request: ${request}`,
@@ -32,6 +32,11 @@ export function prompt(query: Query, request: string) {
 /** The SQL in a pasted LLM reply: its fenced block when it has one, else the whole paste. */
 export function sqlOf(reply: string) {
 	return reply.match(/```(?:sql)?\s*([\s\S]*?)```/i)?.[1].trim() ?? reply;
+}
+
+/** The text of the prompt-requested `-- <label>: …` comment line in `sql`, or ''. */
+export function comment(sql: string, label: 'Name' | 'Shows') {
+	return sql.match(new RegExp(`^\\s*--\\s*${label}:\\s*(.+)$`, 'im'))?.[1].trim() ?? '';
 }
 
 /** Why `sql` won't run here, or undefined: Ops runs one SELECT (or WITH) and nothing else. */
