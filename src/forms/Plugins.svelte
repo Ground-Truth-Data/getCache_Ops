@@ -192,7 +192,7 @@
 		<button class="mb-2 ml-3 h-6 w-6 rounded-full border-[1.5px] border-(--accent) text-xs font-bold text-(--accent)" aria-label="What are plugins?" aria-expanded={info} onclick={() => (info = !info)} data-info>i</button>
 		{#if info}
 			<p role="note" class="max-w-xl rounded-2xl border border-rule bg-[#1f1c14] px-5 py-3.5 text-lg leading-snug text-[#e8e2d6]" data-info-text>
-				Plugins are custom forms. Build one yourself and share it, or install one from your organization. Use it offline in the Get Cache mobile app.
+				Plug in a custom form or an entire company suite, build, share, collect data.
 			</p>
 		{/if}
 	</div>
