@@ -219,7 +219,7 @@
 				</div>
 			</div>
 		{:else}
-			<button class="more" onclick={() => (picking = { at, group: !!group })} data-foot={group ? 'group' : 'section'}><span class="plus">+</span>{group ? 'Add to' : 'Add question to'} {label}</button>
+			<button class="more" onclick={() => (picking = { at, group: !!group })} data-foot={group ? 'group' : 'section'}><span class="plus">+</span></button>
 		{/if}
 	</div>
 {/snippet}
@@ -329,7 +329,7 @@
 			<div class="card depth-0 on" data-head>
 				<div class="flex items-center gap-3">
 					{@render fold('head', held(-1))}
-					<span class="mark gold"><img src="plugin_gold.webp" alt="" /></span>
+					<span class="mark"><img src="plugin_gold.webp" alt="" /></span>
 					<input class="label" placeholder="Name" bind:value={title} />
 					{@render nth(1)}
 				</div>
@@ -339,7 +339,7 @@
 			<div class="card depth-0 head">
 				{@render fold('head', held(-1))}
 				<button class="pick" onclick={() => (selected = 'head')} data-head>
-					<span class="mark gold"><img src="plugin_gold.webp" alt="" /></span>
+					<span class="mark"><img src="plugin_gold.webp" alt="" /></span>
 					{@render text(title || 'Name', rest.description ?? '', false, 1)}
 				</button>
 			</div>
@@ -385,19 +385,20 @@
 		line-height: 0;
 		vertical-align: -0.25em;
 	}
-	/* The star is the switch: gold when optional, red when required. */
+	/* The star is the switch, always red: faint when optional, full when required. */
 	.star {
 		width: 2.5rem;
 		height: 2.5rem;
 		border-radius: 999px;
-		color: var(--accent);
+		color: #ff4d55;
+		opacity: 0.4;
 		font-size: 2rem;
 		font-weight: 800;
 		line-height: 1;
 		padding-top: 0.6rem;
 	}
 	.star.on {
-		color: #ff4d55;
+		opacity: 1;
 	}
 	.stamp {
 		display: flex;
@@ -448,16 +449,11 @@
 		overflow: hidden;
 		border-radius: 14px;
 	}
-	.mark.gold {
-		background: #3a3215;
-	}
 	.mark.rust {
-		--accent: #e08a52;
-		background: #2e2118;
+		--accent: var(--rt-rust);
 	}
 	.mark.sage {
 		--accent: #b9cc95;
-		background: #262b1e;
 	}
 	.mark img {
 		width: 100%;
@@ -534,8 +530,10 @@
 		border-radius: 1rem;
 		background: #1a1a1a;
 	}
+	/* A wider track than the inbox's, so the grip dots sit clear of the card's edge. */
 	.track {
 		border-radius: 1rem;
+		padding-right: 2.25rem;
 	}
 	.card[data-build] {
 		flex-direction: row;
@@ -588,12 +586,12 @@
 		padding: 18px 20px;
 		border: 2.5px solid var(--edge);
 		background: #1f1c14;
-		box-shadow: 0 0 0 5px var(--glow), 0 14px 30px rgb(0 0 0 / 0.55);
+		box-shadow: 0 0 24px 2px var(--glow), 0 14px 30px rgb(0 0 0 / 0.55);
 	}
 	.card.on.depth-1 {
-		--edge: #f0a06c;
+		--edge: var(--rt-rust);
 		--line: var(--rt-rust);
-		--glow: rgb(201 123 74 / 0.3);
+		--glow: color-mix(in srgb, var(--rt-rust) 40%, transparent);
 		--well: #14100d;
 		--rim: #5a3e2c;
 		background: #261c15;
