@@ -179,7 +179,7 @@
 	{#if kind === 'section' || kind === 'nested'}<img src={kind === 'nested' ? 'form_in_form_icon.webp' : 'section_flow_icon.webp'} alt="" style:height="{size * 2}px" style:width="auto" />
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
-{#snippet tile(kind: Kind, tone: string)}<span class={['mark', tone]}>{@render icon(kind, 30)}</span>{/snippet}
+{#snippet tile(kind: Kind, tone: string)}<span class={['mark', tone]}>{@render icon(kind, 22)}</span>{/snippet}
 {#snippet nth(n: number)}<span class="nth">Section {n} of {sections}</span>{/snippet}
 {#snippet text(name: string, description: string, required = false, n = 0)}
 	<span class="text">
@@ -476,7 +476,7 @@
 	/* A wider track than the inbox's, so the grip dots sit clear of the card's edge. */
 	.track {
 		border-radius: 1rem;
-		padding-right: 2.25rem;
+		--rt-row-grip-w: 2.25rem;
 	}
 	.card[data-build] {
 		flex-direction: row;
