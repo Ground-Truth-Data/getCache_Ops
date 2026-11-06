@@ -13,6 +13,7 @@
 	import RowGrip from '../../_rapper/gc/RowGrip.svelte';
 	import RowShell from '../../_rapper/gc/RowShell.svelte';
 	import IdentityPill, { type Identity } from '../../_rapper/gc/IdentityPill.svelte';
+	import HeaderLink from '../../_rapper/gc/HeaderLink.svelte';
 	import { isOpen, query } from '../data/db';
 	import { type RowDrag, rowDragHandle, rowShift } from '../../_rapper/gc/rowDrag';
 	import { addLink, copyPlugin, live, myPlugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
@@ -285,9 +286,10 @@
 		<p class="font-display text-3xl">Scan to add</p>
 	</div>
 {:else}
-	<div class="mb-7 flex flex-wrap items-end gap-4">
+	<div class="mb-7 flex max-w-3xl flex-wrap items-end gap-4">
 		<h1 class="font-display text-5xl text-(--accent)">Plugins</h1>
 		<button class="mb-2 ml-3 h-6 w-6 rounded-full border-[1.5px] border-(--accent) text-xs font-bold text-(--accent)" aria-label="What are plugins?" aria-expanded={info} onclick={() => (info = !info)} data-info>i</button>
+		<span class="mb-1 ml-auto" data-orgs-link><HeaderLink href="#/organizations" icon="org_gold.webp" label="Orgs" /></span>
 		{#if info}
 			<p role="note" class="max-w-xl rounded-2xl border border-rule bg-[#1f1c14] px-5 py-3.5 text-lg leading-snug text-[#e8e2d6]" data-info-text>
 				Plug in a custom form or an entire company suite, build, share, collect data.
