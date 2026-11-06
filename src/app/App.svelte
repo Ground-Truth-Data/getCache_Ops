@@ -49,16 +49,20 @@
 		return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
 	});
 	// Again on coming back from the app's tab, where the planter may have signed in.
+	// A company's own page needs only the sign-in; the planter's whole Central copy is built once a page shows it.
+	let following = false;
 	async function watch() {
 		await fresh();
-		if (account || !(account = signedIn())) return;
+		account ||= signedIn();
+		if (!account || following || page[0] === 'company') return;
+		following = true;
 		follow(
 			(bytes, at) => {
 				if (source && source !== LIVE) return;
 				open(bytes, LIVE);
 				updated = at ? Date.parse(at) : undefined;
 			},
-			() => (account = null),
+			() => ((account = null), (following = false)),
 		);
 	}
 	// Only Get Cache's own site can read the planter's file and sign-in: a popup there sends a copy here.
@@ -111,7 +115,7 @@
 
 <svelte:head><title>{brand.name}</title><link rel="icon" type="image/png" href={brand.icon} /></svelte:head>
 
-<svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => (hash = location.hash)} onfocus={focused} onmessage={received} />
+<svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => ((hash = location.hash), watch())} onfocus={focused} onmessage={received} />
 
 <!-- --site-head: where a table's frozen header row docks, flush under this header whatever its wrapped height. -->
 <div class="font-sans" style:--accent={brand.accent} style:--rt-yellow={brand.accent} style:--site-head="{headHeight}px">
