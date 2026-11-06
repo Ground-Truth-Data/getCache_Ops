@@ -150,7 +150,7 @@
 		order = sorted.map((p) => (ids.includes(p.pluginId) ? ids[k++] : p.pluginId));
 		localStorage.setItem(ORDER, JSON.stringify(order));
 	}
-	const pills = $derived([[{ key: 'all', label: 'All', on: !you, tone: 'var(--rt-cream)' }, { key: 'you', label: 'You', on: you, tone: 'var(--rt-yellow)' }]]);
+	const pills = $derived([[{ key: 'all', label: 'All', on: !you, chain: true }, { key: 'you', label: 'You', on: you, chain: true }]]);
 	const buttons = $derived([
 		{ label: 'Import plugin', icon: gcIcon, ring: true, onclick: () => pick?.click() },
 		{ label: 'New', icon: pluginIcon, hug: true, href: '#/plugins/edit/new' },
