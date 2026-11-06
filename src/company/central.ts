@@ -62,7 +62,7 @@ export const resetInvite = (orgKey: string) => call<string>('rpc/reset_invite', 
 
 export const isApprover = async (authId: string) => (await call<unknown[]>(`approver?authId=eq.${authId}`)).length > 0;
 export const drafts = () => call<(OrgSpace & { createdAt: string })[]>(`orgSpace?status=eq.draft&select=${SPACE},createdAt&order=createdAt`);
-export const decide = (orgKey: string, status: 'approved' | 'rejected') => call(`orgSpace?orgKey=eq.${orgKey}`, 'PATCH', { status });
+export const decide = (orgKey: string, status: 'approved' | 'rejected') => call('rpc/approve', 'POST', { org: orgKey, verdict: status });
 
 export async function uploadLogo(orgKey: string, file: File) {
 	const path = `${orgKey}/logo`;
@@ -73,5 +73,5 @@ export async function uploadLogo(orgKey: string, file: File) {
 	});
 	if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? `HTTP ${res.status}`);
 	// The query string is the cache-buster: the object keeps one path for life.
-	await call(`orgSpace?orgKey=eq.${orgKey}`, 'PATCH', { logo: `${path}?v=${Date.now()}` });
+	await call('rpc/set_logo', 'POST', { org: orgKey, path: `${path}?v=${Date.now()}` });
 }
