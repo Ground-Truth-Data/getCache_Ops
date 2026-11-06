@@ -88,6 +88,7 @@ export async function copyPlugin(pluginId: string): Promise<string> {
 // Every sent file's rows, merged into one file in this browser's storage. Rows keep the phone's ids, so a file
 // given twice adds nothing; the phone's insert-only triggers come across with its tables.
 const KEPT = 'plugin-answers.sqlite3';
+const OLDER = 'plugin-answers.older.sqlite3';
 const TABLES = ['plugin', 'photo', 'answer', 'answerRow'];
 type Sqlite = Awaited<ReturnType<typeof sqlite3InitModule>>;
 let opened: Promise<{ sqlite3: Sqlite; db: Database }> | undefined;
@@ -109,29 +110,59 @@ const answersDb = () =>
 
 const rows = (db: Database, sql: string, bind: unknown[] = []) => db.exec({ sql, bind: bind as never, rowMode: 'object', returnValue: 'resultRows' });
 
+const save = async (name: string, bytes: Uint8Array) => {
+	const w = await (await (await navigator.storage.getDirectory()).getFileHandle(name, { create: true })).createWritable();
+	await w.write(bytes as Uint8Array<ArrayBuffer>);
+	await w.close();
+};
+const columns = (db: Database, schema: string, t: string) => rows(db, 'SELECT name FROM pragma_table_info(?, ?)', [t, schema]).map((r) => r.name as string);
+
+// A kept file older than a sent one is never altered (rapper/DB_LAW.md law 1): it is kept aside, and a fresh file
+// from the sent schema takes its rows. A row the fresh file refuses (an answer from before editedByKey) stays aside.
+async function renew(sqlite3: Sqlite, old: Database, schema: string[]) {
+	const older = sqlite3.capi.sqlite3_js_db_export(old, 'main');
+	await save(OLDER, older);
+	old.close();
+	const db = new sqlite3.oo1.DB();
+	for (const sql of schema) db.exec(sql);
+	db.exec("ATTACH ':memory:' AS old");
+	load(sqlite3, db, 'old', older);
+	const refused = TABLES.flatMap((t) => {
+		const cols = columns(db, 'old', t).filter((c) => columns(db, 'main', t).includes(c)).map((c) => `"${c}"`).join(', ');
+		db.exec(`INSERT OR IGNORE INTO main."${t}" (${cols}) SELECT ${cols} FROM old."${t}"`);
+		const n = (db.selectValue(`SELECT count(*) FROM old."${t}"`) as number) - db.changes();
+		return n ? [`${n} ${t}`] : [];
+	});
+	db.exec('DETACH old');
+	if (refused.length) console.warn(`[plugins] ${refused.join(', ')} the fresh kept file refused; still in`, OLDER);
+	return db;
+}
+
 /** Keeps a sent file's rows; returns how many of each were new. */
 export async function receive(bytes: Uint8Array): Promise<Record<string, number>> {
 	if (new TextDecoder().decode(bytes.subarray(0, 16)) !== 'SQLite format 3\0') throw new Error("isn't a Get Cache plugins file.");
-	const { sqlite3, db } = await answersDb();
-	db.exec("ATTACH ':memory:' AS sent");
+	let { sqlite3, db } = await answersDb();
+	const attach = () => (db.exec("ATTACH ':memory:' AS sent"), load(sqlite3, db, 'sent', bytes));
+	attach();
 	try {
-		load(sqlite3, db, 'sent', bytes);
 		const has = (schema: string) => new Set(rows(db, `SELECT name FROM ${schema}.sqlite_schema WHERE type = 'table'`).map((r) => r.name));
 		if (!TABLES.every((t) => has('sent').has(t))) throw new Error("isn't a Get Cache plugins file.");
+		const schema = rows(db, "SELECT sql FROM sent.sqlite_schema WHERE type IN ('table', 'trigger') AND sql IS NOT NULL ORDER BY type = 'trigger'").map((r) => r.sql as string);
+		if (has('main').size && TABLES.some((t) => columns(db, 'sent', t).some((c) => !columns(db, 'main', t).includes(c)))) {
+			db = await renew(sqlite3, db, schema);
+			opened = Promise.resolve({ sqlite3, db });
+			attach();
+		}
 		const added: Record<string, number> = {};
 		db.transaction(() => {
-			if (!has('main').size)
-				for (const { sql } of rows(db, "SELECT sql FROM sent.sqlite_schema WHERE type IN ('table', 'trigger') AND sql IS NOT NULL ORDER BY type = 'trigger'")) db.exec(sql as string);
+			if (!has('main').size) for (const sql of schema) db.exec(sql);
 			for (const t of TABLES) {
-				const cols = rows(db, 'SELECT name FROM pragma_table_info(?, ?)', [t, 'sent']).map((r) => `"${r.name}"`).join(', ');
+				const cols = columns(db, 'sent', t).map((c) => `"${c}"`).join(', ');
 				db.exec(`INSERT INTO main."${t}" (${cols}) SELECT ${cols} FROM sent."${t}" WHERE true ON CONFLICT DO NOTHING`);
 				added[t] = db.changes();
 			}
 		});
-		const out = sqlite3.capi.sqlite3_js_db_export(db, 'main');
-		const w = await (await (await navigator.storage.getDirectory()).getFileHandle(KEPT, { create: true })).createWritable();
-		await w.write(out as Uint8Array<ArrayBuffer>);
-		await w.close();
+		await save(KEPT, sqlite3.capi.sqlite3_js_db_export(db, 'main'));
 		return added;
 	} finally {
 		db.exec('DETACH sent');
