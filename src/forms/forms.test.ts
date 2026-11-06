@@ -63,6 +63,41 @@ describe('the builder keeps what it does not edit', () => {
 		expect(out.elements[0].templateElements).toEqual([{ type: 'text', name: 'species' }]);
 		expect((out.elements[1].elements as { name: string }[]).map((e) => e.name)).toEqual(['weather']);
 	});
+	it('a choice that jumps writes SurveyJS triggers, reads them back, and drops them with its option or question', () => {
+		const other = { type: 'runexpression', expression: '{a} = 1' };
+		const d = {
+			triggers: [other],
+			elements: [
+				{ type: 'radiogroup', name: 'health', choices: ['Healthy', 'Damaged', 'Dead'] },
+				{ type: 'panel', name: 'section_a', elements: [{ type: 'text', name: 'notes' }] },
+			],
+		};
+		const read = fromDefinition(structuredClone(d));
+		read.fields[0].jumps = { Damaged: 'section_a', Dead: 'submit' };
+		const out = toDefinition('', read.fields, read.rest);
+		const ours = [
+			{ type: 'skip', expression: "{health} = 'Damaged'", gotoName: 'section_a' },
+			{ type: 'complete', expression: "{health} = 'Dead'" },
+		];
+		expect(out.triggers).toEqual([other, ...ours]);
+		const back = fromDefinition(structuredClone(out));
+		expect(back.fields[0].jumps).toEqual({ Damaged: 'section_a', Dead: 'submit' });
+		expect(back.rest.triggers).toEqual([other]);
+		expect(toDefinition('', back.fields, back.rest)).toEqual(out);
+
+		back.fields[0].choices = ['Healthy', 'Damaged'];
+		expect(toDefinition('', back.fields, back.rest).triggers).toEqual([other, ours[0]]);
+		expect(toDefinition('', back.fields.slice(1), back.rest).triggers).toEqual([other]);
+	});
+	it('GPS on stamps each nested entry with its own hidden field', () => {
+		const fields = [{ ...blank('gps'), key: 'gps' }, { ...blank('nested'), key: 'trees' }, { ...blank('number'), key: 'dbh' }];
+		const dbh = { type: 'text', inputType: 'number', name: 'dbh' };
+		const d = toDefinition('', fields);
+		expect(d.elements[1].templateElements).toEqual([{ type: 'gps', name: 'trees_gps' }, dbh]);
+		const back = fromDefinition(structuredClone(d)).fields;
+		expect(back.map((f) => f.key)).toEqual(['gps', 'trees', 'dbh']);
+		expect(toDefinition('', back.slice(1)).elements[0].templateElements).toEqual([dbh]);
+	});
 	it('a nested group sits in its section and owns the fields after it, up to the next section', () => {
 		const fields = [blank('section'), blank('text'), blank('nested'), blank('number'), blank('text'), blank('section'), blank('date')];
 		fields.forEach((f, i) => (f.key = `f${i}`));

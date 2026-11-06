@@ -1,16 +1,18 @@
 // Company forms: a version is one SurveyJS JSON definition in Central's ops.form. The builder edits a flat field
 // list and writes only our field types, so a form can never reach the network (no choicesByUrl).
-import type { Definition, El } from '../../_rapper/gc/form';
+import type { Definition as Base, El } from '../../_rapper/gc/form';
 import { call } from '../company/central';
 
-export type { Definition };
+type Trigger = { type: string; expression?: string; gotoName?: string };
+export type Definition = Base & { triggers?: Trigger[] };
 
 export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'gps' | 'section' | 'nested';
 /** `src` is the element as loaded (or a new field's defaults): saving writes the edited keys onto it, so every
  *  property the builder has no control for survives each version. The builder's list is flat: a section owns
  *  what follows it up to the next section, and a nested group (a little form repeated per tree, say) owns the
- *  fields after it up to the next nested group or section. */
-export type Field = { kind: Kind; key: string; label: string; description: string; required: boolean; choices: string[]; min?: number; max?: number; src: El };
+ *  fields after it up to the next nested group or section. `jumps`, set while branching is on, sends a choice
+ *  to a section's key or to 'submit'; a choice it leaves out continues to the next section. */
+export type Field = { kind: Kind; key: string; label: string; description: string; required: boolean; choices: string[]; min?: number; max?: number; jumps?: Record<string, string>; src: El };
 export type FormRow = { id: string; formId: string; version: number; definition: Definition; publishedAt: string | null; copiedFrom: string | null };
 export type Answer = { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
 export type AnswerRow = { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
@@ -51,12 +53,23 @@ function el(f: Field): El {
 	put('isRequired', f.required);
 	if (f.kind === 'number') (put('min', f.min), put('max', f.max));
 	// Choices the builder shows as plain text; untouched, a definition's own {value, text} pairs stay.
-	if (f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox')
-		out.choices = f.choices.join('\n') === ((f.src.choices as unknown[]) ?? []).map(choiceText).join('\n') ? f.src.choices : f.choices;
+	if (f.kind === 'dropdown' || f.kind === 'radiogroup' || f.kind === 'checkbox') {
+		const choices = f.choices.filter(Boolean);
+		out.choices = choices.join('\n') === ((f.src.choices as unknown[]) ?? []).map(choiceText).join('\n') ? f.src.choices : choices;
+	}
 	return out;
 }
+/** Only a one-answer question outside a nested group can send the form to another section. */
+export const branches = (f: Field) => f.kind === 'dropdown' || f.kind === 'radiogroup';
+// "Go to section based on answer" is written as SurveyJS's own triggers, so the definition stays standard.
+const JUMP = /^\{(\w+)\} = '(.*)'$/;
+const per = (group: string) => `${group}_gps`;
+
 export const toDefinition = (title: string, fields: Field[], rest: Partial<Definition> = {}): Definition => {
 	const elements: El[] = [];
+	const triggers: Trigger[] = [...(rest.triggers ?? [])];
+	const gps = fields.some((f) => f.kind === 'gps');
+	const sections = new Set(fields.filter((f) => f.kind === 'section').map((f) => f.key));
 	let section: El[] | undefined;
 	let nested: El[] | undefined;
 	for (const f of fields) {
@@ -67,13 +80,22 @@ export const toDefinition = (title: string, fields: Field[], rest: Partial<Defin
 			nested = undefined;
 		} else if (f.kind === 'nested') {
 			(section ?? elements).push(e);
-			nested = e.templateElements = [];
+			// GPS on: each entry of a list carries its own stamp.
+			nested = e.templateElements = gps ? [{ type: 'gps', name: per(f.key) }] : [];
 		} else (nested ?? section ?? elements).push(e);
+		if (!nested && f.jumps && branches(f))
+			for (const c of f.choices) {
+				const to = f.jumps[c];
+				const expression = `{${f.key}} = '${c}'`;
+				if (to === 'submit') triggers.push({ type: 'complete', expression });
+				else if (sections.has(to)) triggers.push({ type: 'skip', expression, gotoName: to });
+			}
 	}
-	const d: Definition = { ...rest, elements };
+	const d: Definition = { ...rest, elements, triggers };
 	if (title) d.title = title;
 	else delete d.title;
 	if (!d.description) delete d.description;
+	if (!triggers.length) delete d.triggers;
 	return d;
 };
 
@@ -86,7 +108,7 @@ function field(e: El): Field {
 	};
 }
 const flat = (e: El): Field[] => {
-	const kids = (e.type === 'panel' ? e.elements : e.type === 'paneldynamic' ? e.templateElements : undefined) as El[] | undefined;
+	const kids = (e.type === 'panel' ? e.elements : e.type === 'paneldynamic' ? (e.templateElements as El[]).filter((k) => k.name !== per(e.name)) : undefined) as El[] | undefined;
 	return kids ? [field({ ...e, elements: undefined, templateElements: undefined }), ...flatAll(kids)] : [field(e)];
 };
 // In the flat list a nested group swallows every question after it, so a question that sat after one in the
@@ -99,11 +121,19 @@ const flatAll = (els: El[]): Field[] =>
 	});
 /** The fields the builder edits, each group's own fields right after it, and `rest`: the survey's own settings,
  *  written back untouched. */
-export function fromDefinition({ title, elements, ...rest }: Definition) {
+export function fromDefinition({ title, elements, triggers, ...rest }: Definition) {
 	const fields = flatAll(elements);
 	// A draft kept in this browser before keys were born on every field would be refused by Central on each save.
 	for (const f of fields) if (!CENTRAL_KEY.test(f.key)) f.key = keyFor(f.label, f.kind, fields, f);
-	return { title: title ?? '', fields, rest };
+	// The builder's own triggers become jumps on their question; any other trigger is written back untouched.
+	const others = (triggers ?? []).filter((t) => {
+		const [, key, choice] = JUMP.exec(t.expression ?? '') ?? [];
+		const f = fields.find((f) => f.key === key && branches(f));
+		const to = t.type === 'complete' ? 'submit' : t.type === 'skip' && t.gotoName;
+		if (!f || !to) return true;
+		(f.jumps ??= {})[choice] = to;
+	});
+	return { title: title ?? '', fields, rest: others.length ? { ...rest, triggers: others } : rest };
 }
 /** Central's own rule for a key (ops.form_refused). */
 export const CENTRAL_KEY = /^[a-zA-Z][a-zA-Z0-9_]{0,62}$/;
