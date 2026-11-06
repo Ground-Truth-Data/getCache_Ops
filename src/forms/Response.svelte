@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { El } from '../../_rapper/gc/form';
-	import { columns, current, sections } from './answers';
+	import { columns, current, download, sections, sheets } from './answers';
 	import type { Answers, At } from './forms';
 	import Value from './Value.svelte';
 
@@ -19,6 +19,9 @@
 	const v = $derived(got?.versions.find((x) => x.id === a?.form));
 	const cols = $derived(v ? columns([v]) : []);
 	const at = $derived(a?.lat != null ? a : undefined);
+	// This response's lines in each sheet; Export hands over every response.
+	const mine = $derived(a && got ? sheets({ versions: got.versions, answers: [a], rows: got.rows.filter((r) => r.answer === a.id) }) : {});
+	const lists = $derived(cols.filter((c) => c.type === 'paneldynamic'));
 	const entries = (group: string) => got!.rows.filter((r) => r.answer === id && r.groupKey === group);
 
 	function ago(iso: string) {
@@ -40,7 +43,7 @@
 	{@const list = entries(g.name)}
 	{@const gps = list.some((r) => r.lat != null)}
 	{@const grid = `grid-template-columns: 2rem repeat(${own.length}, minmax(0, 1fr)) ${gps ? '1.5rem' : ''}`}
-	<div class="flex flex-col gap-2 rounded-xl border-[1.5px] border-(--rt-rust)/60 bg-[#1c1916] px-3 py-2.5" data-group={g.name}>
+	<div class="flex flex-col gap-2 rounded-xl border-[1.5px] border-(--rt-rust) bg-[#1c1916] px-3 py-2.5" data-group={g.name}>
 		<div class="flex items-center gap-2">
 			<span class="flex-1 font-bold text-(--rt-rust)">{g.title || g.name}</span>
 			<span class="flex h-6.5 min-w-6.5 items-center justify-center rounded-full bg-(--rt-sage) px-2 text-[13px] font-extrabold text-[#161a10]" data-count>{list.length}</span>
@@ -94,7 +97,7 @@
 					{#if e.type === 'paneldynamic'}
 						{@render group(e)}
 					{:else}
-						<div class="flex justify-between gap-3 rounded-xl border-[1.5px] border-(--rt-rust)/60 bg-[#1c1916] px-3 py-2.5" data-row={e.name}>
+						<div class="flex justify-between gap-3 rounded-xl border-[1.5px] border-(--rt-rust) bg-[#1c1916] px-3 py-2.5" data-row={e.name}>
 							<span class="font-bold text-(--rt-rust)">{e.title || e.name}</span>
 							<span class="text-right font-semibold"><Value v={a.data[e.name]} {photo} /></span>
 						</div>
@@ -102,5 +105,17 @@
 				{/each}
 			</div>
 		{/each}
+
+		<div class="flex flex-col gap-2.5 rounded-[18px] border-2 border-dashed border-[#4a4236] bg-[#171615] px-4 py-3.5" data-export-box>
+			<span class="text-base font-bold">Export as spreadsheet</span>
+			<span class="text-sm text-[#b7b0a2]"
+				>{Object.keys(mine).length === 1 ? 'One sheet' : `${Object.keys(mine).length} sheets`}. Responses: one row each.{#each lists as g (g.key)}
+					{' '}{g.label}: one row per entry, linked by response ID, each with its own GPS.{/each}</span
+			>
+			<pre class="overflow-x-auto rounded-[10px] bg-[#0e0e0d] p-2.5 font-mono text-[11px] leading-relaxed text-[#d8d2c4]" data-csv-preview>{Object.entries(mine)
+					.map(([name, body]) => `${name}\n${body.replaceAll('\r\n', '\n')}`)
+					.join('\n')}</pre>
+			<button class="min-h-12.5 rounded-[14px] border-2 border-(--rt-yellow) text-base font-bold text-(--rt-yellow)" onclick={() => got && download(sheets(got))} data-export>Export CSV</button>
+		</div>
 	</div>
 {/if}
