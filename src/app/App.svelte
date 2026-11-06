@@ -38,8 +38,6 @@
 	}
 
 
-	const SAMPLE = 'the sample season';
-	const trySample = async () => open(await (await fetch('sample.sqlite')).arrayBuffer(), SAMPLE);
 	const LIVE = 'your Get Cache account';
 	let account = $state<ReturnType<typeof signedIn>>(null);
 	let updated = $state<number>();
@@ -143,12 +141,6 @@
 				<span class="ml-auto font-display text-lg text-muted" title="When your phone last sent data to Get Cache" data-updated>{ago && `Updated ${ago}`}</span>
 			{:else if location.origin !== HOME}
 				<button class="rt-fancy-btn ml-auto rounded-lg px-3 py-1 font-display text-lg" onclick={askHome} data-ask><img src="sync.webp" alt="" class="-my-2 mr-0.5 inline h-8 align-middle brightness-0" />Sync<span class="max-sm:hidden"> Get Cache</span></button>
-			{/if}
-			{#if source !== SAMPLE}
-				<button class="rounded-lg px-3 py-1 font-display text-lg text-muted hover:bg-(--accent)/15 hover:text-ink" onclick={trySample} data-sample>Sample</button>
-			{:else if account}
-				<!-- The account copy is cached, so a reload brings it straight back. -->
-				<button class="rounded-lg px-3 py-1 font-display text-lg text-muted hover:bg-(--accent)/15 hover:text-ink" onclick={() => location.reload()} data-sample>My season</button>
 			{/if}
 			{#if !account}
 				<button class="rounded-lg p-2 text-muted hover:bg-(--accent)/15 hover:text-(--accent)" title="Import a backup" aria-label="Import a backup" onclick={() => pick?.click()} data-import>
