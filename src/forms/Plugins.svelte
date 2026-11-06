@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { renderSVG } from 'uqr';
 	import SignIn from '../company/SignIn.svelte';
+	import { mine as memberships } from '../company/central';
 	import Builder from './Builder.svelte';
 	import { nthForm } from './forms';
 	import Report from './Report.svelte';
@@ -54,6 +55,17 @@
 	// The credit is the publishing account's name, set by Central; the logo travels with every version.
 	let madeBy = $state<string>();
 	let logo = $state<string | null>(null);
+	// The company a plugin publishes as: picked before its first version, then fixed by Central.
+	let orgKey = $state<string | null>(null);
+	let isPublished = $state(false);
+	let spaces = $state<{ orgKey: string; name: string }[]>([]);
+	$effect(() => {
+		if (me) memberships(me.authId).then(
+			(m) => (spaces = m.filter((x) => x.role === 'admin' && x.orgSpace?.status === 'approved').map((x) => ({ orgKey: x.orgKey, name: x.orgSpace!.name }))),
+			(e) => console.warn('[plugins] companies', e),
+		);
+	});
+	const company = $derived(spaces.find((s) => s.orgKey === orgKey)?.name);
 	// Set when Publish needs an account: the sign-in shows then, and goes once the session is back.
 	let asking = $state(false);
 	// A new plugin gets its id in the address before anything is typed, so a reload or remount reopens the draft.
@@ -62,9 +74,11 @@
 	});
 	const store = $derived.by(() => {
 		if (sub !== 'edit' || !id || id === 'new') return undefined;
-		const s = pluginStore(id, () => ({ logo }), (rows) => {
+		const s = pluginStore(id, () => ({ logo, orgKey }), (rows) => {
 			logo = rows.at(-1)?.logo ?? null;
 			madeBy = rows.findLast((r) => r.publishedAt)?.madeBy;
+			isPublished = rows.some((r) => r.publishedAt);
+			orgKey = rows.at(-1)?.orgKey ?? null;
 		});
 		return {
 			...s,
@@ -148,6 +162,17 @@
 	{/snippet}
 	{#snippet byline()}
 		{#if madeBy}<span class="text-[#c9c3b7]" data-credit>Made by {madeBy}</span>{/if}
+		{#if isPublished && orgKey}
+			<span class="font-bold text-(--accent)" data-company>{company ?? 'A company'}'s plugin</span>
+		{:else if !isPublished && spaces.length}
+			<label class="flex items-center gap-2 text-[#c9c3b7]"
+				>Publish as
+				<select class="rounded-lg border-2 border-(--accent) bg-transparent px-2 py-1 font-bold text-(--accent)" bind:value={orgKey} data-publish-as>
+					<option value={null}>You</option>
+					{#each spaces as s (s.orgKey)}<option value={s.orgKey}>{s.name}</option>{/each}
+				</select></label
+			>
+		{/if}
 	{/snippet}
 	{#key id}<Builder {store} back={['#/plugins', 'Plugins']} logo={logoPick} {byline} meta={logo} born={nthForm(mine.filter((v) => v[0].pluginId !== id).map((v) => v.at(-1)!.definition.title ?? ''))} />{/key}
 	{#if asking}<div class="mt-6" data-publish-signin><SignIn done={() => ((asking = false), signedInNow())} /></div>{/if}

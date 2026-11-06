@@ -7,7 +7,8 @@ import { fresh } from '../data/auth';
 import { appHome, call } from '../company/central';
 import type { Answers, Definition, Store, Version } from './forms';
 
-export type PluginRow = Version & { pluginId: string; madeBy?: string; logo: string | null; copiedFrom: string | null };
+/** `orgKey`: the company that publishes it, set by its first version; null for a person's own. */
+export type PluginRow = Version & { pluginId: string; madeBy?: string; logo: string | null; copiedFrom: string | null; orgKey: string | null };
 type Draft = Pick<PluginRow, 'pluginId' | 'definition' | 'logo' | 'copiedFrom'>;
 
 export class SignInNeeded extends Error {
@@ -16,7 +17,7 @@ export class SignInNeeded extends Error {
 	}
 }
 
-const COLS = 'id,pluginId,version,definition,madeBy,logo,publishedAt,copiedFrom';
+const COLS = 'id,pluginId,version,definition,madeBy,logo,publishedAt,copiedFrom,orgKey';
 const published = (ids: string[]) =>
 	ids.length ? call<PluginRow[]>(`plugin?pluginId=in.(${ids})&publishedAt=not.is.null&select=${COLS}&order=version`) : Promise.resolve([]);
 
@@ -28,7 +29,7 @@ const keep = (pluginId: string, d: Draft | null) => localStorage.setItem(KEY, JS
 /** Central's published versions, then this browser's draft as the next one. */
 function withDraft(rows: PluginRow[], pluginId: string): PluginRow[] {
 	const d = kept()[pluginId];
-	return d ? [...rows, { ...d, id: 'local', version: (rows.at(-1)?.version ?? 0) + 1, publishedAt: null }] : rows;
+	return d ? [...rows, { ...d, id: 'local', version: (rows.at(-1)?.version ?? 0) + 1, publishedAt: null, orgKey: rows.at(-1)?.orgKey ?? null }] : rows;
 }
 
 // A draft lives only in this browser: Central being unreachable or a sign-in expiring must never hide it or stop it
@@ -49,8 +50,8 @@ export const live = async (pluginId: string) => (await published([pluginId])).at
 /** What a phone opens to add the plugin: the same link is in its QR code. */
 export const addLink = (pluginId: string) => `${new URL(appHome).origin}/app/plugin?add=${pluginId}`;
 
-/** The builder's store for one plugin; `meta` is the logo the page is showing. */
-export function pluginStore(pluginId: string, meta: () => { logo: string | null }, loaded: (rows: PluginRow[]) => void): Store {
+/** The builder's store for one plugin; `meta` is the logo the page is showing and the company it publishes as. */
+export function pluginStore(pluginId: string, meta: () => { logo: string | null; orgKey: string | null }, loaded: (rows: PluginRow[]) => void): Store {
 	const id = pluginId;
 	return {
 		autosave: true,
@@ -60,7 +61,7 @@ export function pluginStore(pluginId: string, meta: () => { logo: string | null 
 			return rows;
 		},
 		async save(definition: Definition) {
-			keep(id, { pluginId: id, definition, ...meta(), copiedFrom: kept()[id]?.copiedFrom ?? null });
+			keep(id, { pluginId: id, definition, logo: meta().logo, copiedFrom: kept()[id]?.copiedFrom ?? null });
 		},
 		async publish() {
 			const d = kept()[id];
@@ -69,7 +70,7 @@ export function pluginStore(pluginId: string, meta: () => { logo: string | null 
 			// An interrupted publish can leave its row unpublished; Central holds one draft per plugin.
 			await call(`plugin?pluginId=eq.${id}&publishedAt=is.null`, 'DELETE');
 			const { pluginId, definition, logo, copiedFrom } = d;
-			const [row] = await call<PluginRow[]>('plugin', 'POST', { pluginId, definition, logo, copiedFrom });
+			const [row] = await call<PluginRow[]>('plugin', 'POST', { pluginId, definition, logo, copiedFrom, orgKey: meta().orgKey });
 			await call(`plugin?id=eq.${row.id}`, 'PATCH', { publishedAt: new Date().toISOString() });
 			keep(d.pluginId, null);
 		},
