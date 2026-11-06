@@ -89,7 +89,7 @@ describe('the builder keeps what it does not edit', () => {
 		expect(toDefinition('', back.fields, back.rest).triggers).toEqual([other, ours[0]]);
 		expect(toDefinition('', back.fields.slice(1), back.rest).triggers).toEqual([other]);
 	});
-	it('a hidden gps field is dropped on load; Request GPS is only its own flag', () => {
+	it('a hidden gps field and the old Request GPS flag are dropped on load', () => {
 		const dbh = { type: 'text', inputType: 'number', name: 'dbh' };
 		const d = {
 			requestGps: true,
@@ -97,7 +97,7 @@ describe('the builder keeps what it does not edit', () => {
 		};
 		const { fields, rest } = fromDefinition(d);
 		expect(fields.map((f) => f.key)).toEqual(['trees', 'dbh']);
-		expect(toDefinition('', fields, rest)).toEqual({ requestGps: true, elements: [{ type: 'paneldynamic', name: 'trees', templateElements: [dbh] }] });
+		expect(toDefinition('', fields, rest)).toEqual({ elements: [{ type: 'paneldynamic', name: 'trees', templateElements: [dbh] }] });
 	});
 	it('a nested group sits in its section and owns the fields after it, up to the next section', () => {
 		const fields = [blank('section'), blank('text'), blank('nested'), blank('number'), blank('text'), blank('section'), blank('date')];

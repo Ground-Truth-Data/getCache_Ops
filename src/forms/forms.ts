@@ -4,8 +4,7 @@ import type { Definition as Base, El } from '../../_rapper/gc/form';
 import { call } from '../company/central';
 
 type Trigger = { type: string; expression?: string; gotoName?: string };
-/** `requestGps` is the builder's Request GPS switch; nothing reads it yet. */
-export type Definition = Base & { triggers?: Trigger[]; requestGps?: boolean };
+export type Definition = Base & { triggers?: Trigger[] };
 
 export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'section' | 'nested';
 /** `src` is the element as loaded (or a new field's defaults): saving writes the edited keys onto it, so every
@@ -123,7 +122,8 @@ const flatAll = (els: El[]): Field[] =>
 	});
 /** The fields the builder edits, each group's own fields right after it, and `rest`: the survey's own settings,
  *  written back untouched. */
-export function fromDefinition({ title, elements, triggers, ...rest }: Definition) {
+// requestGps: a switch drafts once stored; location is now always recorded.
+export function fromDefinition({ title, elements, triggers, requestGps: _, ...rest }: Definition & { requestGps?: unknown }) {
 	const fields = flatAll(elements);
 	// A draft kept in this browser before keys were born on every field would be refused by Central on each save.
 	for (const f of fields) if (!CENTRAL_KEY.test(f.key)) f.key = keyFor(f.label, f.kind, fields, f);

@@ -80,11 +80,6 @@
 		e.preventDefault();
 		if (dragging !== i) (fields.splice(i, 0, ...fields.splice(dragging, 1)), (dragging = i));
 	}
-	const hasGps = $derived(!!rest.requestGps);
-	function stamp() {
-		if (rest.requestGps) delete rest.requestGps;
-		else rest.requestGps = true;
-	}
 	// As in the inbox: the form's head and each section are gold parents, every question is rust, and a nested
 	// group's repeated questions sit a level deeper in sage.
 	// Numbered like Google Forms: the form's head is section 1.
@@ -171,14 +166,12 @@
 		nested: '',
 	};
 	const tone = (f: Field, i: number) => (f.kind === 'section' ? 'gold' : f.kind === 'nested' || depths[i] === 2 ? 'sage' : 'rust');
-	const lists = $derived(fields.filter((f) => f.kind === 'nested').map((f) => f.label || 'list'));
 	// A renamed choice keeps where it goes.
 	function rename(f: Field, k: number, v: string) {
 		const was = f.choices[k];
 		f.choices[k] = v;
 		if (f.jumps && was in f.jumps) ((f.jumps[v] = f.jumps[was]), delete f.jumps[was]);
 	}
-	const GEM = 'M6 4h12l4 5-10 11L2 9z M2 9h20 M9 4l-2 5 5 11 5-11-2-5';
 </script>
 
 {#snippet icon(kind: Kind, size = 22)}
@@ -187,9 +180,6 @@
 	{:else}<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICON[kind]} /></svg>{/if}
 {/snippet}
 {#snippet tile(kind: Kind, tone: string)}<span class={['mark', tone]}>{@render icon(kind, 30)}</span>{/snippet}
-{#snippet gem(size: number, stroke: string, label?: string)}
-	<svg width={size} height={size} viewBox="0 0 24 24" class="flex-none" role={label ? 'img' : undefined} aria-label={label} aria-hidden={!label}><path d={GEM} fill="none" {stroke} stroke-width="1.6" stroke-linejoin="round" /></svg>
-{/snippet}
 {#snippet nth(n: number)}<span class="nth">Section {n} of {sections}</span>{/snippet}
 {#snippet text(name: string, description: string, required = false, n = 0)}
 	<span class="text">
@@ -286,7 +276,7 @@
 			<button class="pick" onclick={() => (selected = f)} data-pick>
 				{@render tile(f.kind, tone(f, i))}
 				{@render text(f.label || KINDS.find(([k]) => k === f.kind)![1], f.description, f.required, section ? sectionNo[i] : 0)}
-				{#if f.kind === 'nested' && hasGps}{@render gem(22, '#ede7da', 'Each entry is GPS stamped')}{/if}
+				
 			</button>
 		{/if}
 		</div>
@@ -318,13 +308,6 @@
 		{/each}
 	</aside>
 	<section class="flex min-w-0 flex-col gap-3" aria-label="The form" data-fields>
-		<button class="stamp" class:on={hasGps} role="switch" aria-checked={hasGps} onclick={stamp} data-gps-stamp>
-			{@render gem(30, hasGps ? '#ede7da' : '#6e675e')}
-			<span class="flex-1 text-left text-xl font-bold">Request GPS<span class="block text-sm font-normal text-muted"
-					>{hasGps ? `Stamped when they save.${lists.length ? ` Each ${lists.join(', ')} entry gets its own stamp.` : ''}` : 'Off. No location saved with answers.'}</span
-				></span>
-			<span class="slot"><span class="knob"></span></span>
-		</button>
 		{#if selected === 'head'}
 			<div class="card depth-0 on" data-head>
 				<div class="flex items-center gap-3">
@@ -399,46 +382,6 @@
 	}
 	.star.on {
 		opacity: 1;
-	}
-	.stamp {
-		display: flex;
-		align-items: center;
-		gap: 0.9rem;
-		min-height: 4.75rem;
-		padding: 0.9rem 1.1rem;
-		border: 2px solid #3a3632;
-		border-radius: 1.1rem;
-		background: #171615;
-	}
-	.stamp.on {
-		border-color: #8c857a;
-		background: #1f1d1a;
-	}
-	.slot {
-		position: relative;
-		flex: none;
-		width: 52px;
-		height: 30px;
-		border-radius: 999px;
-		background: #3a3632;
-		transition: background 0.15s;
-	}
-	.knob {
-		position: absolute;
-		top: 3px;
-		left: 3px;
-		width: 24px;
-		height: 24px;
-		border-radius: 999px;
-		background: #8c857a;
-		transition: left 0.15s;
-	}
-	.stamp.on .slot {
-		background: #ede7da;
-	}
-	.stamp.on .knob {
-		left: 25px;
-		background: #121212;
 	}
 	.mark {
 		flex: none;
