@@ -263,7 +263,7 @@
 	</header>
 	{@const row = items.find((p) => p.pluginId === id)}
 	<!-- The plugin as its list shows it: a tap goes back to that list. -->
-	{#if row}<div class="split mb-10 max-w-3xl print:hidden [&_.rt-row]:border-(--rt-yellow)!" data-share-row>{@render pluginRow(row, '#/plugins', false)}</div>{/if}
+	{#if row}<div class="split mb-10 max-w-3xl print:hidden" data-share-row>{@render pluginRow(row, '#/plugins', false)}</div>{/if}
 	<div class="flex flex-wrap items-center justify-center gap-16 print:hidden" data-share>
 		<div class="aspect-square w-full max-w-90 rounded-[1.75rem] bg-[#f4efe6] p-7" data-qr>{@html renderSVG(link)}</div>
 		<div class="flex w-full max-w-md flex-col gap-5">
@@ -297,9 +297,8 @@
 		{#each shown as p, i (p.pluginId)}
 			{@const moving = drag?.rowId === p.pluginId}
 			{@const shift = rowShift(drag, p.pluginId, i)}
-			<!-- Gold and inset: plugins sit one level in, under the white company row. -->
 			<div
-				class="split rt-row-track rt-row-track--grip ml-4 [&_.rt-row]:border-(--rt-yellow)!"
+				class="split rt-row-track rt-row-track--grip ml-4"
 				class:rt-row-track--dragging={moving}
 				data-row-id={p.pluginId}
 				style:transform={moving ? `translateY(${drag!.deltaY}px)` : shift ? `translateY(${shift}px)` : undefined}
@@ -336,8 +335,11 @@
 
 <style>
 	/* Only the zones are live: the row itself neither lights nor points. */
+	/* Gold: plugins sit one level under the white company row. Not a Tailwind [&_] class: beside a
+	   class: directive Svelte writes its & as a literal &amp;, and the rule never matches. */
 	.split :global(.rt-row) {
 		cursor: default;
+		border-color: var(--rt-yellow);
 	}
 	.split :global(.rt-row:hover) {
 		background: var(--rt-surface);
