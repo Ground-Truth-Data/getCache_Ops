@@ -295,7 +295,7 @@
 	>
 	{@render logo?.()}
 	<div class="flex min-w-56 flex-1 flex-col gap-1">
-		<input class="title" placeholder={born || 'Name'} bind:value={title} bind:this={titleBox} data-title />
+		<input class="title" aria-label="Name" placeholder={born || 'Name'} bind:value={title} bind:this={titleBox} data-title />
 		{@render byline?.()}
 	</div>
 	{#if !store.autosave}<button class="small-btn" onclick={() => save()} data-save>Save draft</button>{/if}
