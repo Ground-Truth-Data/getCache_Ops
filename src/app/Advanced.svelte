@@ -95,18 +95,19 @@
 		{/if}
 	</section>
 {/if}
+{#snippet arrow(deg: number)}<span class="inline-block text-(--accent)" style:rotate="{deg}deg">⬇&#xFE0E;</span>{/snippet}
 <h1 class="mb-6 font-display text-3xl text-(--accent)">SQL Queries</h1>
 <div class="max-w-4xl">
 		<label for="request" class="mb-2 block font-display text-2xl text-ink">1 · Ask for a report</label>
 		<textarea id="request" class="{box} mb-3 resize-none text-lg" rows="2" bind:value={request} oninput={() => (copied = false)} placeholder="Give me the top 10 tree planting days of this season." data-request></textarea>
 		<div class="mb-6 flex flex-wrap items-center gap-3" data-llms>
 			<button class="{btn} px-5 py-2 text-xl" onclick={copy} data-copy-prompt>{copied ? 'Copied ✓' : '2 · Copy prompt'}</button>
-			<span class="font-display text-xl text-ink">→ 3 · paste it into</span>
+			<span class="font-display text-xl text-ink">{@render arrow(-90)} 3 · paste it into</span>
 			{#each [['Claude', 'https://claude.ai/new'], ['ChatGPT', 'https://chatgpt.com/']] as [name, href] (name)}
-				<a {href} target="_blank" rel="noopener" class="rounded-lg border-2 border-(--accent) px-5 py-2 font-display text-xl text-ink hover:bg-(--accent)/15">{name} ↗</a>
+				<a {href} target="_blank" rel="noopener" class="rounded-lg border-2 border-(--accent) px-5 py-2 font-display text-xl text-ink hover:bg-(--accent)/15">{name} {@render arrow(-135)}</a>
 			{/each}
 		</div>
-		<label for="sql" class="mb-2 block font-display text-2xl text-ink"><span class="text-(--accent)">⬇</span> 4 · Paste the SQL it gives you back here <span class="text-(--accent)">⬇</span></label>
+		<label for="sql" class="mb-2 block font-display text-2xl text-ink">{@render arrow(0)}{@render arrow(0)} 4 · Paste the SQL it gives you back here {@render arrow(0)}{@render arrow(0)}</label>
 		<textarea id="sql" class="{box} font-mono text-sm" rows="8" bind:value={sql} placeholder="SELECT ..." data-sql></textarea>
 		<div class="my-3 flex gap-2">
 			<button class={btn} onclick={run} data-run>Run</button>
