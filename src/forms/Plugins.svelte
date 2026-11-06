@@ -140,7 +140,7 @@
 
 {#if sub === 'edit' && store}
 	{#snippet logoPick()}
-		<label class="cursor-pointer rounded-2xl border-2 border-dashed border-[#6b6458]" title="Change the logo" data-logo-pick>
+		<label class="cursor-pointer" title="Change the logo" data-logo-pick>
 			{@render mark(logo, 'h-16 w-16')}
 			<input type="file" class="hidden" accept="image/png,image/jpeg,image/webp,image/svg+xml" onchange={pickLogo} data-logo />
 		</label>

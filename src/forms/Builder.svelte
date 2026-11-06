@@ -301,7 +301,7 @@
 {#if note}{#key refusals}<p class="-mt-3 mb-4 {refusals ? 'refused' : 'text-muted'}" data-note>{note}</p>{/key}{/if}
 
 <div class="grid gap-6 lg:grid-cols-[12.5rem_minmax(0,1fr)_20rem]">
-	<aside class="flex flex-wrap gap-2.5 lg:flex-col" aria-label="Add a field">
+	<aside class="flex flex-wrap gap-2.5 self-start rounded-2xl border-2 border-dashed border-[#6b6458] p-3 lg:flex-col" aria-label="Add a field">
 		<span class="w-full text-sm font-bold tracking-wider text-muted">ADD</span>
 		{#each ADD as [kind, name] (kind)}
 			<button class="add {kind === 'section' ? 'section' : kind === 'nested' ? 'nest' : ''}" onclick={() => add(kind)} data-add-field={kind}>{@render icon(kind, 24)}{name}</button>
@@ -312,7 +312,7 @@
 			<div class="card depth-0 on" data-head>
 				<div class="flex items-center gap-3">
 					{@render fold('head', held(-1))}
-					<span class="mark"><img src="plugin_gold.webp" alt="" /></span>
+					{@render tile('section', 'gold')}
 					<input class="label" placeholder="Name" bind:value={title} />
 					{@render nth(1)}
 				</div>
@@ -322,7 +322,7 @@
 			<div class="card depth-0 head">
 				{@render fold('head', held(-1))}
 				<button class="pick" onclick={() => (selected = 'head')} data-head>
-					<span class="mark"><img src="plugin_gold.webp" alt="" /></span>
+					{@render tile('section', 'gold')}
 					{@render text(title || 'Name', rest.description ?? '', false, 1)}
 				</button>
 			</div>
