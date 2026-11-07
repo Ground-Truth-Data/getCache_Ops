@@ -162,6 +162,9 @@
 	<main class="mx-auto max-w-7xl px-6 py-6">
 		{#if error}<p class="mb-4 text-muted" data-error>{error}</p>{/if}
 		{#if why && page[0] !== 'company' && page[0] !== 'plugins' && !orgsPage}<p class="mb-4 text-muted" data-why>{why}</p>{/if}
+		<!-- Svelte keeps the old page when the new one throws while built, under the new tab: a page's failure stays its own. -->
+		{#key orgsPage || page[0]}
+		<svelte:boundary onerror={(e) => console.error('[ops] page', page[0], e)}>
 		{#if orgsPage}
 			<Companies me={account} {signedInNow} />
 		{:else if page[0] === 'company'}
@@ -169,7 +172,7 @@
 		{:else if page[0] === 'plugins'}
 			<Plugins me={account} sub={parts[1]} id={parts[2]} answer={parts[3]} {signedInNow} />
 		{:else if page[0] === 'home' || page[0] === 'reports'}
-			{#key page[0]}<Reports {ops} page={page[0]} slug={parts[1]} />{/key}
+			<Reports {ops} page={page[0]} slug={parts[1]} />
 		{:else}
 			{#if page[0] !== 'advanced'}<h1 class="mb-6 font-display text-3xl text-(--accent)">{page[1]}</h1>{/if}
 			{#if page[0] === 'custom'}
@@ -192,6 +195,9 @@
 				<p class="text-muted" data-nodata>No data yet</p>
 			{/if}
 		{/if}
+		{#snippet failed(e)}<p class="text-muted" data-failed>This page failed: {(e as Error).message}</p>{/snippet}
+		</svelte:boundary>
+		{/key}
 	</main>
 
 	<span class="fixed right-3 bottom-3 rounded-md border border-rule bg-surface px-2 py-0.5 font-display text-sm text-muted" title="Version" data-version>{VERSION}</span>
