@@ -13,6 +13,7 @@ import type { Answers, Definition, Form, Store } from './forms';
 /** `orgKey`: the company that publishes it; null for a person's own. The counts are the phones' receipts. */
 export type PluginRow = Form & {
 	madeBy?: string;
+	createdAt?: string;
 	logo: string | null;
 	copiedFrom: string | null;
 	orgKey: string | null;
@@ -206,6 +207,7 @@ export async function keepAnswer(v: PluginRow, answers: Record<string, unknown>,
 			});
 	});
 	await save(KEPT, sqlite3.capi.sqlite3_js_db_export(db, 'main'));
+	if (await fresh()) await call('pluginReceipt', 'POST', { answer: id, plugin: v.id });
 }
 
 /** How many answers each plugin has in the sent files and fills kept here, and when the last was filled. */
@@ -223,7 +225,7 @@ export async function received(): Promise<{ id: string; answers: number; lastAt:
 export async function receivedAnswers(id: string, definition: Definition): Promise<Answers & { photos: Map<string, string> }> {
 	const { db } = await answersDb();
 	const json = <T>(list: Record<string, unknown>[]) => list.map((r) => ({ ...r, data: JSON.parse(r.data as string) }) as T);
-	const answers = json<Answers['answers'][number]>(rows(db, `SELECT id, plugin AS form, filledAt, replaces, data, lat, lng, accuracyM FROM answer WHERE plugin = ? ORDER BY filledAt`, [id]));
+	const answers = json<Answers['answers'][number]>(rows(db, `SELECT id, plugin AS form, filledAt, replaces, data, editedByKey, lat, lng, accuracyM FROM answer WHERE plugin = ? ORDER BY filledAt`, [id]));
 	const all = json<Answers['rows'][number]>(
 		rows(db, 'SELECT r.id, r.answer, r.groupKey, r.n, r.replaces, r.data, r.lat, r.lng, r.accuracyM FROM answerRow r JOIN answer a ON a.id = r.answer WHERE a.plugin = ?', [id]),
 	);

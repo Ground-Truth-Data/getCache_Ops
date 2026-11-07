@@ -15,7 +15,7 @@ export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'che
 export type Field = { kind: Kind; key: string; label: string; description: string; required: boolean; choices: string[]; min?: number; max?: number; jumps?: Record<string, string>; src: El };
 /** Where an answer was saved or an entry added, from the phone's columns; null without a fix. */
 export type At = { lat?: number | null; lng?: number | null; accuracyM?: number | null };
-type Answer = At & { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown> };
+type Answer = At & { id: string; form: string; filledAt: string; replaces: string | null; data: Record<string, unknown>; editedByKey?: string };
 type AnswerRow = At & { id: string; answer: string; groupKey: string; n: number; replaces: string | null; data: Record<string, unknown> };
 
 export const KINDS: [Kind, string][] = [

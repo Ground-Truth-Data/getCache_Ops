@@ -149,7 +149,7 @@
 		const p = items.find((x) => x.id === pid);
 		return p ? receivedAnswers(pid, p.definition).then((a) => ((photos = a.photos), a)) : Promise.reject(new Error('No such plugin here.'));
 	};
-	const published = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+	const created = (iso: string) => new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 	// A tapped half presses in and flashes gold for a second before it acts, so a slip of the finger reads as what it did.
 	let pressing = $state<string | null>(null);
 	function press(key: string, act: () => void) {
@@ -172,6 +172,14 @@
 		if (p.mine) return { label: 'you', color: 'var(--accent)', self: true, picked: false };
 		const c = people.get(p.maker);
 		return { label: p.maker, color: (c?.color as string) ?? '', self: false, picked: !!c?.colorPickedAt };
+	};
+	// An answer is signed with the filler's personKey, or the account when no Get Cache file was open.
+	const byKey = new Map((isOpen() ? query('SELECT personKey, username, color, colorPickedAt FROM personView') : []).map((r) => [r.personKey as string, r]));
+	const selfKey = isOpen() ? (query("SELECT selfKey FROM appState WHERE appStateId = 'singleton'")[0]?.selfKey as string | undefined) : undefined;
+	const submitter = (key?: string): Identity => {
+		if (key && (key === selfKey || key === session()?.user.id)) return { label: 'you', color: 'var(--accent)', self: true, picked: false };
+		const c = key ? byKey.get(key) : undefined;
+		return c ? { label: c.username as string, color: (c.color as string) ?? '', self: false, picked: !!c.colorPickedAt } : { label: 'not in your contacts', color: '', self: false, picked: false };
 	};
 	let you = $state(false);
 	let search = $state('');
@@ -244,7 +252,7 @@
 		{/snippet}
 		{#snippet glyph()}
 			<img src="plugin_gold.webp" alt="" class="rt-row__glyph-img" />
-			{#if p.answers}<span class="rt-count-badge" aria-label="{p.answers} {p.answers === 1 ? 'submission' : 'submissions'}" data-answers>{p.answers}</span>{/if}
+			{#if p.answers}<span class="rt-count-badge" aria-label="{p.answers} {p.answers === 1 ? 'submission' : 'submissions'}" data-answers>{p.answers.toLocaleString('en-US')}</span>{/if}
 		{/snippet}
 		{#snippet subtitle()}
 			{#if !p.publishedAt}<span class="rt-row__badge border-[#8a857b]! text-[#8a857b]!" data-unpublished>not published</span>{/if}
@@ -259,7 +267,7 @@
 		{/snippet}
 		<span class="foot" data-foot>
 			<span class="flex min-w-0 items-center gap-2"
-				><IdentityPill who={pill(p)} />{#if p.publishedAt}<span data-published>· {published(p.publishedAt)}</span><span data-submissions
+				><IdentityPill who={pill(p)} />{#if p.publishedAt}<span data-created>· Created {created(p.createdAt ?? p.publishedAt)}</span><span data-submissions
 						>· {p.submissions ?? 0} {p.submissions === 1 ? 'submission' : 'submissions'}</span
 					>{/if}</span
 			>
@@ -392,13 +400,14 @@
 			{#if got}
 				<!-- mr-6 ends them where the row above ends, left of its grip. -->
 				<div class="subs mr-6 ml-10 flex flex-col gap-(--rt-space-2)" data-answer-rows>
+					<a class="small-btn self-start" href="#/plugins/answers/{p.id}" data-answers-link>All submissions as a table</a>
 					{#each got as a (a.id)}
 						{@const to = `#/plugins/answers/${p.id}/${a.id}`}
 						<div class="sub" class:pressed={pressing === a.id}>
 							<RowShell title={p.title || 'Untitled'} tier="child" onclick={() => press(a.id, () => (location.hash = to))}>
 								{#snippet glyph()}<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--rt-rust)" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></svg>{/snippet}
 								{#snippet subtitle()}
-									<span class="rt-row__num">{saved(a.filledAt)}</span>
+									<IdentityPill who={submitter(a.editedByKey)} /><span class="rt-row__num">{saved(a.filledAt)}</span>
 									{#if a.lat != null}<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--rt-cream)" stroke-width="1.7" stroke-linejoin="round" role="img" aria-label="GPS stamped" data-gps><path d="M6 4h12l4 5-10 11L2 9z M2 9h20 M9 4l-2 5 5 11 5-11-2-5" /></svg>{/if}
 								{/snippet}
 								{#snippet end()}
@@ -407,7 +416,6 @@
 							</RowShell>
 						</div>
 					{/each}
-					<a class="small-btn self-start" href="#/plugins/answers/{p.id}" data-answers-link>All submissions as a table</a>
 				</div>
 			{/if}
 		{/each}
@@ -417,6 +425,10 @@
 {#if note}<p class="mt-4 text-lg text-muted" data-note>{note}</p>{/if}
 
 <style>
+	/* Anchored inside the icon's right edge, so a longer count grows left over the icon, never into the title. */
+	.rt-count-badge {
+		right: 0;
+	}
 	/* Only the zones are live: the row itself neither lights nor points. */
 	/* Gold: plugins sit one level under the white company row. Not a Tailwind [&_] class: beside a
 	   class: directive Svelte writes its & as a literal &amp;, and the rule never matches. */
