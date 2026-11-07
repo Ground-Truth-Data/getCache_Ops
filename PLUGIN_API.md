@@ -32,6 +32,10 @@ only the live version of every row. `table(title, rows)` from
 
 The reports in `src/reports.ts` are the public contract: their columns only gain, never change. Raw tables change between versions.
 
+Every tree count Ops shows carries the white pine, as Get Cache's does. A report gets it by naming the column for
+trees (`trees`, `planted`, `allocated`, `delivered`… — `TREE_NAME` in `src/app/trees.ts`); a chart or plugin writes
+`trees(n)` or `TREE`. Never recolour it: it sits only in white text.
+
 ## Refusals
 
 In place of its content, a tab says why it won't run when its `api` is not

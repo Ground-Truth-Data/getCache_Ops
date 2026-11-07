@@ -37,6 +37,7 @@ svg[class^='plot'] {
 
 :root {
 	--rt-fg: #fafafa;
+	--rt-font-mono: 'Tree', ui-monospace, 'SF Mono', Menlo, monospace;
 	/* Every rem grows with the window: 16px at 1280 wide, 22px by 2560, so a big screen isn't a small page in the middle. */
 	font-size: clamp(16px, 0.47vw + 10px, 22px);
 }

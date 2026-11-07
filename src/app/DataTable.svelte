@@ -81,7 +81,7 @@ const totals = $derived.by(() => {
 		const vals = matched.map((r) => r[c]);
 		if (!vals.length || !vals.some((v) => typeof v === "number") || !vals.every((v) => v == null || typeof v === "number")) continue;
 		const sum = (vals as number[]).reduce((a, b) => a + (b ?? 0), 0);
-		if (!cash.includes(c)) out[c] = TREE_NAME.test(c) ? trees(sum) : sum.toLocaleString();
+		if (!cash.includes(c)) out[c] = sum.toLocaleString();
 		else {
 			// Dollars and euros don't add up, so a mixed-currency column gets no Σ.
 			const codes = new Set(matched.map((r) => r[cur]));
