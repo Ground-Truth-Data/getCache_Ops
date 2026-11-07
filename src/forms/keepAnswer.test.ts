@@ -25,7 +25,7 @@ test('Tree check with a repeating Trees section saves into a browser with no plu
 	const form = { id: 'tc', definition, madeBy: 'Chris', logo: null, publishedAt: '2026-11-06', copiedFrom: null, orgKey: null } as never;
 	await keepAnswer(form, { block: 'B12', trees: [{ species: 'Fdc' }, { species: 'Pli' }] }, new Map(), 'me');
 	expect((await received()).map((r) => [r.id, r.answers])).toEqual([['tc', 1]]);
-	// Central counts submissions from receipts: a fill here sends one, as a phone does, or the card says 0.
+	// Central locks a form from its receipts: a fill here sends one, as a phone does.
 	const [[url, init]] = fetch.mock.calls;
 	expect([url.replace(/^.*\/rest\/v1\//, ''), init?.method, Object.keys(JSON.parse(String(init?.body)))]).toEqual(['pluginReceipt', 'POST', ['answer', 'plugin']]);
 });

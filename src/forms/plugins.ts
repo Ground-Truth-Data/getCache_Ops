@@ -17,8 +17,6 @@ export type PluginRow = Form & {
 	logo: string | null;
 	copiedFrom: string | null;
 	orgKey: string | null;
-	submissions?: number;
-	lastSubmittedAt?: string | null;
 	droppedAt?: string | null;
 	/** When the signed-in person retired it; null for everyone else. */
 	retiredAt?: string | null;
@@ -30,7 +28,7 @@ export class SignInNeeded extends Error {
 	}
 }
 
-const COLS = '*,lockedAt,replacedBy,submissions,lastSubmittedAt,retiredAt';
+const COLS = '*,lockedAt,replacedBy,retiredAt';
 const central = (filter: string) => call<PluginRow[]>(`plugin?${filter}&select=${COLS}`);
 /** Central's rows for these plugins, as a phone adding them would get them. */
 export const plugins = (ids: string[]) => (ids.length ? central(`id=in.(${ids})`) : Promise.resolve([]));

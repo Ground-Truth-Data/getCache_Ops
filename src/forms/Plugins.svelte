@@ -110,15 +110,20 @@
 
 	// The home is the inbox: All or You, a search, then rows the maker drags into his own order.
 	const questions = (d: Definition) => keys(d).filter((k) => k.type !== 'paneldynamic').length;
-	const item = (p: PluginRow, mine: boolean) => ({
-		...p,
-		mine,
-		title: p.definition.title ?? '',
-		maker: p.madeBy ?? 'You',
-		questions: questions(p.definition),
-		answers: inbox.find((r) => r.id === p.id)?.answers ?? 0,
-		href: `plugins/fill/${p.id}`,
-	});
+	// The badge, the card's count and the folded list all read this browser's answers file, so they never disagree.
+	const item = (p: PluginRow, mine: boolean) => {
+		const got = inbox.find((r) => r.id === p.id);
+		return {
+			...p,
+			mine,
+			title: p.definition.title ?? '',
+			maker: p.madeBy ?? 'You',
+			questions: questions(p.definition),
+			answers: got?.answers ?? 0,
+			lastAt: got?.lastAt ?? null,
+			href: `plugins/fill/${p.id}`,
+		};
+	};
 	const items = $derived([...mine.map((p) => item(p, true)), ...others.map((p) => item(p, false))]);
 	// A form filled here is kept as a phone keeps one; its photos wait here until it is.
 	let picked = new Map<string, File>();
@@ -270,12 +275,11 @@
 			{/if}
 		{/snippet}
 		<span class="foot" data-foot>
-			<span class="flex min-w-0 items-center gap-2"
-				><IdentityPill who={pill(p)} />{#if p.publishedAt}<span data-created>· Created {created(p.createdAt ?? p.publishedAt)}</span><span data-submissions
-						>· {p.submissions ?? 0} {p.submissions === 1 ? 'submission' : 'submissions'}</span
-					>{/if}</span
+			<span class="flex min-w-0 flex-wrap items-center gap-x-2"
+				><IdentityPill who={pill(p)} />{#if p.publishedAt}<span class="whitespace-nowrap" data-created>· Created {created(p.createdAt ?? p.publishedAt)}</span><span class="whitespace-nowrap" data-submissions
+						>· {p.answers} {p.answers === 1 ? 'submission' : 'submissions'}</span
+					>{/if}{#if p.lastAt}<span class="whitespace-nowrap text-(--rt-sage)" title="Last submitted {saved(p.lastAt)}" data-last>· {ago(p.lastAt)}</span>{/if}</span
 			>
-			{#if p.lastSubmittedAt}<span class="text-(--rt-sage)" title="Last submitted {saved(p.lastSubmittedAt)}" data-last>{ago(p.lastSubmittedAt)}</span>{/if}
 		</span>
 		{#snippet end()}
 			<span class="flex items-center" aria-hidden="true"><span class="fill-label">Fill out</span><span class="rt-row__cell rt-row__cell--chevron">{@render go()}</span></span>
@@ -429,9 +433,10 @@
 {#if note}<p class="mt-4 text-lg text-muted" data-note>{note}</p>{/if}
 
 <style>
-	/* Anchored inside the icon's right edge, so a longer count grows left over the icon, never into the title. */
+	/* On the icon's left corner, so a longer count grows right across the icon: a 1,000+ still clears the title. */
 	.rt-count-badge {
-		right: 0;
+		left: -8px;
+		right: auto;
 	}
 	/* Only the zones are live: the row itself neither lights nor points. */
 	/* Gold: plugins sit one level under the white company row. Not a Tailwind [&_] class: beside a
@@ -481,8 +486,6 @@
 	.foot {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
 		margin-top: 0.4rem;
 		padding-bottom: 0.5rem;
 		color: #c9c3b7;
