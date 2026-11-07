@@ -13,20 +13,19 @@ import JsonPeek from "../../_rapper/rt/admin/JsonPeek.svelte";
 import TableToolbar from "../../_rapper/rt/admin/TableToolbar.svelte";
 import { hiddenFromParams, hiddenToParams, visibleColumns } from "../../_rapper/rt/admin/columnPrefs";
 import { type SortState, sortRows } from "../../_rapper/rt/admin/sortRows";
-import { MONEY_NAME, RATE_NAME, moneyIn } from "./money";
-import { TREE_NAME, trees } from "./trees";
+import { MONEY_NAME, RATE_NAME, amount, byCurrency, mark } from "./money";
+import { TREE, TREE_NAME } from "./trees";
 import { go, route } from "./route.svelte";
 import type { Snippet } from "svelte";
 
 type Row = Record<string, unknown>;
 
-// `money` columns show in each row's own currency, so `currency` leaves the screen but stays in exports.
-// `noSum` columns are rates: a Σ of per-tree prices means nothing.
+// A unit is said once, in the header; cells are plain numbers. `money` columns split the rows by currency, one
+// table each, so `currency` leaves the screen. `noSum` columns are rates: a Σ of per-tree prices means nothing.
 let { rows, columns, name, money = [], noSum = [], toggle, panel }: { rows: Row[]; columns: string[]; name: string; money?: string[]; noSum?: string[]; toggle?: Snippet; panel?: Snippet } = $props();
 const onScreen = $derived(money.length ? columns.filter((c) => c !== "currency") : columns);
 const cur = $derived(columns.find((c) => c.toLowerCase() === "currency") ?? "currency");
 const cash = $derived(money.length ? money : columns.some((c) => c === cur) ? columns.filter((c) => c !== cur && MONEY_NAME.test(c)) : []);
-const price = $derived(moneyIn(rows, undefined, cur));
 
 const path = $derived(route.path.split("?")[0] || ".");
 const all = $derived([...new URLSearchParams(route.path.split("?")[1] ?? "")]);
@@ -49,7 +48,8 @@ let sort = $state<SortState>({ col: "", asc: true });
 
 const hidden = $derived(hiddenFromParams(params, onScreen));
 const cols = $derived(visibleColumns(onScreen, hidden));
-const exportCols = $derived(onScreen === columns ? cols : [...cols, "currency"]);
+const codes = $derived(cash.length ? byCurrency(rows, cur).map(([c]) => c) : []);
+const exportCols = $derived(codes.length > 1 ? [...cols, cur] : cols);
 
 const matched = $derived.by(() => {
 	const q = filter.trim().toLowerCase();
@@ -74,23 +74,25 @@ function onFilter(v: string) {
 	if (pageIndex) setParams((p) => p.delete("page"));
 }
 
-const totals = $derived.by(() => {
+const groups = $derived(cash.length ? byCurrency(shown, cur) : [["", shown] as [string, Row[]]]);
+const inGroup = (code: string) => (cash.length ? matched.filter((r) => String(r[cur] ?? "") === code) : matched);
+const totals = (these: Row[]) => {
 	const out: Record<string, string> = {};
 	for (const c of cols) {
 		if (noSum.includes(c) || (cash.includes(c) && RATE_NAME.test(c))) continue;
-		const vals = matched.map((r) => r[c]);
+		const vals = these.map((r) => r[c]);
 		if (!vals.length || !vals.some((v) => typeof v === "number") || !vals.every((v) => v == null || typeof v === "number")) continue;
 		const sum = (vals as number[]).reduce((a, b) => a + (b ?? 0), 0);
-		if (!cash.includes(c)) out[c] = sum.toLocaleString();
-		else {
-			// Dollars and euros don't add up, so a mixed-currency column gets no Σ.
-			const codes = new Set(matched.map((r) => r[cur]));
-			if (codes.size === 1) out[c] = price(sum, [...codes][0]);
-		}
+		out[c] = cash.includes(c) ? amount(sum) : sum.toLocaleString();
 	}
 	return out;
-});
-const cellText = (c: string, r: Row) => (cash.includes(c) ? price(r[c], r[cur], RATE_NAME.test(c)) : TREE_NAME.test(c) && typeof r[c] === "number" ? trees(r[c]) : fmt(r[c]));
+};
+const isTrees = (c: string) => TREE_NAME.test(c) && rows.some((r) => typeof r[c] === "number");
+const label = (code: string) => (c: string) => (cash.includes(c) && code ? `${c} (${mark(code)})` : isTrees(c) ? `${c} ${TREE}` : c);
+// The pine is Ops' font, so a sheet says "trees"; a currency stays in the header only while there is one.
+const exportLabel = (c: string) => (cash.includes(c) && codes.length === 1 ? `${c} (${mark(codes[0])})` : c);
+const exported = (rs: Row[]) => rs.map((r) => Object.fromEntries(exportCols.map((c) => [exportLabel(c), r[c]])));
+const cellText = (c: string, r: Row) => (cash.includes(c) ? amount(r[c], RATE_NAME.test(c)) : fmt(r[c]));
 
 const countLine = $derived(
 	filter.trim()
@@ -152,18 +154,20 @@ function tickAll() {
 	</div>
 	{@render panel?.()}
 
-	<TableToolbar columns={exportCols} filteredRows={matched} selectedRows={tickedRows} tableName={name} />
+	<TableToolbar columns={exportCols.map(exportLabel)} filteredRows={exported(matched)} selectedRows={exported(tickedRows)} tableName={name} />
 
+	{#each groups as [code, these] (code)}
 	<AdminDataTable
 		columns={cols}
-		rows={shown}
+		label={label(code)}
+		rows={these}
 		{rowKey}
 		{sort}
 		onSort={(next) => (sort = next)}
 		frozen={1}
-		rowNumberOffset={rowOffset}
-		{totals}
-		totalLabel={matched.length.toLocaleString()}
+		rowNumberOffset={groups.length === 1 ? rowOffset : undefined}
+		totals={totals(inGroup(code))}
+		totalLabel={inGroup(code).length.toLocaleString()}
 		pinSum
 		onPeek={peekCell}
 		render={cellText}
@@ -185,6 +189,7 @@ function tickAll() {
 			{/if}
 		{/snippet}
 	</AdminDataTable>
+	{/each}
 
 	<AdminPager
 		page={pageIndex}

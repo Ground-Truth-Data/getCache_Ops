@@ -32,6 +32,17 @@ Your name, logo and colour go in `custom/brand.ts` and your tabs in
 `custom/plugins/`; `custom/README.md` shows both. Upstream never touches
 `custom/`, so `git pull upstream main` never conflicts.
 
+### Units go in the header, once
+
+Every table says its unit once, in the column header: tree counts carry the
+pine, money reads `value ($)` or `per tree ($)`, and each cell is a plain,
+right-aligned number. Canadian dollars are `$`, never `CA$`; another dollar
+says whose (`US$`). Rows in more than one currency split into one table per
+currency, each with its own header and its own sums, because dollars and
+pounds never add up. Exports follow the same headers. A query only has to
+name its columns (`trees`, `value`, `per tree`) and return a `currency`
+column; `src/app/DataTable.svelte` does the rest.
+
 ### Put it online
 
 Push to GitHub, import the repo on Vercel and press Deploy. No settings, no

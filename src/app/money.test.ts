@@ -1,25 +1,31 @@
 import { expect, test } from 'vitest';
-import { moneyIn } from './money';
+import { amount, byCurrency, mark } from './money';
 
-test('one currency reads with its narrow symbol', () => {
-	const money = moneyIn([{ currency: 'CAD' }], 'en');
-	expect(money(0.18, 'CAD')).toBe('$0.18');
-	expect(money(1690.2, 'CAD')).toBe('$1,690.20');
-	expect(money(0.165, 'CAD', true)).toBe('$0.165');
-	expect(money(144.6, 'CAD')).toBe('$144.60');
-	expect(money(144.315, 'CAD')).toBe('$144.32');
+test('Canadian dollars are plain $; another dollar says whose', () => {
+	expect(mark('CAD')).toBe('$');
+	expect(mark('USD')).toBe('US$');
+	expect(mark('GBP')).toBe('£');
+	expect(mark('EUR')).toBe('€');
 });
 
-test('two currencies sharing a symbol tell themselves apart', () => {
-	const money = moneyIn([{ currency: 'CAD' }, { currency: 'USD' }, { currency: 'GBP' }], 'en');
-	expect(money(3.33, 'CAD')).toBe('CA$3.33');
-	expect(money(3.33, 'USD')).toBe('$3.33');
-	expect(moneyIn([{ currency: 'CAD' }, { currency: 'USD' }], 'en-CA')(3.33, 'USD')).toBe('US$3.33');
-	expect(money(3.33, 'GBP')).toBe('£3.33');
+test('a cell is a plain number: two decimals, a rate up to four', () => {
+	expect(amount(1690.2, false, 'en')).toBe('1,690.20');
+	expect(amount(144.315, false, 'en')).toBe('144.32');
+	expect(amount(0.165, true, 'en')).toBe('0.165');
+	expect(amount(0.18, true, 'en')).toBe('0.18');
+	expect(amount(null)).toBe('');
 });
 
-test('a blank amount or currency stays plain', () => {
-	const money = moneyIn([], 'en');
-	expect(money(null, 'CAD')).toBe('');
-	expect(money(2.5, null)).toBe('2.5');
+test('rows group by currency, the biggest group first, sorted order kept inside each', () => {
+	const rows = [
+		{ s: 'a', currency: 'GBP' },
+		{ s: 'b', currency: 'CAD' },
+		{ s: 'c', currency: 'CAD' },
+		{ s: 'd', currency: 'GBP' },
+		{ s: 'e', currency: 'CAD' },
+	];
+	expect(byCurrency(rows, 'currency').map(([c, rs]) => [c, rs.map((r) => r.s).join('')])).toEqual([
+		['CAD', 'bce'],
+		['GBP', 'ad'],
+	]);
 });
