@@ -250,6 +250,16 @@ CREATE TABLE `orgKindTable` (
 	CONSTRAINT "orgKindTable_kind" CHECK("orgKindTable"."kind" IN ('plantingCompany', 'consultant', 'mill', 'nursery', 'government', 'ngo', 'contractor'))
 );
 CREATE INDEX `orgKindTable_live_idx` ON `orgKindTable` (`orgKey`,`replacedAt`);
+CREATE TABLE `orgNameTable` (
+	`versionKey` text PRIMARY KEY NOT NULL,
+	`orgKey` text NOT NULL,
+	`orgName` text DEFAULT '' NOT NULL,
+	`color` text DEFAULT '' NOT NULL,
+	`createdAt` text DEFAULT '' NOT NULL,
+	`replacedAt` text DEFAULT '' NOT NULL,
+	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE cascade
+);
+CREATE INDEX `orgNameTable_live_idx` ON `orgNameTable` (`orgKey`,`replacedAt`);
 CREATE TABLE `orgTable` (
 	`orgKey` text PRIMARY KEY NOT NULL,
 	`orgName` text DEFAULT '' NOT NULL,
@@ -596,6 +606,10 @@ CREATE VIEW `mapView` AS SELECT v.versionKey, v.mapKey, v.mapName, e.createdAt, 
 /* mapView(versionKey,mapKey,mapName,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
 CREATE VIEW `orgKindView` AS SELECT * FROM orgKindTable WHERE replacedAt = ''
 /* orgKindView(versionKey,orgKey,kind,createdAt,replacedAt) */;
+CREATE VIEW `orgNameView` AS SELECT * FROM orgNameTable n WHERE n.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM orgNameTable w
+	   WHERE w.orgKey = n.orgKey AND w.replacedAt = ''
+	     AND (w.createdAt > n.createdAt OR (w.createdAt = n.createdAt AND w.versionKey > n.versionKey)))
+/* orgNameView(versionKey,orgKey,orgName,color,createdAt,replacedAt) */;
 CREATE VIEW `orgTagView` AS SELECT * FROM orgTagTable WHERE replacedAt = ''
 /* orgTagView(versionKey,orgKey,mapKey,blockKey,createdAt,replacedAt) */;
 CREATE VIEW `packageView` AS SELECT v.versionKey, v.packageKey, v.fileName, v.direction, v.packageType, v.plantedDt, v.sentAt, v.receivedAt, v.rawJson, v.byteSize, v.logLine, v.countsJson, v.sentVersionKeysJson, v.senderHighWaterAt, v.shareLinkId, v.shareDeleteToken, v.shareAccess, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
