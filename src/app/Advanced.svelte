@@ -9,6 +9,7 @@
 
 	let { ops }: { ops: Ops } = $props();
 	let request = $state('');
+	const dull = $derived(!request.trim());
 	let sql = $state('');
 	let copied = $state(false);
 	let result = $state<{ rows: Record<string, unknown>[] } | { error: string }>();
@@ -107,10 +108,10 @@
 		<label for="request" class="mb-2 block font-display text-2xl text-ink">1 · Ask for a report</label>
 		<textarea id="request" class="{box} mb-3 resize-none text-lg" rows="2" bind:value={request} oninput={() => (copied = false)} placeholder="Give me the top 10 tree planting days of this season." data-request></textarea>
 		<div class="mb-6 flex flex-wrap items-center gap-3" data-llms>
-			<button class="{btn} px-5 py-2 text-xl" onclick={copy} data-copy-prompt>{copied ? 'Copied ✓' : '2 · Copy prompt'}</button>
+			<button class="{btn} px-5 py-2 text-xl" class:dull disabled={dull} onclick={copy} data-copy-prompt>{copied ? 'Copied ✓' : '2 · Copy prompt'}</button>
 			<span class="font-display text-xl text-ink">{@render arrow(-90)} 3 · paste it into</span>
 			{#each [['Claude', 'https://claude.ai/new'], ['ChatGPT', 'https://chatgpt.com/']] as [name, href] (name)}
-				<a {href} target="_blank" rel="noopener" class="rounded-lg border-2 border-(--accent) px-5 py-2 font-display text-xl text-ink hover:bg-(--accent)/15">{name} {@render arrow(-135)}</a>
+				<a {href} target="_blank" rel="noopener" class:dull inert={dull} class="rounded-lg border-2 border-(--accent) px-5 py-2 font-display text-xl text-ink hover:bg-(--accent)/15">{name} {@render arrow(-135)}</a>
 			{/each}
 		</div>
 		<label for="sql" class="mb-2 block font-display text-2xl text-ink">4 · Paste the entire SQL response in here {@render arrow(0)}{@render arrow(0)}{@render arrow(0)}</label>
@@ -124,3 +125,12 @@
 			{/if}
 		</div>
 	</div>
+
+<!-- Nothing asked yet: Copy, Claude and ChatGPT stay grey and dead until the box has words. -->
+<style>
+	.dull {
+		filter: grayscale(1);
+		opacity: 0.4;
+		box-shadow: none;
+	}
+</style>
