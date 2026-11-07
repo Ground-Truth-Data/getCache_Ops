@@ -16,8 +16,11 @@
 	import HeaderLink from '../../_rapper/gc/HeaderLink.svelte';
 	import FormView from '../../_rapper/gc/FormView.svelte';
 	import { isOpen, query } from '../data/db';
-	import { type RowDrag, rowDragHandle, rowShift } from '../../_rapper/gc/rowDrag';
-	import { addLink, copyPlugin, keepAnswer, live, myPlugins, plugins, pluginStore, receive, received, receivedAnswers, SignInNeeded, type PluginRow } from './plugins';
+	import { type RowDrag, rowDragHandle, rowShift, rowSwipe } from '../../_rapper/gc/rowDrag';
+	import Icon from '../../_rapper/gc/Icon.svelte';
+
+	const RETIRE_PX = 84;
+	import { addLink, copyPlugin, keepAnswer, live, myPlugins, plugins, pluginStore, receive, received, receivedAnswers, retirePlugin, SignInNeeded, type PluginRow } from './plugins';
 
 	let { me, sub, id, answer, signedInNow }: { me: { authId: string } | null; sub?: string; id?: string; answer?: string; signedInNow: () => void } = $props();
 
@@ -158,7 +161,9 @@
 	// This browser's order; a plugin it hasn't placed yet goes on top.
 	const ORDER = 'ops-plugins-order';
 	let order = $state<string[]>(JSON.parse(localStorage.getItem(ORDER) ?? '[]'));
-	const sorted = $derived(items.toSorted((x, y) => order.indexOf(x.id) - order.indexOf(y.id)));
+	// Retired by this person, on Central: greyed and sorted below the rest, and it still opens.
+	const retire = (pid: string) => run(() => retirePlugin(pid).then(load))();
+	const sorted = $derived(items.toSorted((x, y) => +!!x.retiredAt - +!!y.retiredAt || order.indexOf(x.id) - order.indexOf(y.id)));
 	// A maker wears their pill from the open Get Cache file's contacts, as every Get Cache screen draws them.
 	const people = new Map(
 		(isOpen() ? query('SELECT username, color, colorPickedAt FROM personView') : []).map((r) => [r.username as string, r]),
@@ -231,6 +236,7 @@
 				class="rt-row__half rt-row__half--open zone"
 				class:pressed={pressing === p.id}
 				{href}
+				draggable="false"
 				aria-label="Fill out {p.title || 'Untitled'}"
 				onclick={(e) => (e.preventDefault(), e.stopPropagation(), press(p.id, () => (location.hash = href)))}
 				data-open
@@ -363,10 +369,19 @@
 				class="split rt-row-track rt-row-track--grip ml-4"
 				class:rt-row-track--dragging={moving}
 				data-row-id={p.id}
+				data-retired={p.retiredAt ? '' : undefined}
 				style:transform={moving ? `translateY(${drag!.deltaY}px)` : shift ? `translateY(${shift}px)` : undefined}
 				style:transition={shift && !moving ? 'transform 200ms ease' : undefined}
 			>
-			{@render pluginRow(p, p.href, true)}
+			<!-- Swiped left it rests open on the trash can, as on the phone; a tap there retires it. -->
+			<div class="swipe" class:past={!!p.retiredAt}>
+				{#if !p.retiredAt}
+					<button type="button" class="retire" aria-label="Retire {p.title || 'Untitled'}" onclick={() => retire(p.id)} data-retire><Icon name="trash" size={26} /></button>
+				{/if}
+				<div class="track" use:rowSwipe={p.retiredAt ? null : { hold: RETIRE_PX }}>
+					{@render pluginRow(p, p.href, true)}
+				</div>
+			</div>
 			<RowGrip
 				label="Drag to reorder"
 				dragging={moving}
@@ -411,6 +426,38 @@
 	}
 	.zone {
 		width: 50%;
+	}
+	/* The phone's swipe: a red bed with the can under an opaque track; a retired row greys with no bed. */
+	.swipe {
+		position: relative;
+		flex: 1;
+		min-width: 0;
+		border-radius: var(--rt-radius-lg);
+		background: color-mix(in srgb, var(--palette-red) 85%, black);
+	}
+	.swipe.past {
+		background: none;
+	}
+	.swipe.past :global(.rt-row) {
+		border-color: var(--rt-border-subtle);
+		opacity: 0.55;
+	}
+	.track {
+		position: relative;
+		border-radius: var(--rt-radius-lg);
+		background: var(--rt-bg);
+		touch-action: pan-y;
+		transition: transform 160ms ease;
+	}
+	.retire {
+		position: absolute;
+		inset: 0 0 0 auto;
+		width: 84px;
+		display: grid;
+		place-items: center;
+		border: 0;
+		background: none;
+		color: #fff;
 	}
 	.none {
 		opacity: 0.3;

@@ -19,6 +19,8 @@ export type PluginRow = Form & {
 	submissions?: number;
 	lastSubmittedAt?: string | null;
 	droppedAt?: string | null;
+	/** When the signed-in person retired it; null for everyone else. */
+	retiredAt?: string | null;
 };
 
 export class SignInNeeded extends Error {
@@ -27,7 +29,7 @@ export class SignInNeeded extends Error {
 	}
 }
 
-const COLS = '*,lockedAt,replacedBy,submissions,lastSubmittedAt';
+const COLS = '*,lockedAt,replacedBy,submissions,lastSubmittedAt,retiredAt';
 const central = (filter: string) => call<PluginRow[]>(`plugin?${filter}&select=${COLS}`);
 /** Central's rows for these plugins, as a phone adding them would get them. */
 export const plugins = (ids: string[]) => (ids.length ? central(`id=in.(${ids})`) : Promise.resolve([]));
@@ -43,6 +45,13 @@ async function written(rows: Promise<PluginRow[]>): Promise<PluginRow> {
 }
 
 export const live = async (id: string) => (await central(`id=eq.${id}`))[0];
+
+/** Greys a plugin and sinks it in the signed-in person's own list only; it still opens. */
+export async function retirePlugin(id: string): Promise<void> {
+	if (!(await fresh())) throw new SignInNeeded();
+	const [row] = await call<unknown[]>('pluginRetired', 'POST', { plugin: id });
+	if (!row) throw new Error('Central did not retire this plugin.');
+}
 /** Every plugin a company published, newest first: its suite. */
 export const companyPlugins = (orgKey: string) => central(`orgKey=eq.${orgKey}&order=publishedAt.desc`);
 
