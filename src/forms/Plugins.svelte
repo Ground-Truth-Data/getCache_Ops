@@ -4,7 +4,7 @@
 	import { mine as memberships } from '../company/central';
 	import Builder from './Builder.svelte';
 	import { keys, nthForm, type Answers, type Definition } from './forms';
-	import { ago, current } from './answers';
+	import { ago, current, named } from './answers';
 	import { SvelteMap } from 'svelte/reactivity';
 	import Report from './Report.svelte';
 	import Response from './Response.svelte';
@@ -181,6 +181,9 @@
 		const c = key ? byKey.get(key) : undefined;
 		return c ? { label: c.username as string, color: (c.color as string) ?? '', self: false, picked: !!c.colorPickedAt } : { label: 'not in your contacts', color: '', self: false, picked: false };
 	};
+	// A Person question picks from, and its answers are read through, the open Get Cache file's contacts.
+	const contacts = [...byKey.values()].map((r) => ({ key: r.personKey as string, name: r.username as string, color: (r.color as string) ?? '', picked: !!r.colorPickedAt }));
+	const known = (pid: string) => answersOf(pid).then((g) => named(g, (k) => (byKey.get(k)?.username as string) ?? 'not in your contacts'));
 	let you = $state(false);
 	let search = $state('');
 	const q = $derived(search.trim().toLowerCase());
@@ -307,9 +310,9 @@
 	{#key id}<Builder {store} edit={(i) => `#/plugins/edit/${i}`} back={['#/plugins', 'Plugins']} logo={logoPick} {byline} meta={logo} born={nthForm(mine.filter((p) => p.id !== id).map((p) => p.definition.title ?? ''))} />{/key}
 	{#if asking}<div class="mt-6" data-publish-signin><SignIn done={() => ((asking = false), signedInNow())} /></div>{/if}
 {:else if sub === 'answers' && id && answer}
-	<Response load={() => answersOf(id)} id={answer} back={[`#/plugins/answers/${id}`, 'Answers']} photo={(k) => photos.get(k)} />
+	<Response load={() => known(id)} id={answer} back={[`#/plugins/answers/${id}`, 'Answers']} photo={(k) => photos.get(k)} />
 {:else if sub === 'answers' && id}
-	<Report load={() => answersOf(id)} back={['#/plugins', 'Plugins']} photo={(k) => photos.get(k)} open={(a) => `#/plugins/answers/${id}/${a}`} />
+	<Report load={() => known(id)} back={['#/plugins', 'Plugins']} photo={(k) => photos.get(k)} open={(a) => `#/plugins/answers/${id}/${a}`} />
 {:else if sub === 'fill' && id}
 	{@const row = items.find((p) => p.id === id)}
 	<!-- Edit lives inside the form, and only on your own. -->
@@ -321,7 +324,7 @@
 		{#if row?.mine}<a class="small-btn" href="#/plugins/edit/{id}" data-edit>Edit</a>{/if}
 		{#if row?.publishedAt}<a class="small-btn" href={addLink(id)} data-add-phone>Add to phone</a>{/if}
 	</header>
-	{#if row}<div class="phone" data-fill-form><FormView definition={row.definition} keep={pickPhoto} onsubmit={(a) => fill(row, a)} /></div>{/if}
+	{#if row}<div class="phone" data-fill-form><FormView definition={row.definition} keep={pickPhoto} people={contacts} onsubmit={(a) => fill(row, a)} /></div>{/if}
 {:else if sub === 'share' && id}
 	{@const link = addLink(id)}
 	<header class="mb-8 flex flex-wrap items-center gap-4 border-b border-rule pb-5 print:hidden">

@@ -6,7 +6,7 @@ import { call } from '../company/central';
 type Trigger = { type: string; expression?: string; gotoName?: string };
 export type Definition = Base & { triggers?: Trigger[] };
 
-export type Kind = 'text' | 'number' | 'date' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'section' | 'nested';
+export type Kind = 'text' | 'number' | 'date' | 'person' | 'dropdown' | 'radiogroup' | 'checkbox' | 'file' | 'section' | 'nested';
 /** `src` is the element as loaded (or a new field's defaults): saving writes the edited keys onto it, so every
  *  property the builder has no control for survives each save. The builder's list is flat: a section owns
  *  what follows it up to the next section, and a nested group (a little form repeated per tree, say) owns the
@@ -20,11 +20,13 @@ type AnswerRow = At & { id: string; answer: string; groupKey: string; n: number;
 
 export const KINDS: [Kind, string][] = [
 	['text', 'Text'], ['number', 'Number'], ['dropdown', 'Dropdown'], ['radiogroup', 'Multiple choice'], ['checkbox', 'Checkboxes'],
-	['date', 'Date'], ['file', 'Photo'], ['section', 'Section'], ['nested', 'Nested'],
+	['date', 'Date'], ['person', 'Person'], ['file', 'Photo'], ['section', 'Section'], ['nested', 'Nested'],
 ];
 
 const NEW: Record<Kind, Omit<El, 'name'>> = {
 	text: { type: 'text' }, number: { type: 'text', inputType: 'number' }, date: { type: 'text', inputType: 'date' },
+	// A Person is a dropdown of the filler's own contacts, so Central takes it unchanged; its answer is a personKey.
+	person: { type: 'dropdown', contacts: true },
 	dropdown: { type: 'dropdown' }, radiogroup: { type: 'radiogroup' }, checkbox: { type: 'checkbox' },
 	file: { type: 'file', storeDataAsText: false, acceptedTypes: 'image/*' }, section: { type: 'panel' },
 	nested: { type: 'paneldynamic', panelCount: 1 },
@@ -105,7 +107,7 @@ export const toDefinition = (title: string, fields: Field[], rest: Partial<Defin
 };
 
 function field(e: El): Field {
-	const kind = (e.type === 'text' ? (e.inputType === 'number' ? 'number' : e.inputType === 'date' ? 'date' : 'text') : e.type === 'panel' ? 'section' : e.type === 'paneldynamic' ? 'nested' : e.type) as Kind;
+	const kind = (e.type === 'text' ? (e.inputType === 'number' ? 'number' : e.inputType === 'date' ? 'date' : 'text') : e.type === 'panel' ? 'section' : e.type === 'paneldynamic' ? 'nested' : e.contacts ? 'person' : e.type) as Kind;
 	return {
 		kind, key: e.name, label: e.title ?? '', description: (e.description as string) ?? '', required: !!e.isRequired,
 		choices: ((e.choices as unknown[]) ?? []).map(choiceText),
@@ -148,11 +150,11 @@ export const CENTRAL_KEY = /^[a-zA-Z][a-zA-Z0-9_]{0,62}$/;
 
 /** Every key a definition holds, with its label, and the repeating group it sits in. */
 export const keys = (d: Definition) => {
-	const walk = (els: El[], group?: string): { key: string; label: string; type: string; group?: string }[] =>
+	const walk = (els: El[], group?: string): { key: string; label: string; type: string; contacts: boolean; group?: string }[] =>
 		els.flatMap((e) =>
 			e.type === 'panel'
 				? walk(e.elements as El[], group)
-				: [{ key: e.name, label: e.title ?? e.name, type: e.type, group }, ...(e.type === 'paneldynamic' ? walk(e.templateElements as El[], e.name) : [])],
+				: [{ key: e.name, label: e.title ?? e.name, type: e.type, contacts: !!e.contacts, group }, ...(e.type === 'paneldynamic' ? walk(e.templateElements as El[], e.name) : [])],
 		);
 	return walk(d.elements);
 };

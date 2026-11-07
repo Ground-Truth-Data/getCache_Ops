@@ -109,3 +109,15 @@ describe('the builder keeps what it does not edit', () => {
 		expect(toDefinition('', fromDefinition(d).fields)).toEqual(d);
 	});
 });
+
+describe('a Person question', () => {
+	it('is a dropdown of contacts with no choices, and survives a save and a load', () => {
+		const f = { ...blank('person'), label: 'Boss' };
+		f.key = keyFor(f.label, f.kind, [f]);
+		const d = toDefinition('Crew', [f]);
+		expect(d.elements).toEqual([{ type: 'dropdown', name: 'boss', title: 'Boss', contacts: true }]);
+		const back = fromDefinition(structuredClone(d));
+		expect(back.fields.map((x) => [x.kind, x.key, x.choices])).toEqual([['person', 'boss', []]]);
+		expect(toDefinition(back.title, back.fields, back.rest)).toEqual(d);
+	});
+});

@@ -65,6 +65,16 @@ export function sheets(got: Answers): Record<string, string> {
 	};
 }
 
+/** Each Person answer's personKey as the reader's contacts name it, for every page and sheet that reads answers. */
+export function named(got: Answers, name: (key: string) => string): Answers {
+	const people = new Set(keys(got.definition).filter((c) => c.contacts).map((c) => c.key));
+	const swap = <T extends { data: Record<string, unknown> }>(x: T): T => ({
+		...x,
+		data: Object.fromEntries(Object.entries(x.data).map(([k, v]) => [k, people.has(k) && typeof v === 'string' ? name(v) : v])),
+	});
+	return { ...got, answers: got.answers.map(swap), rows: got.rows.map(swap) };
+}
+
 /** Each sheet as its own download. */
 export function download(files: Record<string, string>) {
 	for (const [name, body] of Object.entries(files)) {

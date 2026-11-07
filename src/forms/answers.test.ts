@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { sections, sheets } from './answers';
+import { named, sections, sheets } from './answers';
 import type { Answers } from './forms';
 
 const definition = {
@@ -52,4 +52,19 @@ test('sections: the head first, then each section with its nested group', () => 
 		['Section 1', ['species']],
 		['Measurements', ['height', 'trees']],
 	]);
+});
+
+test("a Person answer shows the username from the reader's contacts, an unknown one says so", () => {
+	const crew: Answers = {
+		definition: { elements: [{ type: 'dropdown', name: 'boss', title: 'Boss', contacts: true }, { type: 'text', name: 'note', title: 'Note' }] },
+		answers: [
+			{ id: 'r1', form: 'v1', filledAt: '2026-11-07T10:00:00Z', replaces: null, data: { boss: 'p1', note: 'p1' } },
+			{ id: 'r2', form: 'v1', filledAt: '2026-11-07T11:00:00Z', replaces: null, data: { boss: 'p9' } },
+		],
+		rows: [],
+	};
+	const people = new Map([['p1', 'Carlie']]);
+	expect(sheets(named(crew, (k) => people.get(k) ?? 'not in your contacts'))['responses.csv']).toBe(
+		'id,boss,note,saved\r\nr1,Carlie,p1,2026-11-07T10:00:00Z\r\nr2,not in your contacts,,2026-11-07T11:00:00Z\r\n',
+	);
 });
