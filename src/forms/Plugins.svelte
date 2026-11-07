@@ -409,7 +409,7 @@
 						{@const to = `plugins/answers/${p.id}/${a.id}`}
 						<div class="sub" class:pressed={pressing === a.id}>
 							<RowShell title={p.title || 'Untitled'} tier="child" onclick={() => press(a.id, () => navigate(to))}>
-								{#snippet glyph()}<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--rt-rust)" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></svg>{/snippet}
+								{#snippet glyph()}<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--rust)" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></svg>{/snippet}
 								{#snippet subtitle()}
 									<IdentityPill who={submitter(a.editedByKey)} /><span class="rt-row__num">{saved(a.filledAt)}</span>
 									{#if a.lat != null}<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--rt-cream)" stroke-width="1.7" stroke-linejoin="round" role="img" aria-label="GPS stamped" data-gps><path d="M6 4h12l4 5-10 11L2 9z M2 9h20 M9 4l-2 5 5 11 5-11-2-5" /></svg>{/if}
@@ -496,7 +496,7 @@
 		cursor: pointer;
 	}
 	.questions {
-		color: var(--rt-rust);
+		color: var(--rust);
 		font-weight: 600;
 		white-space: nowrap;
 	}
@@ -514,10 +514,10 @@
 	}
 	.subs {
 		padding-left: 1.25rem;
-		border-left: 2px dashed color-mix(in srgb, var(--rt-rust) 55%, #1a1a1a);
+		border-left: 2px dashed var(--rust);
 	}
 	.subs :global(.rt-row) {
-		border-color: var(--rt-rust);
+		border-color: var(--rust);
 	}
 	.pressed,
 	.sub.pressed :global(.rt-row) {

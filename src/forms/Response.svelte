@@ -38,9 +38,9 @@
 	{@const list = entries(g.name)}
 	{@const gps = list.some((r) => r.lat != null)}
 	{@const grid = `grid-template-columns: 2rem repeat(${own.length}, minmax(0, 1fr)) ${gps ? '1.5rem' : ''}`}
-	<div class="flex flex-col gap-2 rounded-xl border-[1.5px] border-(--rt-rust) bg-[#1c1916] px-3 py-2.5" data-group={g.name}>
+	<div class="flex flex-col gap-2 rounded-xl border-[1.5px] border-(--rust) bg-[#1c1916] px-3 py-2.5" data-group={g.name}>
 		<div class="flex items-center gap-2">
-			<span class="flex-1 font-bold text-(--rt-rust)">{g.title || g.name}</span>
+			<span class="flex-1 font-bold text-(--rust)">{g.title || g.name}</span>
 			<span class="flex h-6.5 min-w-6.5 items-center justify-center rounded-full bg-(--rt-sage) px-2 text-[13px] font-extrabold text-[#161a10]" data-count>{list.length}</span>
 		</div>
 		{#if list.length}
@@ -91,8 +91,8 @@
 					{#if e.type === 'paneldynamic'}
 						{@render group(e)}
 					{:else}
-						<div class="flex justify-between gap-3 rounded-xl border-[1.5px] border-(--rt-rust) bg-[#1c1916] px-3 py-2.5" data-row={e.name}>
-							<span class="font-bold text-(--rt-rust)">{e.title || e.name}</span>
+						<div class="flex justify-between gap-3 rounded-xl border-[1.5px] border-(--rust) bg-[#1c1916] px-3 py-2.5" data-row={e.name}>
+							<span class="font-bold text-(--rust)">{e.title || e.name}</span>
 							<span class="text-right font-semibold"><Value v={a.data[e.name]} {photo} /></span>
 						</div>
 					{/if}

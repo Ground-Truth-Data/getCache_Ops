@@ -419,7 +419,7 @@
 		border-radius: 14px;
 	}
 	.mark.rust {
-		--accent: var(--rt-rust);
+		--accent: var(--rust);
 	}
 	.mark.sage {
 		--accent: #b9cc95;
@@ -558,9 +558,9 @@
 		box-shadow: 0 0 24px 2px var(--glow), 0 14px 30px rgb(0 0 0 / 0.55);
 	}
 	.card.on.depth-1 {
-		--edge: var(--rt-rust);
-		--line: var(--rt-rust);
-		--glow: color-mix(in srgb, var(--rt-rust) 40%, transparent);
+		--edge: var(--rust);
+		--line: var(--rust);
+		--glow: color-mix(in srgb, var(--rust) 40%, transparent);
 		--well: #14100d;
 		--rim: #5a3e2c;
 		background: #261c15;
@@ -638,17 +638,17 @@
 		border-color: var(--accent);
 	}
 	.card.depth-1:not(.on) {
-		border-color: var(--rt-rust);
+		border-color: var(--rust);
 	}
 	.card.depth-2:not(.on) {
 		border-color: var(--rt-sage);
 	}
 	.add.nest {
-		border-color: var(--rt-rust);
+		border-color: var(--rust);
 	}
 	/* A section's foot is rust, a nested group's sage: the colour of what it adds. */
 	.foot {
-		--tone: var(--rt-rust);
+		--tone: var(--rust);
 		display: flex;
 		gap: 0.6rem;
 		margin-right: 1.5rem;

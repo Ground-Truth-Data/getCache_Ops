@@ -1,4 +1,5 @@
 import * as Plot from '@observablehq/plot';
+import { TREE, trees } from './trees';
 
 type Row = Record<string, unknown>;
 const frame = (el: HTMLElement) => ({
@@ -33,8 +34,8 @@ export const charts: Record<string, (rows: Row[], el: HTMLElement) => Element> =
 	days(rows, el) {
 		const { accent, bg, ...f } = frame(el);
 		return Plot.plot({
-			...f, marginLeft: 50, y: { grid: true, label: 'Trees' }, x: { type: 'utc', label: null },
-			marks: [Plot.rectY(rows, { x: (d) => new Date(d.date), y: 'trees', interval: 'day', fill: accent, tip: { fill: bg } }), Plot.ruleY([0])],
+			...f, marginLeft: 50, y: { grid: true, label: `${TREE} Trees` }, x: { type: 'utc', label: null },
+			marks: [Plot.rectY(rows, { x: (d) => new Date(d.date), y: 'trees', interval: 'day', fill: accent, tip: { fill: bg, format: { y: trees } } }), Plot.ruleY([0])],
 		});
 	},
 	'block-totals'(rows, el) {
@@ -45,7 +46,7 @@ export const charts: Record<string, (rows: Row[], el: HTMLElement) => Element> =
 		const over = rows.filter((r) => Math.max(num(r, 'trees'), num(r, 'allocated')) > end);
 		const real = (r: Row) => {
 			const [t, a] = [num(r, 'trees'), num(r, 'allocated')];
-			return t > end ? `${compact(t)} trees${a > end ? ` of ${compact(a)}` : ''}` : `${compact(a)} allocated`;
+			return `${TREE}${t > end ? `${compact(t)}${a > end ? ` of ${compact(a)}` : ''}` : `${compact(a)} allocated`}`;
 		};
 		const bars = (dir: 'x' | 'y') => {
 			const bar = dir === 'x' ? Plot.barX : Plot.barY;
@@ -53,9 +54,9 @@ export const charts: Record<string, (rows: Row[], el: HTMLElement) => Element> =
 			const inset = dir === 'x' ? { insetTop: 3, insetBottom: 3 } : { insetLeft: 4, insetRight: 4 };
 			return [
 				bar(rows, { ...pos, [dir]: cut('allocated'), fill: accent, fillOpacity: 0.3 }),
-				bar(rows, { ...pos, [dir]: cut('trees'), fill: accent, ...inset, channels: { trees: 'trees', allocated: 'allocated' }, tip: { fill: bg, format: { [dir]: false } } }),
+				bar(rows, { ...pos, [dir]: cut('trees'), fill: accent, ...inset, channels: { trees: 'trees', allocated: 'allocated' }, tip: { fill: bg, format: { [dir]: false, trees, allocated: trees } } }),
 				Plot.text(over, { ...pos, [dir]: end, text: () => '≈', fill: bg, fontSize: 30, fontWeight: 'bold', ...(dir === 'x' ? { dx: -12, rotate: 90 } : { dy: 12 }) }),
-				Plot.text(over, { ...pos, [dir]: end, text: real, fill: bg, fontWeight: 'bold', ...(dir === 'x' ? { dx: -24, textAnchor: 'end' } : { dy: 24, rotate: -90, textAnchor: 'end' }) }),
+				Plot.text(over, { ...pos, [dir]: end, text: real, fill: 'white', stroke: bg, strokeWidth: 3, fontWeight: 'bold', ...(dir === 'x' ? { dx: -24, textAnchor: 'end' } : { dy: 24, rotate: -90, textAnchor: 'end' }) }),
 				dir === 'x' ? Plot.ruleX([0]) : Plot.ruleY([0]),
 			];
 		};
@@ -63,12 +64,12 @@ export const charts: Record<string, (rows: Row[], el: HTMLElement) => Element> =
 		if (f.width / rows.length < 28) {
 			const label = Math.min(160, Math.max(...rows.map((r) => String(r.block).length)) * 7 + 8);
 			return Plot.plot({
-				...f, height: rows.length * 22 + 40, marginLeft: label, x: { grid: true, label: 'Trees', axis: 'bottom', ticks: f.width / 90, tickFormat: '~s', domain: end < Infinity ? [0, end] : undefined }, y: { label: null, domain: blockOrder(rows), tickFormat: (b: string) => (b.length * 7 > label ? `${b.slice(0, label / 7 - 2)}…` : b) },
+				...f, height: rows.length * 22 + 40, marginLeft: label, x: { grid: true, label: `${TREE} Trees`, axis: 'bottom', ticks: f.width / 90, tickFormat: '~s', domain: end < Infinity ? [0, end] : undefined }, y: { label: null, domain: blockOrder(rows), tickFormat: (b: string) => (b.length * 7 > label ? `${b.slice(0, label / 7 - 2)}…` : b) },
 				marks: bars('x'),
 			});
 		}
 		return Plot.plot({
-			...f, height: Math.min(400, Math.max(260, f.width * 0.7)), marginLeft: 70, marginBottom: Math.min(110, Math.max(...rows.map((r) => String(r.block).length)) * 5 + 20), y: { grid: true, label: 'Trees', domain: end < Infinity ? [0, end] : undefined }, x: { label: null, domain: blockOrder(rows), tickRotate: -45 },
+			...f, height: Math.min(400, Math.max(260, f.width * 0.7)), marginLeft: 70, marginBottom: Math.min(110, Math.max(...rows.map((r) => String(r.block).length)) * 5 + 20), y: { grid: true, label: `${TREE} Trees`, domain: end < Infinity ? [0, end] : undefined }, x: { label: null, domain: blockOrder(rows), tickRotate: -45 },
 			marks: bars('y'),
 		});
 	},

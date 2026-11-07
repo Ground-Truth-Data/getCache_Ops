@@ -14,6 +14,7 @@ import TableToolbar from "../../_rapper/rt/admin/TableToolbar.svelte";
 import { hiddenFromParams, hiddenToParams, visibleColumns } from "../../_rapper/rt/admin/columnPrefs";
 import { type SortState, sortRows } from "../../_rapper/rt/admin/sortRows";
 import { MONEY_NAME, RATE_NAME, moneyIn } from "./money";
+import { TREE_NAME, trees } from "./trees";
 import { go, route } from "./route.svelte";
 import type { Snippet } from "svelte";
 
@@ -80,7 +81,7 @@ const totals = $derived.by(() => {
 		const vals = matched.map((r) => r[c]);
 		if (!vals.length || !vals.some((v) => typeof v === "number") || !vals.every((v) => v == null || typeof v === "number")) continue;
 		const sum = (vals as number[]).reduce((a, b) => a + (b ?? 0), 0);
-		if (!cash.includes(c)) out[c] = sum.toLocaleString();
+		if (!cash.includes(c)) out[c] = TREE_NAME.test(c) ? trees(sum) : sum.toLocaleString();
 		else {
 			// Dollars and euros don't add up, so a mixed-currency column gets no Σ.
 			const codes = new Set(matched.map((r) => r[cur]));
@@ -89,7 +90,7 @@ const totals = $derived.by(() => {
 	}
 	return out;
 });
-const cellText = (c: string, r: Row) => (cash.includes(c) ? price(r[c], r[cur], RATE_NAME.test(c)) : fmt(r[c]));
+const cellText = (c: string, r: Row) => (cash.includes(c) ? price(r[c], r[cur], RATE_NAME.test(c)) : TREE_NAME.test(c) && typeof r[c] === "number" ? trees(r[c]) : fmt(r[c]));
 
 const countLine = $derived(
 	filter.trim()

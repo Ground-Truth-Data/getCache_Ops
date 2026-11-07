@@ -10,7 +10,19 @@
 	font-display: swap;
 }
 
+/* Only the pine (U+E001), first in every stack: a tree count draws it in any text, a chart's SVG included. Always white. */
+@font-face {
+	font-family: 'Tree';
+	src: url('/retreeverFont.woff2') format('woff2');
+	unicode-range: U+E001;
+	font-display: block;
+}
+svg[class^='plot'] {
+	font-family: var(--font-sans);
+}
+
 @theme {
+	--font-sans: 'Tree', ui-sans-serif, system-ui, sans-serif;
 	--font-display: 'Retreever', sans-serif;
 	/* The admin depth stack, darkest at back: page, then header and cards, then fields. One surface each, or inputs vanish into the page. */
 	--color-ground: var(--at-bg);
@@ -18,7 +30,7 @@
 	--color-field: var(--at-panel-2);
 	--color-ink: #fafafa;
 	--color-muted: #838963;
-	--color-heading: #c97a4a;
+	--color-heading: var(--rust);
 	--color-rule: #333333;
 	--color-on-accent: #1c0d04;
 }
@@ -131,8 +143,8 @@ body {
 		color: #111;
 	}
 	.chip-rust {
-		border: 2px solid var(--rt-rust);
-		color: var(--rt-rust);
+		border: 2px solid var(--rust);
+		color: var(--rust);
 		font-weight: 600;
 	}
 	.badge {
@@ -142,7 +154,7 @@ body {
 		min-width: 2.5rem;
 		height: 2.5rem;
 		border-radius: 999px;
-		background: var(--rt-rust);
+		background: var(--rust);
 		color: #111;
 		font-family: var(--font-sans);
 		font-size: 1.25rem;
