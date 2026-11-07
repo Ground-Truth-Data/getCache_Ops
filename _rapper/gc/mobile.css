@@ -46,7 +46,7 @@
 
 	--rt-row-sender: #c3c8ac; /* a contact pill with no colour */
 	--rt-row-sep: #5c6046; /* " • " separator — divides without being read */
-	--rt-row-size: var(--rt-meta); /* rust size stat — keeps the row striped; grey here reads as one undifferentiated blob */
+	--rt-row-size: var(--rust); /* rust size stat — keeps the row striped; grey here reads as one undifferentiated blob */
 	--rt-row-when: #8c9170; /* date at rest — glance target, not read target */
 	--rt-row-when-fresh: #86a65c; /* date for now / a time-of-day today ONLY */
 
@@ -72,10 +72,8 @@
 	--rt-press-lo: rgba(255, 255, 255, 0.55); /* lit edge, below */
 	--rt-press-hi: rgba(0, 0, 0, 0.18); /* shaded edge, above */
 
-	--rust: #c97a4a;
-	/* Lighter on purpose: thin text and 1.5px lines in #c97a4a read brown on #1a1a1a. */
-	--rt-meta: #e88a5a;
-	--rust-edge: #d18a5e;
+	/* The one rust. Darker rusts read brown on #1a1a1a. */
+	--rust: #e99366;
 	--rust-soft: color-mix(in srgb, var(--rust) 14%, transparent);
 
 	/* The rose of ConfirmedDiamond's art, for text that names it. */
@@ -554,7 +552,7 @@ hr {
 	gap: 0.4rem;
 	padding: 0.45rem 0.7rem 0.45rem 0.5rem;
 	background: var(--rt-overlay);
-	border: var(--rt-border-w-structural) solid color-mix(in srgb, var(--rust) 55%, transparent);
+	border: var(--rt-border-w-structural) solid var(--rust);
 	border-radius: var(--rt-radius-sm);
 	color: var(--rust);
 	cursor: pointer;
@@ -1126,7 +1124,7 @@ body.map-only .mobile-map-fill .maplibregl-ctrl-bottom-left {
 	padding: 0.7rem 0.75rem 0.75rem;
 	border-radius: 0.95rem;
 	/* 2px @25%: a 1px hairline had no luminance step over satellite imagery. */
-	border: 2px solid color-mix(in srgb, var(--rust), transparent 25%);
+	border: 2px solid var(--rust);
 	box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
 }
 
@@ -1143,7 +1141,7 @@ body.map-only .mobile-map-fill .maplibregl-ctrl-bottom-left {
 	/* Literal colour: color-mix() inside a gradient stop paints transparent here. */
 	background-image: repeating-linear-gradient(
 		to bottom,
-		var(--rust-edge) 0 3px,
+		var(--rust) 0 3px,
 		transparent 3px 7px
 	);
 	pointer-events: none;
@@ -1167,7 +1165,7 @@ body.map-only .mobile-map-fill .maplibregl-ctrl-bottom-left {
 	margin-top: -1.5px;
 	background-image: repeating-linear-gradient(
 		to right,
-		var(--rust-edge) 0 3px,
+		var(--rust) 0 3px,
 		transparent 3px 7px
 	);
 }
@@ -1284,7 +1282,7 @@ body.map-only .mobile-map-fill .maplibregl-ctrl-bottom-left {
 	font-family: var(--rt-font-display, "Retreever", sans-serif);
 	padding: 0.7rem 0.75rem 0.75rem;
 	border-radius: 0.95rem;
-	border: 2px solid color-mix(in srgb, var(--rust), transparent 25%);
+	border: 2px solid var(--rust);
 	box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
 }
 .rt-hospital-popup .maplibregl-popup-tip {
