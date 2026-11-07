@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { axisEnd } from './charts';
+import { axisEnd, blockOrder } from './charts';
 
 const block = (trees: number, allocated = 0) => ({ block: 'b', trees, allocated });
 
@@ -14,4 +14,9 @@ test('blocks of a size share an axis, uncut', () => {
 
 test('too few blocks to call one an outlier', () => {
 	expect(axisEnd([block(10), block(1_000_000)])).toBeUndefined();
+});
+
+test('blocks with no trees yet come last, each group by name', () => {
+	const rows = [{ block: 'C', trees: 0 }, { block: 'B', trees: 5 }, { block: 'A', trees: 0 }, { block: 'D', trees: 9 }];
+	expect(blockOrder(rows)).toEqual(['B', 'D', 'A', 'C']);
 });

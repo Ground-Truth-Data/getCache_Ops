@@ -5,6 +5,7 @@ const frame = (el: HTMLElement) => ({
 	style: { background: 'transparent', overflow: 'visible' },
 	width: el.clientWidth,
 	accent: getComputedStyle(el).getPropertyValue('--accent'),
+	// Plot's tip box is white and its text takes the page's colour: on this dark page, white on white.
 	bg: getComputedStyle(document.body).backgroundColor,
 });
 const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format;
@@ -23,13 +24,17 @@ export function axisEnd(rows: Row[]): number | undefined {
 	return inside.length < v.length ? inside.at(-1)! * 1.1 : undefined;
 }
 
+/** Blocks in the chart's order: planted ones first, then those with no trees yet, each by name. */
+export const blockOrder = (rows: Row[]) =>
+	[...rows].sort((a, b) => Number(!num(a, 'trees')) - Number(!num(b, 'trees')) || String(a.block).localeCompare(String(b.block))).map((r) => r.block);
+
 /** The chart drawn above a report's table, by report slug. */
 export const charts: Record<string, (rows: Row[], el: HTMLElement) => Element> = {
 	days(rows, el) {
 		const { accent, bg, ...f } = frame(el);
 		return Plot.plot({
 			...f, marginLeft: 50, y: { grid: true, label: 'Trees' }, x: { type: 'utc', label: null },
-			marks: [Plot.rectY(rows, { x: (d) => new Date(d.date), y: 'trees', interval: 'day', fill: accent, tip: true }), Plot.ruleY([0])],
+			marks: [Plot.rectY(rows, { x: (d) => new Date(d.date), y: 'trees', interval: 'day', fill: accent, tip: { fill: bg } }), Plot.ruleY([0])],
 		});
 	},
 	'block-totals'(rows, el) {
@@ -48,7 +53,7 @@ export const charts: Record<string, (rows: Row[], el: HTMLElement) => Element> =
 			const inset = dir === 'x' ? { insetTop: 3, insetBottom: 3 } : { insetLeft: 4, insetRight: 4 };
 			return [
 				bar(rows, { ...pos, [dir]: cut('allocated'), fill: accent, fillOpacity: 0.3 }),
-				bar(rows, { ...pos, [dir]: cut('trees'), fill: accent, ...inset, channels: { trees: 'trees', allocated: 'allocated' }, tip: { format: { [dir]: false } } }),
+				bar(rows, { ...pos, [dir]: cut('trees'), fill: accent, ...inset, channels: { trees: 'trees', allocated: 'allocated' }, tip: { fill: bg, format: { [dir]: false } } }),
 				Plot.text(over, { ...pos, [dir]: end, text: () => '≈', fill: bg, fontSize: 30, fontWeight: 'bold', ...(dir === 'x' ? { dx: -12, rotate: 90 } : { dy: 12 }) }),
 				Plot.text(over, { ...pos, [dir]: end, text: real, fill: bg, fontWeight: 'bold', ...(dir === 'x' ? { dx: -24, textAnchor: 'end' } : { dy: 24, rotate: -90, textAnchor: 'end' }) }),
 				dir === 'x' ? Plot.ruleX([0]) : Plot.ruleY([0]),
@@ -58,12 +63,12 @@ export const charts: Record<string, (rows: Row[], el: HTMLElement) => Element> =
 		if (f.width / rows.length < 28) {
 			const label = Math.min(160, Math.max(...rows.map((r) => String(r.block).length)) * 7 + 8);
 			return Plot.plot({
-				...f, height: rows.length * 22 + 40, marginLeft: label, x: { grid: true, label: 'Trees', axis: 'top', ticks: f.width / 90, tickFormat: '~s', domain: end < Infinity ? [0, end] : undefined }, y: { label: null, tickFormat: (b: string) => (b.length * 7 > label ? `${b.slice(0, label / 7 - 2)}…` : b) },
+				...f, height: rows.length * 22 + 40, marginLeft: label, x: { grid: true, label: 'Trees', axis: 'bottom', ticks: f.width / 90, tickFormat: '~s', domain: end < Infinity ? [0, end] : undefined }, y: { label: null, domain: blockOrder(rows), tickFormat: (b: string) => (b.length * 7 > label ? `${b.slice(0, label / 7 - 2)}…` : b) },
 				marks: bars('x'),
 			});
 		}
 		return Plot.plot({
-			...f, height: Math.min(400, Math.max(260, f.width * 0.7)), marginLeft: 70, marginBottom: Math.min(110, Math.max(...rows.map((r) => String(r.block).length)) * 5 + 20), y: { grid: true, label: 'Trees', domain: end < Infinity ? [0, end] : undefined }, x: { label: null, tickRotate: -45 },
+			...f, height: Math.min(400, Math.max(260, f.width * 0.7)), marginLeft: 70, marginBottom: Math.min(110, Math.max(...rows.map((r) => String(r.block).length)) * 5 + 20), y: { grid: true, label: 'Trees', domain: end < Infinity ? [0, end] : undefined }, x: { label: null, domain: blockOrder(rows), tickRotate: -45 },
 			marks: bars('y'),
 		});
 	},
