@@ -2,12 +2,6 @@
 import type { El } from '../../_rapper/gc/form';
 import { keys, type Answers, type At, type Definition } from './forms';
 
-/** How long ago, as the inbox writes it: 5m, 3h, 4d, 2w. */
-export function ago(iso: string) {
-	const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
-	return m < 60 ? `${m}m` : m < 1440 ? `${Math.round(m / 60)}h` : m < 20160 ? `${Math.round(m / 1440)}d` : `${Math.round(m / 10080)}w`;
-}
-
 /** The answers as they stand: a fix replaces the row it names; entries follow their answer's order. */
 export function current(got: Answers): Answers {
 	const fixed = new Set(got.answers.map((a) => a.replaces));

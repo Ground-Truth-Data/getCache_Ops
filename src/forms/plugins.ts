@@ -10,7 +10,7 @@ import { fresh } from '../data/auth';
 import { appHome, call } from '../company/central';
 import type { Answers, Definition, Form, Store } from './forms';
 
-/** `orgKey`: the company that publishes it; null for a person's own. The counts are the phones' receipts. */
+/** `orgKey`: the company that publishes it; null for a person's own. `company`: Central's card for it, once approved. */
 export type PluginRow = Form & {
 	madeBy?: string;
 	createdAt?: string;
@@ -18,6 +18,7 @@ export type PluginRow = Form & {
 	copiedFrom: string | null;
 	orgKey: string | null;
 	droppedAt?: string | null;
+	company?: { orgKey: string; name: string; color: string | null; logo: string | null } | null;
 	/** When the signed-in person retired it; null for everyone else. */
 	retiredAt?: string | null;
 };
@@ -28,7 +29,7 @@ export class SignInNeeded extends Error {
 	}
 }
 
-const COLS = '*,lockedAt,replacedBy,retiredAt';
+const COLS = '*,lockedAt,replacedBy,retiredAt,company';
 const central = (filter: string) => call<PluginRow[]>(`plugin?${filter}&select=${COLS}`);
 /** Central's rows for these plugins, as a phone adding them would get them. */
 export const plugins = (ids: string[]) => (ids.length ? central(`id=in.(${ids})`) : Promise.resolve([]));

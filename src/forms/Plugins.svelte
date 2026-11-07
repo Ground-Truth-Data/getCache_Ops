@@ -4,23 +4,22 @@
 	import { companies } from '../company/central';
 	import Builder from './Builder.svelte';
 	import { keys, nthForm, type Answers, type Definition } from './forms';
-	import { ago, current, named } from './answers';
+	import { current, named } from './answers';
+	import { ago } from '../../_rapper/gc/ago';
 	import { SvelteMap } from 'svelte/reactivity';
 	import Report from './Report.svelte';
 	import Response from './Response.svelte';
 	import { session } from '../data/auth';
 	import InboxChrome from '../../_rapper/gc/InboxChrome.svelte';
-	import RowGrip from '../../_rapper/gc/RowGrip.svelte';
 	import RowShell from '../../_rapper/gc/RowShell.svelte';
 	import IdentityPill, { type Identity } from '../../_rapper/gc/IdentityPill.svelte';
 	import HeaderLink from '../../_rapper/gc/HeaderLink.svelte';
 	import FormView from '../../_rapper/gc/FormView.svelte';
 	import { isOpen, query } from '../data/db';
 	import { go as navigate } from '../app/route.svelte';
-	import { type RowDrag, rowDragHandle, rowShift, rowSwipe } from '../../_rapper/gc/rowDrag';
-	import Icon from '../../_rapper/gc/Icon.svelte';
-
-	const RETIRE_PX = 84;
+	import PluginCard from '../../_rapper/gc/PluginCard.svelte';
+	import PluginList, { type PluginListItem } from '../../_rapper/gc/PluginList.svelte';
+	import { logoUrl } from '../company/central';
 	import { addLink, copyPlugin, keepAnswer, live, myPlugins, plugins, pluginStore, receive, received, receivedAnswers, retirePlugin, SignInNeeded, type PluginRow } from './plugins';
 
 	let { me, sub, id, answer, signedInNow }: { me: { authId: string } | null; sub?: string; id?: string; answer?: string; signedInNow: () => void } = $props();
@@ -108,19 +107,26 @@
 		r.readAsDataURL(file);
 	}
 
-	// The home is the inbox: All or You, a search, then rows the maker drags into his own order.
+	// The home is the inbox: All or You, a search, then the one plugins list.
 	const questions = (d: Definition) => keys(d).filter((k) => k.type !== 'paneldynamic').length;
 	// The badge, the card's count and the folded list all read this browser's answers file, so they never disagree.
 	const item = (p: PluginRow, mine: boolean) => {
 		const got = inbox.find((r) => r.id === p.id);
+		const c = p.company;
 		return {
 			...p,
 			mine,
 			title: p.definition.title ?? '',
-			maker: p.madeBy ?? 'You',
+			icon: 'plugin_gold.webp',
+			maker: pill({ mine, maker: p.madeBy ?? 'You' }),
 			questions: questions(p.definition),
+			created: p.publishedAt && (p.createdAt ?? p.publishedAt),
 			answers: got?.answers ?? 0,
 			lastAt: got?.lastAt ?? null,
+			past: !!p.retiredAt,
+			retired: !!p.retiredAt,
+			replacedBy: p.replacedBy && { ...p.replacedBy, href: `plugins/fill/${p.replacedBy.id}` },
+			org: c && { key: c.orgKey, name: c.name, color: c.color, logo: logoUrl(c) || null },
 			href: `plugins/fill/${p.id}`,
 		};
 	};
@@ -155,7 +161,6 @@
 		const p = items.find((x) => x.id === pid);
 		return p ? receivedAnswers(pid, p.definition).then((a) => ((photos = a.photos), a)) : Promise.reject(new Error('No such plugin here.'));
 	};
-	const created = (iso: string) => new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 	// A tapped half presses in and flashes gold for a second before it acts, so a slip of the finger reads as what it did.
 	let pressing = $state<string | null>(null);
 	function press(key: string, act: () => void) {
@@ -164,12 +169,8 @@
 		setTimeout(() => ((pressing = null), act()), 1000);
 	}
 	const saved = (iso: string) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
-	// This browser's order; a plugin it hasn't placed yet goes on top.
-	const ORDER = 'ops-plugins-order';
-	let order = $state<string[]>(JSON.parse(localStorage.getItem(ORDER) ?? '[]'));
 	// Retired by this person, on Central: greyed and sorted below the rest, and it still opens.
 	const retire = (pid: string) => run(() => retirePlugin(pid).then(load))();
-	const sorted = $derived(items.toSorted((x, y) => +!!x.retiredAt - +!!y.retiredAt || order.indexOf(x.id) - order.indexOf(y.id)));
 	// A maker wears their pill from the open Get Cache file's contacts, as every Get Cache screen draws them.
 	const people = new Map(
 		(isOpen() ? query('SELECT username, color, colorPickedAt FROM personView') : []).map((r) => [r.username as string, r]),
@@ -193,17 +194,7 @@
 	let you = $state(false);
 	let search = $state('');
 	const q = $derived(search.trim().toLowerCase());
-	const shown = $derived(sorted.filter((p) => (!you || p.mine) && (!q || `${p.title} ${p.maker}`.toLowerCase().includes(q))));
-	let drag = $state<RowDrag | null>(null);
-	function drop(d: RowDrag) {
-		drag = null;
-		if (d.fromIndex === d.targetIndex) return;
-		const ids = shown.map((p) => p.id);
-		ids.splice(d.targetIndex, 0, ...ids.splice(d.fromIndex, 1));
-		let k = 0;
-		order = sorted.map((p) => (ids.includes(p.id) ? ids[k++] : p.id));
-		localStorage.setItem(ORDER, JSON.stringify(order));
-	}
+	const match = (p: PluginListItem) => (!you || p.mine) && (!q || `${p.title} ${p.maker.label} ${p.org?.name ?? ''}`.toLowerCase().includes(q));
 	const pills = $derived([[{ key: 'all', label: 'All', on: !you, chain: true }, { key: 'you', label: 'You', on: you, chain: true }]]);
 	const buttons = $derived([
 		{ label: 'Import plugin', icon: gcIcon, ring: true, onclick: () => pick?.click() },
@@ -221,71 +212,6 @@
 {#snippet pluginIcon()}<img src="plugin_white.webp" alt="" class="h-8 w-auto" />{/snippet}
 
 {#snippet go()}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg>{/snippet}
-
-<!-- One pill colour per fact, so the eye learns them: questions rust, a draft dim, submissions counted on the icon. -->
-{#snippet pluginRow(p: (typeof items)[number], href: string, foldable: boolean)}
-	<!-- Half and half: the left folds the submissions open, the right fills the form out. -->
-	<RowShell title={p.title || 'Untitled'} tier="top">
-		{#snippet lead()}
-			{#if foldable}
-				<span class="rt-row__fold" class:rt-row__fold--shut={!unfolded.has(p.id)} class:none={!p.answers}
-					><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg></span
-				>
-			{/if}
-		{/snippet}
-		{#snippet overlay()}
-			<!-- Always two zones, so every row reads the same; with no submissions the left one folds nothing. -->
-			{#if foldable}
-				<span
-					class="rt-row__half rt-row__half--toggle zone"
-					class:pressed={pressing === `${p.id}:fold`}
-					role="button"
-					tabindex="0"
-					aria-label={unfolded.has(p.id) ? 'Hide submissions' : 'Show submissions'}
-					aria-expanded={unfolded.has(p.id)}
-					aria-disabled={!p.answers}
-					onclick={(e) => (e.stopPropagation(), p.answers && press(`${p.id}:fold`, () => fold(p)))}
-					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), p.answers && press(`${p.id}:fold`, () => fold(p)))}
-					data-fold
-				></span>
-			{/if}
-			<a
-				class="rt-row__half rt-row__half--open zone"
-				class:pressed={pressing === p.id}
-				{href}
-				draggable="false"
-				aria-label="Fill out {p.title || 'Untitled'}"
-				onclick={(e) => (e.preventDefault(), e.stopPropagation(), press(p.id, () => navigate(href)))}
-				data-open
-			></a>
-		{/snippet}
-		{#snippet glyph()}
-			<img src="plugin_gold.webp" alt="" class="rt-row__glyph-img" />
-			{#if p.answers}<span class="rt-count-badge" aria-label="{p.answers} {p.answers === 1 ? 'submission' : 'submissions'}" data-answers>{p.answers.toLocaleString('en-US')}</span>{/if}
-		{/snippet}
-		{#snippet subtitle()}
-			{#if !p.publishedAt}<span class="rt-row__badge border-[#8a857b]! text-[#8a857b]!" data-unpublished>not published</span>{/if}
-			<span class="questions" data-questions>{p.questions} {p.questions === 1 ? 'question' : 'questions'}</span>
-			{#if p.replacedBy}
-				{@const to = `plugins/fill/${p.replacedBy.id}`}
-				<!-- A span, not a link: the row is a button, and this sits above its tap zones. -->
-				<span class="replaced" role="link" tabindex="0" onclick={(e) => (e.stopPropagation(), navigate(to))} onkeydown={(e) => e.key === 'Enter' && navigate(to)} data-replaced-by
-					>Replaced by {p.replacedBy.title || 'Untitled'}</span
-				>
-			{/if}
-		{/snippet}
-		<span class="foot" data-foot>
-			<span class="flex min-w-0 flex-wrap items-center gap-x-2"
-				><IdentityPill who={pill(p)} />{#if p.publishedAt}<span class="whitespace-nowrap" data-created>· Created {created(p.createdAt ?? p.publishedAt)}</span><span class="whitespace-nowrap" data-submissions
-						>· {p.answers} {p.answers === 1 ? 'submission' : 'submissions'}</span
-					>{/if}{#if p.lastAt}<span class="whitespace-nowrap text-(--rt-sage)" title="Last submitted {saved(p.lastAt)}" data-last>· {ago(p.lastAt)}</span>{/if}</span
-			>
-		</span>
-		{#snippet end()}
-			<span class="flex items-center" aria-hidden="true"><span class="fill-label">Fill out</span><span class="rt-row__cell rt-row__cell--chevron">{@render go()}</span></span>
-		{/snippet}
-	</RowShell>
-{/snippet}
 
 {#snippet mark(src: string | null, size: string)}
 	<img src={src ?? 'plugin_gold.webp'} alt="" class="{size} shrink-0 rounded-2xl object-contain" />
@@ -346,7 +272,7 @@
 	</header>
 	{@const row = items.find((p) => p.id === id)}
 	<!-- The plugin as its list shows it: a tap goes back to that list. -->
-	{#if row}<div class="split mb-10 max-w-3xl print:hidden" data-share-row>{@render pluginRow(row, 'plugins', false)}</div>{/if}
+	{#if row}<div class="mb-10 max-w-3xl print:hidden" data-share-row><PluginCard card={row} href="plugins" go={navigate} /></div>{/if}
 	<div class="flex flex-wrap items-center justify-center gap-16 print:hidden" data-share>
 		<div class="aspect-square w-full max-w-90 rounded-[1.75rem] bg-[#f4efe6] p-7" data-qr>{@html renderSVG(link)}</div>
 		<div class="flex w-full max-w-md flex-col gap-5">
@@ -378,38 +304,12 @@
 	</div>
 	<div class="flex max-w-3xl flex-col gap-(--rt-space-2)" data-plugins>
 		<InboxChrome rows={pills} onpill={(k) => (you = k === 'you')} bind:query={search} placeholder="Search plugins and makers" clearLabel="Clear" {buttons} />
-		{#each shown as p, i (p.id)}
-			{@const moving = drag?.rowId === p.id}
-			{@const shift = rowShift(drag, p.id, i)}
-			<div
-				class="split rt-row-track rt-row-track--grip ml-4"
-				class:rt-row-track--dragging={moving}
-				data-row-id={p.id}
-				data-retired={p.retiredAt ? '' : undefined}
-				style:transform={moving ? `translateY(${drag!.deltaY}px)` : shift ? `translateY(${shift}px)` : undefined}
-				style:transition={shift && !moving ? 'transform 200ms ease' : undefined}
-			>
-			<!-- Swiped left it rests open on the trash can, as on the phone; a tap there retires it. -->
-			<div class="swipe" class:past={!!p.retiredAt}>
-				{#if !p.retiredAt}
-					<button type="button" class="retire" aria-label="Retire {p.title || 'Untitled'}" onclick={() => retire(p.id)} data-retire><Icon name="trash" size={26} /></button>
-				{/if}
-				<div class="track" use:rowSwipe={p.retiredAt ? null : { hold: RETIRE_PX }}>
-					{@render pluginRow(p, p.href, true)}
-				</div>
-			</div>
-			<RowGrip
-				label="Drag to reorder"
-				dragging={moving}
-				attach={(el) => rowDragHandle(el, { rowId: p.id, index: i, count: shown.length, drag: () => drag, move: (d) => (drag = d), drop }).destroy}
-			/>
-			</div>
-			{@const got = unfolded.get(p.id)}
-			{#if got}
+		<PluginList {items} {match} orderKey="ops-plugins-order" go={navigate} onretire={retire} isOpen={(pid) => unfolded.has(pid)} ontoggle={(pid) => fold(items.find((x) => x.id === pid)!)}>
+			{#snippet folded(p)}
 				<!-- mr-6 ends them where the row above ends, left of its grip. -->
 				<div class="subs mr-6 ml-10 flex flex-col gap-(--rt-space-2)" data-answer-rows>
 					<a class="small-btn self-start" href="plugins/answers/{p.id}" data-answers-link>All submissions as a table</a>
-					{#each got as a (a.id)}
+					{#each unfolded.get(p.id) ?? [] as a (a.id)}
 						{@const to = `plugins/answers/${p.id}/${a.id}`}
 						<div class="sub" class:pressed={pressing === a.id}>
 							<RowShell title={p.title || 'Untitled'} tier="child" onclick={() => press(a.id, () => navigate(to))}>
@@ -425,96 +325,14 @@
 						</div>
 					{/each}
 				</div>
-			{/if}
-		{/each}
+			{/snippet}
+		</PluginList>
 	</div>
 	<input bind:this={pick} type="file" accept=".getcache" class="hidden" onchange={(e) => open(e.currentTarget.files?.[0])} data-sent-file />
 {/if}
 {#if note}<p class="mt-4 text-lg text-muted" data-note>{note}</p>{/if}
 
 <style>
-	/* On the icon's left corner, so a longer count grows right across the icon: a 1,000+ still clears the title. */
-	.rt-count-badge {
-		left: -8px;
-		right: auto;
-	}
-	/* Only the zones are live: the row itself neither lights nor points. */
-	/* Gold: plugins sit one level under the white company row. Not a Tailwind [&_] class: beside a
-	   class: directive Svelte writes its & as a literal &amp;, and the rule never matches. */
-	.split :global(.rt-row) {
-		cursor: default;
-		border-color: var(--rt-yellow);
-	}
-	.zone {
-		width: 50%;
-	}
-	/* The phone's swipe: a red bed with the can under an opaque track; a retired row greys with no bed. */
-	.swipe {
-		position: relative;
-		flex: 1;
-		min-width: 0;
-		border-radius: var(--rt-radius-lg);
-		background: color-mix(in srgb, var(--palette-red) 85%, black);
-	}
-	.swipe.past {
-		background: none;
-	}
-	.swipe.past :global(.rt-row) {
-		border-color: var(--rt-border-subtle);
-		opacity: 0.55;
-	}
-	.track {
-		position: relative;
-		border-radius: var(--rt-radius-lg);
-		background: var(--rt-bg);
-		touch-action: pan-y;
-		transition: transform 160ms ease;
-	}
-	.retire {
-		position: absolute;
-		inset: 0 0 0 auto;
-		width: 84px;
-		display: grid;
-		place-items: center;
-		border: 0;
-		background: none;
-		color: #fff;
-	}
-	.none {
-		opacity: 0.3;
-	}
-	.foot {
-		display: flex;
-		align-items: center;
-		margin-top: 0.4rem;
-		padding-bottom: 0.5rem;
-		color: #c9c3b7;
-		font-size: 0.95rem;
-	}
-	.replaced {
-		position: relative;
-		z-index: 3;
-		color: var(--rt-yellow);
-		text-decoration: underline;
-		cursor: pointer;
-	}
-	.questions {
-		color: var(--rust);
-		font-weight: 600;
-		white-space: nowrap;
-	}
-	/* The right half names what it does only while the pointer is on it. */
-	.fill-label {
-		margin-right: 1rem;
-		color: var(--rt-yellow);
-		font-family: var(--rt-font-display);
-		font-size: 1.15rem;
-		opacity: 0;
-		transition: opacity 120ms;
-	}
-	.split:has(.rt-row__half--open:hover) .fill-label {
-		opacity: 1;
-	}
 	.subs {
 		padding-left: 1.25rem;
 		border-left: 2px dashed var(--rust);

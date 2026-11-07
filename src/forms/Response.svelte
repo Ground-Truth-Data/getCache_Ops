@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { El } from '../../_rapper/gc/form';
-	import { ago, current, download, sections, sheets } from './answers';
+	import { current, download, sections, sheets } from './answers';
+	import { ago } from '../../_rapper/gc/ago';
 	import { keys, type Answers, type At } from './forms';
 	import Value from './Value.svelte';
 
