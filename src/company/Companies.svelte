@@ -1,13 +1,21 @@
 <script lang="ts">
+	import OrgCard from '../../_rapper/gc/OrgCard.svelte';
 	import { ownSignIn } from '../data/auth';
-	import { check, create, decide, drafts, isApprover, join, mine, myOrgs, spaceUrl, type Org } from './central';
+	import type { Ops } from '../plugin/api';
+	import { check, companies, decide, drafts, isApprover, join, logoUrl, makeCompany, spaceUrl, type Company } from './central';
 	import Info from './Info.svelte';
-	import OrgLogo from './OrgLogo.svelte';
 	import SignIn from './SignIn.svelte';
 
-	let { me, signedInNow }: { me: { authId: string } | null; signedInNow: () => void } = $props();
-	let list = $state<Awaited<ReturnType<typeof mine>>>([]);
-	let orgs = $state<(Org & { found?: Awaited<ReturnType<typeof check>> })[]>([]);
+	let { me, ops, signedInNow }: { me: { authId: string } | null; ops: Ops | undefined; signedInNow: () => void } = $props();
+	type Org = { orgKey: string; orgName: string; color: string; kinds: string | null; maps: number };
+	// The phone's own Orgs list (db/sql/orgs.ts), run on the same planter's file: the same organizations, row for row.
+	const ORGS = `SELECT o.orgKey, n.orgName, n.color,
+		(SELECT group_concat(DISTINCT kind) FROM orgKindView k WHERE k.orgKey = o.orgKey) AS kinds,
+		(SELECT COUNT(DISTINCT m.mapKey) FROM orgTagView m WHERE m.orgKey = o.orgKey) AS maps
+		FROM orgTable o JOIN orgNameView n USING (orgKey) ORDER BY n.orgName COLLATE NOCASE`;
+	const orgs = $derived((ops?.query(ORGS) ?? []) as Org[]);
+	let mine = $state(new Map<string, Company>());
+	let found = $state(new Map<string, Awaited<ReturnType<typeof check>>>());
 	let waiting = $state<Awaited<ReturnType<typeof drafts>>>([]);
 	let loaded = $state(false);
 	let view = $state<'grid' | 'join' | 'new' | 'sent'>('grid');
@@ -16,12 +24,13 @@
 
 	async function load() {
 		if (!me) return;
-		const [m, o, a] = await Promise.all([mine(me.authId), myOrgs(me.authId), isApprover(me.authId)]);
-		list = m;
-		const spaced = new Set(m.map((x) => x.orgKey));
-		orgs = await Promise.all(o.filter((x) => !spaced.has(x.orgKey)).map(async (x) => ({ ...x, found: await check(x.orgName) })));
+		const [m, a] = await Promise.all([companies(), isApprover(me.authId)]);
+		mine = new Map(m.map((c) => [c.orgKey, c]));
 		waiting = a ? await drafts() : [];
 		loaded = true;
+	}
+	async function lookUp() {
+		found = new Map(await Promise.all(orgs.filter((o) => !mine.has(o.orgKey)).map(async (o) => [o.orgKey, await check(o.orgName)] as const)));
 	}
 	$effect(() => void load().catch((e) => (note = e.message)));
 
@@ -42,6 +51,22 @@
 		paste = '';
 	}, 'sent');
 	const ROLE = { admin: 'Admin', member: 'Member', requested: 'Request sent' };
+	const STATUS = { draft: 'Waiting for approval', approved: '', rejected: 'Not approved' };
+	// The phone's own words for an org's kinds (messages/en.json account_org_kind_*).
+	const KIND: Record<string, string> = {
+		plantingCompany: 'planting company',
+		consultant: 'consultant / forester',
+		mill: 'mill',
+		nursery: 'nursery',
+		government: 'government',
+		ngo: 'NGO',
+		contractor: 'contractor',
+	};
+	const line = (o: Org | undefined, c: Company | undefined) =>
+		[...(o?.kinds?.split(',').map((k) => KIND[k] ?? k) ?? []), c && ROLE[c.role], c && STATUS[c.card.status]].filter(Boolean).join(' · ');
+	// A company joined here before the phone has added it to Contacts: listed after them until it has.
+	const joinedOnly = $derived([...mine.values()].filter((c) => !orgs.some((o) => o.orgKey === c.orgKey)));
+	const companyHref = (c: Company | undefined) => (c && c.role !== 'requested' ? `${spaceUrl(c.card.slug)}company` : undefined);
 	const back = 'small-btn self-start';
 	const chevron = 'M15 6l-6 6 6 6';
 </script>
@@ -78,15 +103,14 @@
 		<button class="big-btn w-full" onclick={() => (view = 'grid')} data-done>Done</button>
 	</div>
 {:else if view === 'new'}
-	{@render header('New organization', 'These are the organizations in your Get Cache app (Account → Contacts → Orgs). Each gets its own space here once Get Cache approves it.')}
-	<div class="grid max-w-4xl gap-5 md:grid-cols-2" data-orgs>
-		{#each orgs as o (o.orgKey)}
-			{@const why = o.found?.refused ?? (o.found?.taken ? 'That name is taken' : null)}
-			<button class="big-btn justify-start text-left disabled:opacity-40" disabled={!!why || !o.found?.slug} title={why ?? ''} onclick={act(() => create(o.orgKey))} data-make={o.orgName}>
-				<OrgLogo logo={null} size={3.5} />{o.orgName || 'Unnamed organization'}
-			</button>
+	{@render header('New organization', 'These are the organizations in your Get Cache app (Account → Contacts → Orgs). Tap one to make it a company: it opens once Get Cache approves it.')}
+	<div class="org-list max-w-xl" data-orgs>
+		{#each orgs.filter((o) => !mine.has(o.orgKey)) as o (o.orgKey)}
+			{@const f = found.get(o.orgKey)}
+			{@const why = f?.refused ?? (f?.taken ? 'That name is taken' : f ? null : 'Checking the name…')}
+			<OrgCard name={o.orgName} color={o.color} sub={why ?? `${f?.slug}.getcache.org`} end={why ? '' : 'Make'} onclick={why ? undefined : act(() => makeCompany(o.orgKey))} data-make={o.orgName} />
 		{:else}
-			<p class="text-xl text-muted" data-none>Add one in the Get Cache app first.</p>
+			<p class="px-4 py-5 text-muted" data-none>Add one in the Get Cache app first (Account → Contacts → Orgs).</p>
 		{/each}
 	</div>
 {:else}
@@ -100,29 +124,26 @@
 			<button class="small-btn rounded-2xl border-2 px-7 py-3 text-xl" onclick={act(() => decide(c.orgKey, 'rejected'))} data-reject>Decline</button>
 		</section>
 	{/if}
-	<div class="grid gap-6 md:grid-cols-3" data-mine>
-		{#each list as m (m.orgKey)}
-			{@const s = m.orgSpace}
-			<a class="tile items-start justify-start text-left" href={s ? `${spaceUrl(s.slug)}company` : undefined} data-org-tile={s?.slug}>
-				<OrgLogo logo={s?.logo} />
-				<span>{s?.name ?? 'Not open yet'}</span>
-				<span class="flex flex-wrap gap-2.5">
-					<span class="chip {m.role === 'requested' ? 'chip-rust' : 'chip-gold'}" data-role>{ROLE[m.role]}</span>
-					{#if s?.status === 'draft'}
-						<span class="chip chip-rust" data-status
-							><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 10 6 10 9s-10 4-10 9M17 3c0 5-10 6-10 9" /></svg>Waiting for approval</span
-						>
-					{:else if s?.status === 'rejected'}<span class="chip chip-rust" data-status>Not approved</span>{/if}
-				</span>
-			</a>
+	<div class="org-list mb-8 max-w-xl" data-mine>
+		{#each orgs as o (o.orgKey)}
+			{@const c = mine.get(o.orgKey)}
+			<OrgCard name={o.orgName} color={o.color} logo={c?.card.logo ? logoUrl(c.card) : ''} sub={line(o, c)} end={String(o.maps || '—')} href={companyHref(c)} data-org-tile={c?.card.slug ?? o.orgKey} />
 		{/each}
+		{#each joinedOnly as c (c.orgKey)}
+			<OrgCard name={c.card.name} color={c.card.color ?? ''} logo={c.card.logo ? logoUrl(c.card) : ''} sub={line(undefined, c)} end="—" href={companyHref(c)} data-org-tile={c.card.slug} />
+		{/each}
+		{#if !orgs.length && !joinedOnly.length}
+			<p class="px-4 py-5 text-muted" data-none>{ops ? 'No orgs yet. Add one in the Get Cache app (Account → Contacts → Orgs).' : 'No Get Cache data in this browser yet.'}</p>
+		{/if}
+	</div>
+	<div class="grid gap-6 md:grid-cols-3">
 		<button class="tile tile-gold rt-fancy-btn" onclick={() => (view = 'join')} data-join
 			><svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
 				><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" /><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" /></svg
 			>Join with invite link</button
 		>
 	</div>
-	<button class="small-btn mt-12 border-dashed text-[#8a857b]" onclick={() => (view = 'new')} data-new
+	<button class="small-btn mt-12 border-dashed text-[#8a857b]" onclick={() => ((view = 'new'), void lookUp())} data-new
 		><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12" /></svg>Start a new organization</button
 	>
 {/if}

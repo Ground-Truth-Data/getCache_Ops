@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { renderSVG } from 'uqr';
 	import SignIn from '../company/SignIn.svelte';
-	import { mine as memberships } from '../company/central';
+	import { companies } from '../company/central';
 	import Builder from './Builder.svelte';
 	import { keys, nthForm, type Answers, type Definition } from './forms';
 	import { ago, current, named } from './answers';
@@ -71,8 +71,8 @@
 	let isPublished = $state(false);
 	let spaces = $state<{ orgKey: string; name: string }[]>([]);
 	$effect(() => {
-		if (me) memberships(me.authId).then(
-			(m) => (spaces = m.filter((x) => x.role === 'admin' && x.orgSpace?.status === 'approved').map((x) => ({ orgKey: x.orgKey, name: x.orgSpace!.name }))),
+		if (me) companies().then(
+			(m) => (spaces = m.filter((x) => x.role === 'admin' && x.card.status === 'approved').map((x) => ({ orgKey: x.orgKey, name: x.card.name }))),
 			(e) => console.warn('[plugins] companies', e),
 		);
 	});

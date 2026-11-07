@@ -72,6 +72,13 @@ body {
 		border-color: var(--accent);
 		color: var(--accent);
 	}
+	/* The phone Orgs tab's box around its cards (OrgsPanel .tablewrap). */
+	.org-list {
+		border-radius: 16px;
+		overflow: hidden;
+		background: #181818;
+		border: 1px solid #2a2722;
+	}
 	.tile {
 		display: flex;
 		flex-direction: column;

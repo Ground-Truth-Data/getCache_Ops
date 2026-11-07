@@ -166,7 +166,7 @@
 		{#key orgsPage || page[0]}
 		<svelte:boundary onerror={(e) => console.error('[ops] page', page[0], e)}>
 		{#if orgsPage}
-			<Companies me={account} {signedInNow} />
+			<Companies me={account} {ops} {signedInNow} />
 		{:else if page[0] === 'company'}
 			<Space slug={space!} {company} me={account} token={parts[0] === 'join' ? parts[1] : undefined} reload={loadSpace} {signedInNow} />
 		{:else if page[0] === 'plugins'}
