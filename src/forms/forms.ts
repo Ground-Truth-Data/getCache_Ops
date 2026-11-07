@@ -184,7 +184,7 @@ export function orgStore(orgKey: string, formId: string): Store {
 		async save(definition) {
 			if (id) return call(`form?id=eq.${id}`, 'PATCH', { definition });
 			const [made] = await call<FormRow[]>('form', 'POST', { orgKey, definition });
-			history.replaceState(null, '', `#/company/form/${(id = made.id)}`);
+			history.replaceState(null, '', `company/form/${(id = made.id)}`);
 		},
 		publish: () => call(`form?id=eq.${id}`, 'PATCH', { publishedAt: new Date().toISOString() }),
 		copy: () => copyForm(id!, orgKey),

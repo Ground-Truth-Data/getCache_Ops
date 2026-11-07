@@ -13,14 +13,14 @@
 	import Advanced from './Advanced.svelte';
 	import Custom from './Custom.svelte';
 	import Reports from './Reports.svelte';
+	import { route } from './route.svelte';
 
 	let ops = $state<Ops>();
 	let error = $state<string>();
 	let source = $state('');
-	let hash = $state(location.hash);
 
 	const pages = [...(space ? [['company', 'Organization']] : []), ['home', 'Home'], ['reports', 'Reports'], ['plugins', 'Plugins'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
-	const parts = $derived(hash.replace(/^#\/?/, '').split('?')[0].split('/'));
+	const parts = $derived(route.path.split('?')[0].split('/'));
 	// Organizations has no tab or tile: Chris parked companies (5 Nov); invite links still land here.
 	const orgsPage = $derived(parts[0] === 'organizations');
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/')) ?? pages[0]);
@@ -115,21 +115,21 @@
 
 <svelte:head><title>{brand.name}</title><link rel="icon" type="image/png" href={brand.icon} /></svelte:head>
 
-<svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onhashchange={() => ((hash = location.hash), watch())} onfocus={focused} onmessage={received} />
+<svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onfocus={focused} onmessage={received} />
 
 <!-- --site-head: where a table's frozen header row docks, flush under this header whatever its wrapped height. -->
 <div class="font-sans" style:--accent={brand.accent} style:--rt-yellow={brand.accent} style:--site-head="{headHeight}px">
 	<header class="sticky top-0 z-10 print:hidden border-b border-rule bg-surface" bind:offsetHeight={headHeight}>
 		<nav class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
 			{#if space}
-				<a href="#/" class="mr-2 flex sm:mr-4 items-center gap-2 font-display text-2xl text-(--accent)">
+				<a href="." class="mr-2 flex sm:mr-4 items-center gap-2 font-display text-2xl text-(--accent)">
 					{#if company?.logo}<img src={logoUrl(company)} alt="" class="h-7 sm:h-10" />{/if}<span data-company-head>Get Cache{company ? ` · ${company.name}` : ''}</span>
 				</a>
 			{:else}
 				<!-- Each half already holds half the art board's gap, so only the outer sides get padding: the two still sit flush. -->
 				<div class="mr-2 flex sm:mr-4">
 					{#each brand.logos as src, i (src)}
-						<a href={i ? '#/' : `${HOME}/app/menu`} class="rounded-xl py-1 transition-colors hover:bg-white/10 {i ? 'pr-2' : 'pl-2'}" title={i ? 'Ops home' : 'Back to Get Cache'}>
+						<a href={i ? '.' : `${HOME}/app/menu`} class="rounded-xl py-1 transition-colors hover:bg-white/10 {i ? 'pr-2' : 'pl-2'}" title={i ? 'Ops home' : 'Back to Get Cache'}>
 							<!-- The letters are 57% of the art, set low under the dragonflies: this height and lift line them up with a nav pill. -->
 							<img {src} alt={i ? 'Ops' : 'Get Cache'} class="relative -top-[7px] h-[68px]" />
 						</a>
@@ -139,7 +139,7 @@
 			<!-- An organization's own address is only that organization: no reports, no sample, no sync. -->
 			{#if !space}
 			{#each pages as [path, label] (path)}
-				<a class="nav-pill" class:active={orgsPage ? path === 'advanced' : page[0] === path} aria-current={page[0] === path ? 'page' : undefined} href="#/{path}">{label}</a>
+				<a class="nav-pill" class:active={orgsPage ? path === 'advanced' : page[0] === path} aria-current={page[0] === path ? 'page' : undefined} href={path}>{label}</a>
 			{/each}
 			{#if account}
 				<span class="ml-auto font-display text-lg text-muted" title="When your phone last sent data to Get Cache" data-updated>{ago && `Updated ${ago}`}</span>

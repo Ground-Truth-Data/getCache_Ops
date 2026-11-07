@@ -5,6 +5,7 @@
 	import type { Attachment } from 'svelte/attachments';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { blank, branches, CENTRAL_KEY, fromDefinition, keyFor, keys, KINDS, toDefinition, type Field, type Form, type Kind, type Store } from './forms';
+	import { go } from '../app/route.svelte';
 
 	let { store, edit, back, logo, byline, meta, born = '' }: {
 		store: Store;
@@ -153,7 +154,7 @@
 	async function copy() {
 		note = '';
 		try {
-			location.hash = edit(await store.copy());
+			go(edit(await store.copy()));
 		} catch (e) {
 			refused(e, 'copy');
 		}

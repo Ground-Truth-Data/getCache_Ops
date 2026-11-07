@@ -16,6 +16,7 @@
 	import HeaderLink from '../../_rapper/gc/HeaderLink.svelte';
 	import FormView from '../../_rapper/gc/FormView.svelte';
 	import { isOpen, query } from '../data/db';
+	import { go as navigate } from '../app/route.svelte';
 	import { type RowDrag, rowDragHandle, rowShift, rowSwipe } from '../../_rapper/gc/rowDrag';
 	import Icon from '../../_rapper/gc/Icon.svelte';
 
@@ -55,7 +56,7 @@
 			note = "Couldn't keep that in this browser. Try again, or reload.";
 		}
 	};
-	const copy = (source: string) => run(async () => (location.hash = `#/plugins/edit/${await copyPlugin(source)}`));
+	const copy = (source: string) => run(async () => navigate(`plugins/edit/${await copyPlugin(source)}`));
 
 	async function open(file?: File) {
 		if (file) await run(async () => (await receive(new Uint8Array(await file.arrayBuffer())), await load()))();
@@ -80,7 +81,7 @@
 	let asking = $state(false);
 	// A new plugin gets its id in the address before anything is typed, so a reload or remount reopens it.
 	$effect(() => {
-		if (sub === 'edit' && id === 'new') location.replace(`#/plugins/edit/${crypto.randomUUID()}`);
+		if (sub === 'edit' && id === 'new') navigate(`plugins/edit/${crypto.randomUUID()}`, true);
 	});
 	const store = $derived.by(() => {
 		if (sub !== 'edit' || !id || id === 'new') return undefined;
@@ -94,7 +95,7 @@
 			...s,
 			publish: () =>
 				s.publish().then(
-					() => (location.hash = `#/plugins/share/${location.hash.split('/').at(-1)}`),
+					() => navigate(`plugins/share/${location.pathname.split('/').at(-1)}`),
 					(e) => ((asking = e instanceof SignInNeeded), Promise.reject(e)),
 				),
 		};
@@ -116,7 +117,7 @@
 		maker: p.madeBy ?? 'You',
 		questions: questions(p.definition),
 		answers: inbox.find((r) => r.id === p.id)?.answers ?? 0,
-		href: `#/plugins/fill/${p.id}`,
+		href: `plugins/fill/${p.id}`,
 	});
 	const items = $derived([...mine.map((p) => item(p, true)), ...others.map((p) => item(p, false))]);
 	// A form filled here is kept as a phone keeps one; its photos wait here until it is.
@@ -137,7 +138,7 @@
 			picked = new Map();
 			unfolded.delete(v.id);
 			await load();
-			location.hash = '#/plugins';
+			navigate('plugins');
 		})();
 	// A plugin with answers folds open on its left chevron: its answers as rust rows, each opening its response.
 	const unfolded = new SvelteMap<string, Answers['answers']>();
@@ -201,7 +202,7 @@
 	const pills = $derived([[{ key: 'all', label: 'All', on: !you, chain: true }, { key: 'you', label: 'You', on: you, chain: true }]]);
 	const buttons = $derived([
 		{ label: 'Import plugin', icon: gcIcon, ring: true, onclick: () => pick?.click() },
-		{ label: 'New', icon: pluginIcon, hug: true, href: '#/plugins/edit/new' },
+		{ label: 'New', icon: pluginIcon, hug: true, href: 'plugins/edit/new' },
 	]);
 
 	let photos = new Map<string, string>();
@@ -249,7 +250,7 @@
 				{href}
 				draggable="false"
 				aria-label="Fill out {p.title || 'Untitled'}"
-				onclick={(e) => (e.preventDefault(), e.stopPropagation(), press(p.id, () => (location.hash = href)))}
+				onclick={(e) => (e.preventDefault(), e.stopPropagation(), press(p.id, () => navigate(href)))}
 				data-open
 			></a>
 		{/snippet}
@@ -261,9 +262,9 @@
 			{#if !p.publishedAt}<span class="rt-row__badge border-[#8a857b]! text-[#8a857b]!" data-unpublished>not published</span>{/if}
 			<span class="questions" data-questions>{p.questions} {p.questions === 1 ? 'question' : 'questions'}</span>
 			{#if p.replacedBy}
-				{@const to = `#/plugins/fill/${p.replacedBy.id}`}
+				{@const to = `plugins/fill/${p.replacedBy.id}`}
 				<!-- A span, not a link: the row is a button, and this sits above its tap zones. -->
-				<span class="replaced" role="link" tabindex="0" onclick={(e) => (e.stopPropagation(), (location.hash = to))} onkeydown={(e) => e.key === 'Enter' && (location.hash = to)} data-replaced-by
+				<span class="replaced" role="link" tabindex="0" onclick={(e) => (e.stopPropagation(), navigate(to))} onkeydown={(e) => e.key === 'Enter' && navigate(to)} data-replaced-by
 					>Replaced by {p.replacedBy.title || 'Untitled'}</span
 				>
 			{/if}
@@ -294,7 +295,7 @@
 		</label>
 	{/snippet}
 	{#snippet byline()}
-		{#if madeBy}<span class="text-[#c9c3b7]" data-credit>Made by {madeBy}{#if isPublished}&nbsp;· <a class="underline" href="#/plugins/share/{id}" data-share-link>Share</a>{/if}</span>{/if}
+		{#if madeBy}<span class="text-[#c9c3b7]" data-credit>Made by {madeBy}{#if isPublished}&nbsp;· <a class="underline" href="plugins/share/{id}" data-share-link>Share</a>{/if}</span>{/if}
 		{#if isPublished && orgKey}
 			<span class="font-bold text-(--accent)" data-company>{company ?? 'A company'}'s plugin</span>
 		{:else if !isPublished && spaces.length}
@@ -307,28 +308,28 @@
 			>
 		{/if}
 	{/snippet}
-	{#key id}<Builder {store} edit={(i) => `#/plugins/edit/${i}`} back={['#/plugins', 'Plugins']} logo={logoPick} {byline} meta={logo} born={nthForm(mine.filter((p) => p.id !== id).map((p) => p.definition.title ?? ''))} />{/key}
+	{#key id}<Builder {store} edit={(i) => `plugins/edit/${i}`} back={['plugins', 'Plugins']} logo={logoPick} {byline} meta={logo} born={nthForm(mine.filter((p) => p.id !== id).map((p) => p.definition.title ?? ''))} />{/key}
 	{#if asking}<div class="mt-6" data-publish-signin><SignIn done={() => ((asking = false), signedInNow())} /></div>{/if}
 {:else if sub === 'answers' && id && answer}
-	<Response load={() => known(id)} id={answer} back={[`#/plugins/answers/${id}`, 'Answers']} photo={(k) => photos.get(k)} />
+	<Response load={() => known(id)} id={answer} back={[`plugins/answers/${id}`, 'Answers']} photo={(k) => photos.get(k)} />
 {:else if sub === 'answers' && id}
-	<Report load={() => known(id)} back={['#/plugins', 'Plugins']} photo={(k) => photos.get(k)} open={(a) => `#/plugins/answers/${id}/${a}`} />
+	<Report load={() => known(id)} back={['plugins', 'Plugins']} photo={(k) => photos.get(k)} open={(a) => `plugins/answers/${id}/${a}`} />
 {:else if sub === 'fill' && id}
 	{@const row = items.find((p) => p.id === id)}
 	<!-- Edit lives inside the form, and only on your own. -->
 	<header class="mb-8 flex max-w-3xl flex-wrap items-center gap-4" data-fill>
-		<a class="small-btn" href="#/plugins" data-back
+		<a class="small-btn" href="plugins" data-back
 			><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>Plugins</a
 		>
 		<span class="flex-1 font-display text-4xl">{row?.title || 'Untitled'}</span>
-		{#if row?.mine}<a class="small-btn" href="#/plugins/edit/{id}" data-edit>Edit</a>{/if}
+		{#if row?.mine}<a class="small-btn" href="plugins/edit/{id}" data-edit>Edit</a>{/if}
 		{#if row?.publishedAt}<a class="small-btn" href={addLink(id)} data-add-phone>Add to phone</a>{/if}
 	</header>
 	{#if row}<div class="phone" data-fill-form><FormView definition={row.definition} keep={pickPhoto} people={contacts} onsubmit={(a) => fill(row, a)} /></div>{/if}
 {:else if sub === 'share' && id}
 	{@const link = addLink(id)}
 	<header class="mb-8 flex flex-wrap items-center gap-4 border-b border-rule pb-5 print:hidden">
-		<a class="small-btn" href="#/plugins/edit/{id}" data-back
+		<a class="small-btn" href="plugins/edit/{id}" data-back
 			><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>Edit</a
 		>
 		{#if shared}
@@ -341,7 +342,7 @@
 	</header>
 	{@const row = items.find((p) => p.id === id)}
 	<!-- The plugin as its list shows it: a tap goes back to that list. -->
-	{#if row}<div class="split mb-10 max-w-3xl print:hidden" data-share-row>{@render pluginRow(row, '#/plugins', false)}</div>{/if}
+	{#if row}<div class="split mb-10 max-w-3xl print:hidden" data-share-row>{@render pluginRow(row, 'plugins', false)}</div>{/if}
 	<div class="flex flex-wrap items-center justify-center gap-16 print:hidden" data-share>
 		<div class="aspect-square w-full max-w-90 rounded-[1.75rem] bg-[#f4efe6] p-7" data-qr>{@html renderSVG(link)}</div>
 		<div class="flex w-full max-w-md flex-col gap-5">
@@ -364,7 +365,7 @@
 	<div class="mb-7 flex max-w-3xl flex-wrap items-center gap-4">
 		<h1 class="font-display text-5xl text-(--accent)">Plugins</h1>
 		<button class="ml-3 h-6 w-6 rounded-full border-[1.5px] border-(--accent) text-xs font-bold text-(--accent)" aria-label="What are plugins?" aria-expanded={info} onclick={() => (info = !info)} data-info>i</button>
-		<span class="ml-auto [--header-link-size:1.4rem]" data-orgs-link><HeaderLink href="#/organizations" icon="org_gold.webp" label="Orgs." /></span>
+		<span class="ml-auto [--header-link-size:1.4rem]" data-orgs-link><HeaderLink href="organizations" icon="org_gold.webp" label="Orgs." /></span>
 		{#if info}
 			<p role="note" class="max-w-xl rounded-2xl border border-rule bg-[#1f1c14] px-5 py-3.5 text-lg leading-snug text-[#e8e2d6]" data-info-text>
 				Plug in a custom form or an entire company suite, build, share, collect data.
@@ -403,11 +404,11 @@
 			{#if got}
 				<!-- mr-6 ends them where the row above ends, left of its grip. -->
 				<div class="subs mr-6 ml-10 flex flex-col gap-(--rt-space-2)" data-answer-rows>
-					<a class="small-btn self-start" href="#/plugins/answers/{p.id}" data-answers-link>All submissions as a table</a>
+					<a class="small-btn self-start" href="plugins/answers/{p.id}" data-answers-link>All submissions as a table</a>
 					{#each got as a (a.id)}
-						{@const to = `#/plugins/answers/${p.id}/${a.id}`}
+						{@const to = `plugins/answers/${p.id}/${a.id}`}
 						<div class="sub" class:pressed={pressing === a.id}>
-							<RowShell title={p.title || 'Untitled'} tier="child" onclick={() => press(a.id, () => (location.hash = to))}>
+							<RowShell title={p.title || 'Untitled'} tier="child" onclick={() => press(a.id, () => navigate(to))}>
 								{#snippet glyph()}<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--rt-rust)" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></svg>{/snippet}
 								{#snippet subtitle()}
 									<IdentityPill who={submitter(a.editedByKey)} /><span class="rt-row__num">{saved(a.filledAt)}</span>

@@ -1,0 +1,11 @@
+{
+	"redirects": [
+		{
+			"source": "/:path*",
+			"has": [{ "type": "host", "value": "ops.getcache.org" }],
+			"destination": "https://getcache.org/ops/:path*",
+			"permanent": false
+		}
+	],
+	"rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

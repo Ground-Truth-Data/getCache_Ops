@@ -74,7 +74,7 @@
 					<button class="text-muted hover:text-ink" onclick={() => (doomed = undefined)}>Keep</button>
 				</span>
 			{:else}
-				<Pill href="#/advanced" active={s.sql === sql.trim()} onclick={(e) => (e.preventDefault(), open(s))}>
+				<Pill href="advanced" active={s.sql === sql.trim()} onclick={(e) => (e.preventDefault(), open(s))}>
 					{s.name}
 					<span
 						class="ml-2 opacity-60 hover:opacity-100"

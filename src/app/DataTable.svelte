@@ -1,7 +1,7 @@
 <!--
   One query result as the admin spreadsheet: search, sort, column picker,
   Comfort/Fit/Full, row selection, copy/export, Σ row, pager. Column choice and
-  page ride in the hash after `?`, keyed by `name` because one page can hold
+  page ride in the address's query, keyed by `name` because one page can hold
   two tables, so Copy link sends this exact view.
 -->
 <script lang="ts">
@@ -14,6 +14,7 @@ import TableToolbar from "../../_rapper/rt/admin/TableToolbar.svelte";
 import { hiddenFromParams, hiddenToParams, visibleColumns } from "../../_rapper/rt/admin/columnPrefs";
 import { type SortState, sortRows } from "../../_rapper/rt/admin/sortRows";
 import { MONEY_NAME, RATE_NAME, moneyIn } from "./money";
+import { go, route } from "./route.svelte";
 import type { Snippet } from "svelte";
 
 type Row = Record<string, unknown>;
@@ -26,14 +27,8 @@ const cur = $derived(columns.find((c) => c.toLowerCase() === "currency") ?? "cur
 const cash = $derived(money.length ? money : columns.some((c) => c === cur) ? columns.filter((c) => c !== cur && MONEY_NAME.test(c)) : []);
 const price = $derived(moneyIn(rows, undefined, cur));
 
-let hash = $state(location.hash);
-$effect(() => {
-	const sync = () => (hash = location.hash);
-	addEventListener("hashchange", sync);
-	return () => removeEventListener("hashchange", sync);
-});
-const route = $derived(hash.split("?")[0] || "#");
-const all = $derived([...new URLSearchParams(hash.split("?")[1] ?? "")]);
+const path = $derived(route.path.split("?")[0] || ".");
+const all = $derived([...new URLSearchParams(route.path.split("?")[1] ?? "")]);
 const mine = (k: string) => k.startsWith(`${name}.`);
 const params = $derived(new URLSearchParams(all.filter(([k]) => mine(k)).map(([k, v]) => [k.slice(name.length + 1), v])));
 const hrefWith = (edit: (p: URLSearchParams) => void) => {
@@ -42,11 +37,10 @@ const hrefWith = (edit: (p: URLSearchParams) => void) => {
 	const p = new URLSearchParams(all.filter(([k]) => !mine(k)));
 	for (const [k, v] of own) p.append(`${name}.${k}`, v);
 	const q = p.toString();
-	return q ? `${route}?${q}` : route;
+	return q ? `${path}?${q}` : path;
 };
 function setParams(edit: (p: URLSearchParams) => void) {
-	history.replaceState(history.state, "", hrefWith(edit));
-	hash = location.hash;
+	go(hrefWith(edit), true);
 }
 
 let filter = $state("");

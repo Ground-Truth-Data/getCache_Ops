@@ -25,7 +25,7 @@
 
 <nav class="flex flex-wrap gap-2" data-picker>
 	{#each list as r (r.slug)}
-		<Pill href="#/{page}/{r.slug}" active={r === report}>{r.title}</Pill>
+		<Pill href="{page}/{r.slug}" active={r === report}>{r.title}</Pill>
 	{/each}
 </nav>
 <h1 class="mt-6 font-display text-3xl text-(--accent)">{report.title}</h1>

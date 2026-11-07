@@ -9,6 +9,7 @@
 	import Forms from '../forms/Forms.svelte';
 	import Report from '../forms/Report.svelte';
 	import { orgAnswers, orgStore } from '../forms/forms';
+	import { go, route } from '../app/route.svelte';
 
 	let { slug, company, me, token, reload, signedInNow }: {
 		slug: string;
@@ -25,10 +26,9 @@
 	const admin = $derived(company?.role === 'admin');
 	const requests = $derived(people.filter((p) => p.role === 'requested'));
 	const team = $derived(people.filter((p) => p.role !== 'requested'));
-	const link = $derived(invite && `${spaceUrl(slug)}#/join/${invite}`);
-	// #/company/<forms|invite|requests|people>, #/company/form/<formId|new>, #/company/report/<formId>.
-	let hash = $state(location.hash);
-	const [, sub, formId] = $derived(hash.replace(/^#\/?/, '').split('/'));
+	const link = $derived(invite && `${spaceUrl(slug)}join/${invite}`);
+	// company/<forms|invite|requests|people>, company/form/<formId|new>, company/report/<formId>.
+	const [, sub, formId] = $derived(route.path.split('?')[0].split('/'));
 
 	let suite = $state<string>();
 	let suiteForms = $state<PluginRow[]>([]);
@@ -51,7 +51,7 @@
 	};
 	const ask = act(async () => {
 		if (!(await join(token!))) throw new Error('This invite link no longer works. Ask for a new one.');
-		history.replaceState(null, '', '#/company');
+		go('company', true);
 	});
 	const pickLogo = (e: Event & { currentTarget: HTMLInputElement }) => {
 		const file = e.currentTarget.files?.[0];
@@ -65,7 +65,6 @@
 	}
 </script>
 
-<svelte:window onhashchange={() => (hash = location.hash)} />
 
 {#snippet back(href: string, label: string)}
 	<a class="small-btn mb-7 print:hidden" {href} data-back
@@ -122,14 +121,14 @@
 		{/if}
 	</div>
 {:else if admin && sub === 'form'}
-	{#key formId}<Builder store={orgStore(company.orgKey, formId)} edit={(id) => `#/company/form/${id}`} back={['#/company/forms', 'Forms']} />{/key}
+	{#key formId}<Builder store={orgStore(company.orgKey, formId)} edit={(id) => `company/form/${id}`} back={['company/forms', 'Forms']} />{/key}
 {:else if admin && sub === 'report'}
-	<Report load={() => orgAnswers(formId)} back={['#/company/forms', 'Forms']} />
+	<Report load={() => orgAnswers(formId)} back={['company/forms', 'Forms']} />
 {:else if admin && sub === 'forms'}
-	{@render back('#/company', company.name)}
+	{@render back('company', company.name)}
 	<Forms orgKey={company.orgKey} />
 {:else if admin && sub === 'invite'}
-	{@render back('#/company', company.name)}
+	{@render back('company', company.name)}
 	<div class="mb-6 flex items-center gap-4 print:hidden">
 		<h1 class="font-display text-5xl text-(--accent)">Invite people</h1>
 		<Info label="How inviting works">Anyone who opens the link or scans the code can ask to join. You let them in under Requests. A new link stops the old one.</Info>
@@ -151,7 +150,7 @@
 		</div>
 	{/if}
 {:else if admin && sub === 'requests'}
-	{@render back('#/company', company.name)}
+	{@render back('company', company.name)}
 	<h1 class="mb-6 font-display text-5xl text-(--accent)">Requests</h1>
 	<div class="flex max-w-3xl flex-col gap-4" data-requests>
 		{#each requests as p (p.authId)}
@@ -165,7 +164,7 @@
 		{/each}
 	</div>
 {:else if admin && sub === 'people'}
-	{@render back('#/company', company.name)}
+	{@render back('company', company.name)}
 	<h1 class="mb-6 font-display text-5xl text-(--accent)">People</h1>
 	<div class="flex max-w-3xl flex-col gap-3" data-members>
 		{#each team as p (p.authId)}
@@ -180,7 +179,7 @@
 		{/each}
 	</div>
 {:else}
-	{@render back(`${opsHome}#/organizations`, 'Organizations')}
+	{@render back(`${opsHome}organizations`, 'Organizations')}
 	<div class="mb-8 flex items-center gap-5">
 		{#if admin}
 			<label class="cursor-pointer" title="Change the logo" data-logo-pick>
@@ -197,10 +196,10 @@
 	</div>
 	{#if admin}
 		<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4" data-tiles>
-			{@render tile('#/company/forms', 'Forms', 'M7 4h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM9 4V3h6v1M8.5 10h7M8.5 14h7M8.5 18h4', true)}
-			{@render tile('#/company/invite', 'Invite people', 'M4 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM4 14h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1zM14 14h3v3h-3zM20 14v1M14 20h1M18 18h3v3')}
-			{@render tile('#/company/requests', 'Requests', 'M12.5 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0zM3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M18 8v6M15 11h6', false, requests.length)}
-			{@render tile('#/company/people', 'People', 'M11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM19.5 9a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0zM2.5 19c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5M14.5 14.2c.8-.5 1.6-.7 2.5-.7 2.5 0 4.5 2 4.5 4.8')}
+			{@render tile('company/forms', 'Forms', 'M7 4h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM9 4V3h6v1M8.5 10h7M8.5 14h7M8.5 18h4', true)}
+			{@render tile('company/invite', 'Invite people', 'M4 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM4 14h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1zM14 14h3v3h-3zM20 14v1M14 20h1M18 18h3v3')}
+			{@render tile('company/requests', 'Requests', 'M12.5 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0zM3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M18 8v6M15 11h6', false, requests.length)}
+			{@render tile('company/people', 'People', 'M11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM19.5 9a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0zM2.5 19c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5M14.5 14.2c.8-.5 1.6-.7 2.5-.7 2.5 0 4.5 2 4.5 4.8')}
 		</div>
 	{:else}
 		<Info label="Where the forms are">Fill this organization's forms in the Get Cache app, under its button at the bottom.</Info>

@@ -49,7 +49,7 @@
 {#snippet header(title: string, info: string)}
 	<div class="mb-7 flex flex-wrap items-center gap-4">
 		{#if view === 'grid'}
-			<a class={back} href="#/advanced" data-back><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d={chevron} /></svg>Advanced</a>
+			<a class={back} href="advanced" data-back><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d={chevron} /></svg>Advanced</a>
 		{:else}
 			<button class={back} onclick={() => ((view = 'grid'), (note = ''))} data-back><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d={chevron} /></svg>Organizations</button>
 		{/if}
@@ -103,7 +103,7 @@
 	<div class="grid gap-6 md:grid-cols-3" data-mine>
 		{#each list as m (m.orgKey)}
 			{@const s = m.orgSpace}
-			<a class="tile items-start justify-start text-left" href={s ? `${spaceUrl(s.slug)}#/company` : undefined} data-org-tile={s?.slug}>
+			<a class="tile items-start justify-start text-left" href={s ? `${spaceUrl(s.slug)}company` : undefined} data-org-tile={s?.slug}>
 				<OrgLogo logo={s?.logo} />
 				<span>{s?.name ?? 'Not open yet'}</span>
 				<span class="flex flex-wrap gap-2.5">
