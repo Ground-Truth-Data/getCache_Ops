@@ -136,7 +136,7 @@ export const reports = [
 				(SELECT count(*) FROM mapFeatureView f WHERE f.mapKey = m.mapKey AND json_extract(f.geometryJson, '$.type') <> 'Point') AS "pieces",
 				(SELECT count(*) FROM mapFeatureView f WHERE f.mapKey = m.mapKey AND json_extract(f.geometryJson, '$.type') = 'Point') AS "pins",
 				(SELECT count(DISTINCT f.linkedBlockKey) FROM mapFeatureView f WHERE f.mapKey = m.mapKey) AS "blocks",
-				(SELECT group_concat(o.orgName, ', ') FROM orgTagView g JOIN orgTable o USING (orgKey) WHERE g.mapKey = m.mapKey) AS "companies",
+				(SELECT group_concat(o.orgName, ', ') FROM orgTagView g JOIN orgNameView o USING (orgKey) WHERE g.mapKey = m.mapKey) AS "companies",
 				date(m.createdAt) AS "created", ${person('p')} AS "by"
 			FROM mapView m LEFT JOIN personView p ON p.personKey = m.createdByKey ORDER BY "map"`,
 	},
@@ -148,8 +148,8 @@ export const reports = [
 				(SELECT group_concat(replace(c.kind, 'Company', ' company'), ', ') FROM orgKindView c WHERE c.orgKey = o.orgKey) AS "kind",
 				(SELECT group_concat(m.mapName, ', ') FROM orgTagView g JOIN mapView m USING (mapKey) WHERE g.orgKey = o.orgKey) AS "maps",
 				(SELECT group_concat(k.blockName, ', ') FROM orgTagView g JOIN blockView k USING (blockKey) WHERE g.orgKey = o.orgKey) AS "blocks",
-				date(o.createdAt) AS "added"
-			FROM orgTable o ORDER BY "company"`,
+				date(t.createdAt) AS "added"
+			FROM orgTable t JOIN orgNameView o USING (orgKey) ORDER BY "company"`,
 	},
 	{
 		slug: 'edits',
