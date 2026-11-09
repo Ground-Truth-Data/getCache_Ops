@@ -2,7 +2,7 @@
 	import OrgCard from '../../_rapper/gc/OrgCard.svelte';
 	import { ownSignIn } from '../data/auth';
 	import type { Ops } from '../data/db';
-	import { check, companies, decide, drafts, isApprover, join, logoUrl, makeCompany, spaceUrl, type Company } from './central';
+	import { check, companies, join, logoUrl, makeCompany, spaceUrl, type Company } from './central';
 	import Info from './Info.svelte';
 	import SignIn from './SignIn.svelte';
 
@@ -16,7 +16,6 @@
 	const orgs = $derived((ops?.query(ORGS) ?? []) as Org[]);
 	let mine = $state(new Map<string, Company>());
 	let found = $state(new Map<string, Awaited<ReturnType<typeof check>>>());
-	let waiting = $state<Awaited<ReturnType<typeof drafts>>>([]);
 	let loaded = $state(false);
 	let view = $state<'grid' | 'join' | 'new' | 'sent'>('grid');
 	let paste = $state('');
@@ -24,9 +23,7 @@
 
 	async function load() {
 		if (!me) return;
-		const [m, a] = await Promise.all([companies(), isApprover(me.authId)]);
-		mine = new Map(m.map((c) => [c.orgKey, c]));
-		waiting = a ? await drafts() : [];
+		mine = new Map((await companies()).map((c) => [c.orgKey, c]));
 		loaded = true;
 	}
 	async function lookUp() {
@@ -51,7 +48,6 @@
 		paste = '';
 	}, 'sent');
 	const ROLE = { admin: 'Admin', member: 'Member', requested: 'Request sent' };
-	const STATUS = { draft: 'Waiting for approval', approved: '', rejected: 'Not approved' };
 	// The phone's own words for an org's kinds (messages/en.json account_org_kind_*).
 	const KIND: Record<string, string> = {
 		plantingCompany: 'planting company',
@@ -63,7 +59,7 @@
 		contractor: 'contractor',
 	};
 	const line = (o: Org | undefined, c: Company | undefined) =>
-		[...(o?.kinds?.split(',').map((k) => KIND[k] ?? k) ?? []), c && ROLE[c.role], c && STATUS[c.card.status]].filter(Boolean).join(' · ');
+		[...(o?.kinds?.split(',').map((k) => KIND[k] ?? k) ?? []), c && ROLE[c.role]].filter(Boolean).join(' · ');
 	// A company joined here before the phone has added it to Contacts: listed after them until it has.
 	const joinedOnly = $derived([...mine.values()].filter((c) => !orgs.some((o) => o.orgKey === c.orgKey)));
 	const companyHref = (c: Company | undefined) => (c && c.role !== 'requested' ? `${spaceUrl(c.card.slug)}company` : undefined);
@@ -103,7 +99,7 @@
 		<button class="big-btn w-full" onclick={() => (view = 'grid')} data-done>Done</button>
 	</div>
 {:else if view === 'new'}
-	{@render header('New organization', 'These are the organizations in your Get Cache app (Account → Contacts → Orgs). Tap one to make it a company: it opens once Get Cache approves it.')}
+	{@render header('New organization', 'These are the organizations in your Get Cache app (Account → Contacts → Orgs). Tap one to make it a company: it opens at once.')}
 	<div class="org-list max-w-xl" data-orgs>
 		{#each orgs.filter((o) => !mine.has(o.orgKey)) as o (o.orgKey)}
 			{@const f = found.get(o.orgKey)}
@@ -115,15 +111,6 @@
 	</div>
 {:else}
 	{@render header('Organizations', 'An organization is a planting company or crew on Get Cache. Its admins build forms here; its members fill them in on their phones. Most people join one from an invite link.')}
-	{#if waiting.length}
-		{@const c = waiting[0]}
-		<section class="mb-7 flex flex-wrap items-center gap-5 rounded-2xl border-2 border-(--rust) bg-[#1e1713] px-6 py-5" aria-label="Waiting for you" data-draft={c.slug}>
-			<span class="badge">{waiting.length}</span>
-			<span class="flex-1 text-2xl font-semibold">New: {c.name}</span>
-			<button class="rt-fancy-btn rounded-2xl px-8 py-3 font-display text-2xl" onclick={act(() => decide(c.orgKey, 'approved'))} data-approve>Approve</button>
-			<button class="small-btn rounded-2xl border-2 px-7 py-3 text-xl" onclick={act(() => decide(c.orgKey, 'rejected'))} data-reject>Decline</button>
-		</section>
-	{/if}
 	<div class="org-list mb-8 max-w-xl" data-mine>
 		{#each orgs as o (o.orgKey)}
 			{@const c = mine.get(o.orgKey)}

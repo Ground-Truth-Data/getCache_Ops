@@ -75,7 +75,6 @@
 {#snippet chips(c: Space)}
 	<span class="flex flex-wrap gap-2.5">
 		{#if c.role === 'admin' || c.role === 'member'}<span class="chip chip-gold" data-role>{c.role === 'admin' ? 'Admin' : 'Member'}</span>{/if}
-		{#if c.status === 'draft'}<span class="chip chip-rust" data-status>Waiting for approval</span>{:else if c.status === 'rejected'}<span class="chip chip-rust" data-status>Not approved</span>{/if}
 	</span>
 {/snippet}
 

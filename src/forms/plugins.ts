@@ -10,7 +10,7 @@ import { fresh } from '../data/auth';
 import { appHome, call } from '../company/central';
 import type { Answers, Definition, Form, Store } from './forms';
 
-/** `orgKey`: the company that publishes it; null for a person's own. `company`: Central's card for it, once approved. */
+/** `orgKey`: the company that publishes it; null for a person's own. `company`: Central's card for it. */
 export type PluginRow = Form & {
 	madeBy?: string;
 	createdAt?: string;

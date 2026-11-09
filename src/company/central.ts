@@ -7,7 +7,7 @@ const env = import.meta.env;
 
 export type Role = 'admin' | 'member' | 'requested';
 /** A company is an organization in Contacts; this is its card as Central reads it off that row. */
-export type Card = { orgKey: string; name: string; slug: string; color: string | null; logo: string | null; status: 'draft' | 'approved' | 'rejected' };
+export type Card = { orgKey: string; name: string; slug: string; color: string | null; logo: string | null };
 export type Company = { orgKey: string; card: Card; role: Role; suiteKey: string | null; inviteKey: string | null };
 export type Space = Omit<Card, 'slug'> & { role: Role | null };
 export type Member = { orgKey: string; authId: string; role: Role; email: string; joinedAt: string };
@@ -43,7 +43,7 @@ export const logoUrl =(c: { logo: string | null }) => (c.logo ? `${env.PUBLIC_GC
 
 /** The address a name would get, whether it or a look-alike is taken (never by whom), or why it is refused. */
 export const check = (name: string) => one(call<{ slug: string | null; taken: boolean | null; refused: string | null }[]>('rpc/check', 'POST', { name }));
-/** One of your own organizations becomes a company: a draft until Get Cache approves it. */
+/** One of your own organizations becomes a company, live at once. */
 export const makeCompany = (orgKey: string) => call<string>('rpc/make_company', 'POST', { org: orgKey });
 export const space = (slug: string) => one(call<Space[]>('rpc/space', 'POST', { slug }));
 /** Opening the invite link signed in sends a join request; an admin approves it. */
@@ -67,10 +67,6 @@ export const dropFromSuite = (form: string, dropped: boolean) => call('rpc/drop_
 export const inviteToken = async (orgKey: string) => (await mineOf(orgKey))?.inviteKey ?? undefined;
 /** A new link; the old one stops working at once. */
 export const resetInvite = (orgKey: string) => call<string>('rpc/reset_invite', 'POST', { org: orgKey });
-
-export const isApprover = async (authId: string) => (await call<unknown[]>(`approver?authId=eq.${authId}`)).length > 0;
-export const drafts = () => call<Card[]>('rpc/drafts', 'POST', {});
-export const decide = (orgKey: string, status: 'approved' | 'rejected') => call('rpc/approve', 'POST', { org: orgKey, verdict: status });
 
 export async function uploadLogo(orgKey: string, file: File) {
 	const path = `${orgKey}/logo`;

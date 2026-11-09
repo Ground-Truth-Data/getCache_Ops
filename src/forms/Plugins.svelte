@@ -71,7 +71,7 @@
 	let spaces = $state<{ orgKey: string; name: string }[]>([]);
 	$effect(() => {
 		if (me) companies().then(
-			(m) => (spaces = m.filter((x) => x.role === 'admin' && x.card.status === 'approved').map((x) => ({ orgKey: x.orgKey, name: x.card.name }))),
+			(m) => (spaces = m.filter((x) => x.role === 'admin').map((x) => ({ orgKey: x.orgKey, name: x.card.name }))),
 			(e) => console.warn('[plugins] companies', e),
 		);
 	});
