@@ -45,9 +45,6 @@ export async function build(read = rest, page = 1000): Promise<Uint8Array> {
 		db.exec(ddl);
 		// The schema the DDL file is, as a phone stamps its own file: the reports check it.
 		db.exec('PRAGMA user_version = 57');
-		// A read copy of rows the phone already checked: the write guards only get in the way.
-		for (const { name } of db.exec({ sql: "SELECT name FROM sqlite_schema WHERE type = 'trigger'", rowMode: 'object', returnValue: 'resultRows' }))
-			db.exec(`DROP TRIGGER "${name}"`);
 		db.exec('PRAGMA foreign_keys = OFF');
 		const tables = db.exec({ sql: "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'", rowMode: 'array', returnValue: 'resultRows' }).map((r) => String(r[0]));
 		for (const table of tables) {

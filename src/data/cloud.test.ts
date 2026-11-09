@@ -100,3 +100,41 @@ test("builds the Phone schema from Central's rows, and the reports read it", asy
 	expect(query(perDay)).toEqual(sample.prepare(perDay).all().map((r) => ({ ...r })));
 	expect(query('SELECT count(*) AS n FROM tallyTable')).toEqual([sample.prepare('SELECT count(*) AS n FROM tallyTable').get()].map((r) => ({ ...r })));
 });
+
+/** Ops' IndexedDB cache, holding `kept` by authId: each request answers on the next microtask, as a browser's does. */
+function cache(kept: Map<string, unknown>) {
+	const answer = <T>(result: T) => {
+		const req = { result, onsuccess: null as null | (() => void) };
+		queueMicrotask(() => req.onsuccess?.());
+		return req;
+	};
+	const store = { get: (k: string) => answer(kept.get(k)), put: (v: unknown, k: string) => (kept.set(k, v), answer(k)) };
+	vi.stubGlobal('indexedDB', { open: () => answer({ transaction: () => ({ objectStore: () => store }), close: () => {} }) });
+}
+const central2 = (cursor: string) => (path: string) => Response.json(path === 'snapshot' ? [{ superCruddedAt: cursor }] : []);
+
+test("the last copy shows at once; Central's newer one replaces it and is kept for next time", async () => {
+	browser(3600, central2('noon'));
+	const kept = new Map<string, unknown>([['u1', { cursor: 'dawn', bytes: new Uint8Array([1]) }]]);
+	cache(kept);
+	const onBytes = vi.fn();
+	const stop = follow(onBytes, () => {});
+	await settle();
+	stop();
+	expect(onBytes.mock.calls.map(([bytes, at]) => [bytes.length, at])).toEqual([[1, 'dawn'], [expect.any(Number), 'noon']]);
+	expect(kept.get('u1')).toEqual({ cursor: 'noon', bytes: onBytes.mock.calls[1][0] });
+	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
+});
+
+test('a kept copy Central has not moved past is not rebuilt', async () => {
+	browser(3600, central2('dawn'));
+	cache(new Map([['u1', { cursor: 'dawn', bytes: new Uint8Array([1]) }]]));
+	const onBytes = vi.fn();
+	const stop = follow(onBytes, () => {});
+	await settle();
+	stop();
+	expect(onBytes.mock.calls.map(([, at]) => at)).toEqual(['dawn']);
+	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
+});
