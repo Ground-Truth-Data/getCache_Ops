@@ -29,6 +29,27 @@ export function axisEnd(rows: Row[]): number | undefined {
 export const blockOrder = (rows: Row[]) =>
 	[...rows].sort((a, b) => Number(!num(a, 'trees')) - Number(!num(b, 'trees')) || String(a.block).localeCompare(String(b.block))).map((r) => r.block);
 
+const isNumber = (v: unknown) => (typeof v === 'number' || (typeof v === 'string' && v.trim() !== '')) && Number.isFinite(Number(v));
+
+/** A query's quick chart: its first column of labels across, its first column of numbers up. None for one row. */
+export function quickAxes(rows: Row[]): { x: string; y: string } | undefined {
+	if (rows.length < 2) return undefined;
+	const every = (test: (v: unknown) => boolean) => Object.keys(rows[0]).find((k) => rows.every((r) => test(r[k])));
+	const x = every((v) => typeof v === 'string' && !isNumber(v));
+	const y = every(isNumber);
+	return x && y ? { x, y } : undefined;
+}
+
+/** Bars of `quickAxes`, in the query's own row order. */
+export function quick(rows: Row[], el: HTMLElement): Element {
+	const { x, y } = quickAxes(rows)!;
+	const { accent, bg, ...f } = frame(el);
+	return Plot.plot({
+		...f, height: 300, marginLeft: 60, marginBottom: 60, y: { grid: true, label: y }, x: { label: null, domain: rows.map((r) => r[x]), tickRotate: -45 },
+		marks: [Plot.barY(rows, { x, y: (r: Row) => Number(r[y]), fill: accent, tip: { fill: bg } }), Plot.ruleY([0])],
+	});
+}
+
 /** The chart drawn above a report's table, by report slug. */
 export const charts: Record<string, (rows: Row[], el: HTMLElement) => Element> = {
 	days(rows, el) {

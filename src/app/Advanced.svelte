@@ -2,6 +2,7 @@
 	import type { Ops } from '../data/db';
 	import Pill from '../../_rapper/rt/admin/Pill.svelte';
 	import { comment, prompt, refusal, sqlOf } from './ask';
+	import { quick, quickAxes } from './charts';
 	import DataTable from './DataTable.svelte';
 
 	type Saved = { name: string; description: string; sql: string };
@@ -98,7 +99,7 @@
 		{#if 'error' in result}
 			<p class="mt-2 text-muted" data-sql-error>{result.error}</p>
 		{:else}
-			{#key result}<DataTable rows={result.rows} columns={Object.keys(result.rows[0] ?? {})} name={current?.name ?? 'Query'} />{/key}
+			{#key result}{#if quickAxes(result.rows)}{@const rows = result.rows}<div class="mb-8" {@attach (el) => (el.append(quick(rows, el)), () => el.replaceChildren())} data-chart></div>{/if}<DataTable rows={result.rows} columns={Object.keys(result.rows[0] ?? {})} name={current?.name ?? 'Query'} />{/key}
 		{/if}
 	</section>
 {/if}
