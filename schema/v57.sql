@@ -107,7 +107,7 @@ CREATE TABLE `bagUpTable` (
 );
 --> statement-breakpoint
 CREATE INDEX `bagUpTable_live_idx` ON `bagUpTable` (`bagUpKey`,`replacedAt`);--> statement-breakpoint
-CREATE INDEX `bagUpTable_replaces_idx` ON `bagUpTable` (`replacesKey`);--> statement-breakpoint
+CREATE INDEX `bagUpTable_parent_idx` ON `bagUpTable` (`replacesKey`,`bagUpKey`);--> statement-breakpoint
 CREATE TABLE `blockEntity` (
 	`blockKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
@@ -132,7 +132,7 @@ CREATE TABLE `blockTable` (
 );
 --> statement-breakpoint
 CREATE INDEX `blockTable_live_idx` ON `blockTable` (`blockKey`,`replacedAt`);--> statement-breakpoint
-CREATE INDEX `blockTable_replaces_idx` ON `blockTable` (`replacesKey`);--> statement-breakpoint
+CREATE INDEX `blockTable_parent_idx` ON `blockTable` (`replacesKey`,`blockKey`);--> statement-breakpoint
 CREATE TABLE `boxEntity` (
 	`boxKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
@@ -160,7 +160,7 @@ CREATE TABLE `boxTable` (
 );
 --> statement-breakpoint
 CREATE INDEX `boxTable_live_idx` ON `boxTable` (`boxKey`,`replacedAt`);--> statement-breakpoint
-CREATE INDEX `boxTable_replaces_idx` ON `boxTable` (`replacesKey`);--> statement-breakpoint
+CREATE INDEX `boxTable_parent_idx` ON `boxTable` (`replacesKey`,`boxKey`);--> statement-breakpoint
 CREATE TABLE `crewTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapFeatureKey` text NOT NULL,
@@ -261,7 +261,7 @@ CREATE TABLE `mapFeatureTable` (
 );
 --> statement-breakpoint
 CREATE INDEX `mapFeatureTable_live_idx` ON `mapFeatureTable` (`mapFeatureKey`,`replacedAt`);--> statement-breakpoint
-CREATE INDEX `mapFeatureTable_replaces_idx` ON `mapFeatureTable` (`replacesKey`);--> statement-breakpoint
+CREATE INDEX `mapFeatureTable_parent_idx` ON `mapFeatureTable` (`replacesKey`,`mapFeatureKey`);--> statement-breakpoint
 CREATE TABLE `mapTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapKey` text NOT NULL,
@@ -276,7 +276,7 @@ CREATE TABLE `mapTable` (
 );
 --> statement-breakpoint
 CREATE INDEX `mapTable_live_idx` ON `mapTable` (`mapKey`,`replacedAt`);--> statement-breakpoint
-CREATE INDEX `mapTable_replaces_idx` ON `mapTable` (`replacesKey`);--> statement-breakpoint
+CREATE INDEX `mapTable_parent_idx` ON `mapTable` (`replacesKey`,`mapKey`);--> statement-breakpoint
 CREATE TABLE `orgKindTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`orgKey` text NOT NULL,
@@ -383,6 +383,7 @@ CREATE TABLE `personIdTable` (
 	FOREIGN KEY (`personKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
+CREATE INDEX `personIdTable_person_idx` ON `personIdTable` (`personKey`);--> statement-breakpoint
 CREATE TABLE `personTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`personKey` text NOT NULL,
@@ -403,6 +404,7 @@ CREATE TABLE `personTable` (
 --> statement-breakpoint
 CREATE INDEX `personTable_live_idx` ON `personTable` (`personKey`,`replacedAt`);--> statement-breakpoint
 CREATE INDEX `personTable_replaces_idx` ON `personTable` (`replacesKey`);--> statement-breakpoint
+CREATE INDEX `personTable_sameAs_idx` ON `personTable` (`sameAsKey`);--> statement-breakpoint
 CREATE TABLE `purgatoryTable` (
 	`reviewKey` text PRIMARY KEY NOT NULL,
 	`versionKey` text NOT NULL,
@@ -461,7 +463,7 @@ CREATE TABLE `qaPlotTable` (
 );
 --> statement-breakpoint
 CREATE INDEX `qaPlotTable_live_idx` ON `qaPlotTable` (`qaPlotKey`,`replacedAt`);--> statement-breakpoint
-CREATE INDEX `qaPlotTable_replaces_idx` ON `qaPlotTable` (`replacesKey`);--> statement-breakpoint
+CREATE INDEX `qaPlotTable_parent_idx` ON `qaPlotTable` (`replacesKey`,`qaPlotKey`);--> statement-breakpoint
 CREATE TABLE `qaSurveyEntity` (
 	`qaSurveyKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
@@ -494,7 +496,7 @@ CREATE TABLE `qaSurveyTable` (
 );
 --> statement-breakpoint
 CREATE INDEX `qaSurveyTable_live_idx` ON `qaSurveyTable` (`qaSurveyKey`,`replacedAt`);--> statement-breakpoint
-CREATE INDEX `qaSurveyTable_replaces_idx` ON `qaSurveyTable` (`replacesKey`);--> statement-breakpoint
+CREATE INDEX `qaSurveyTable_parent_idx` ON `qaSurveyTable` (`replacesKey`,`qaSurveyKey`);--> statement-breakpoint
 CREATE TABLE `settingTable` (
 	`settingKey` text NOT NULL,
 	`workMode` text DEFAULT '' NOT NULL,
@@ -565,7 +567,7 @@ CREATE TABLE `tallyTable` (
 );
 --> statement-breakpoint
 CREATE INDEX `tallyTable_live_idx` ON `tallyTable` (`tallyKey`,`replacedAt`);--> statement-breakpoint
-CREATE INDEX `tallyTable_replaces_idx` ON `tallyTable` (`replacesKey`);--> statement-breakpoint
+CREATE INDEX `tallyTable_parent_idx` ON `tallyTable` (`replacesKey`,`tallyKey`);--> statement-breakpoint
 CREATE TABLE `touchTable` (
 	`entityKey` text PRIMARY KEY NOT NULL,
 	`lastTouchedAt` text DEFAULT '' NOT NULL,
