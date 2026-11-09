@@ -7,7 +7,7 @@ const env = import.meta.env;
 
 export type Role = 'admin' | 'member' | 'requested';
 /** A company is an organization in Contacts; this is its card as Central reads it off that row. */
-export type Card = { orgKey: string; name: string; slug: string; color: string | null; logo: string | null };
+type Card = { orgKey: string; name: string; slug: string; color: string | null; logo: string | null };
 export type Company = { orgKey: string; card: Card; role: Role; suiteKey: string | null; inviteKey: string | null };
 export type Space = Omit<Card, 'slug'> & { role: Role | null };
 export type Member = { orgKey: string; authId: string; role: Role; email: string; joinedAt: string };
