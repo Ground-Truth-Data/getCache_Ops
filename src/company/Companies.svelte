@@ -1,7 +1,7 @@
 <script lang="ts">
 	import OrgCard from '../../_rapper/gc/OrgCard.svelte';
 	import { ownSignIn } from '../data/auth';
-	import type { Ops } from '../plugin/api';
+	import type { Ops } from '../data/db';
 	import { check, companies, decide, drafts, isApprover, join, logoUrl, makeCompany, spaceUrl, type Company } from './central';
 	import Info from './Info.svelte';
 	import SignIn from './SignIn.svelte';

@@ -3,6 +3,8 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<!-- A company report's box may not navigate itself anywhere: its own CSP cannot stop that, this page's can. -->
+		<meta http-equiv="Content-Security-Policy" content="frame-src 'none'" />
 		<!-- One build serves getcache.org/ops/ and a company's own root: every relative link and asset resolves from here. -->
 		<script>document.head.append(Object.assign(document.createElement('base'), { href: /^\/ops(\/|$)/.test(location.pathname) ? '/ops/' : '/' }));</script>
 	</head>

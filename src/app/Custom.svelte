@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Ops } from '../plugin/api';
+	import type { Ops } from '../data/db';
 	import DataTable from './DataTable.svelte';
 
 	let { ops }: { ops: Ops } = $props();

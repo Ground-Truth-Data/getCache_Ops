@@ -28,8 +28,8 @@ untouched, and a changed lockfile blocks `git pull upstream main`.
 
 ### Your changes go in `custom/`, nowhere else
 
-Your name, logo and colour go in `custom/brand.ts` and your tabs in
-`custom/plugins/`; `custom/README.md` shows both. Upstream never touches
+Your name, logo and colour go in `custom/brand.ts` and your reports in
+`custom/reports/`; `custom/README.md` shows both. Upstream never touches
 `custom/`, so `git pull upstream main` never conflicts.
 
 ### Units go in the header, once

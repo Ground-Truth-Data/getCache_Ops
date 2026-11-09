@@ -10,6 +10,7 @@
     "prepare": "git config core.hooksPath .githooks || true",
     "pretest": "npm run rapper && npm run sample",
     "test": "vitest run",
+    "e2e": "npm run sample && playwright test",
     "predev": "npm run rapper && npm run sample",
     "dev": "vite",
     "prebuild": "npm run rapper && npm run sample",
@@ -20,6 +21,7 @@
     "rapper": "node scripts/vendorRapper.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tailwindcss/vite": "^4.3.3",
@@ -40,8 +42,7 @@
   },
   "knip": {
     "ignore": [
-      "_rapper/**",
-      "src/plugin/table.ts"
+      "_rapper/**"
     ]
   }
 }

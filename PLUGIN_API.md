@@ -1,51 +1,29 @@
-# Plugin API
+# Report API
 
-A plugin is one tab: a file in `custom/plugins/`.
+A company report is one JavaScript file at the company's own address, listed in
+`custom/reports/<id>.json` (`custom/README.md`). Copy `src/starters/report/report.js`.
 
-```ts
-import type { Plugin } from '../../src/plugin/api';
+## The box
 
-export default {
-	id: 'jrp-payroll',   // unique and stable
-	name: 'Payroll',     // the tab's label
-	api: 1,              // the plugin API major it was built for
-	minSchema: 57,       // the oldest Get Cache file it understands
-	mount(el, ops) {     // draw into el (any framework or none); return the cleanup
-		return () => el.replaceChildren();
-	},
-} satisfies Plugin;
-```
+Ops runs the file as the only script of a sandboxed page: no network of any
+kind, no `eval`, no frames, workers, forms, popups, cookies or sign-in, and no
+reach into the Ops page. Images only from `data:` and `blob:`. The first time a
+user opens the tab, Ops shows which tables it asks for and waits for Allow.
 
-## `ops`
+## Talking to Ops
 
-| Member | What it gives you |
+| You post to `parent` | Ops posts back |
 |---|---|
-| `apiVersion` | This Ops's plugin API, e.g. `'1.0.0'` |
-| `schemaVersion` | The open file's Get Cache schema (`PRAGMA user_version`) |
-| `query(sql, bind?)` | Rows as objects. Read-only: a write throws. |
-| `tables()` | Every table with its columns (`name`, `type`, `notNull`, `primaryKey`) |
-| `download(filename, data)` | Saves a `Blob` or string on the user's computer |
+| `{ id: 1, rows: 'tallyView' }` | `{ id: 1, rows: [...] }`, or `{ id: 1, error }` for a table your manifest doesn't list |
 
-Query the `…View` views (`tallyView`, `bagUpView`, `blockView`…): each holds
-only the live version of every row. `table(title, rows)` from
-`src/plugin/table` draws rows as the built-in tabs do.
+Rows are the signed-in user's own, exactly as Ops' built-in reports see them.
 
-The reports in `src/reports.ts` are the public contract: their columns only gain, never change. Raw tables change between versions.
+When the user presses Export, Ops posts `{ export: true }`; answer with
+`{ file: { name: 'payroll.csv', text } }` and Ops saves it. Print prints the page
+with your report in it.
 
-Every tree count Ops shows carries the white pine, as Get Cache's does. A report gets it by naming the column for
-trees (`trees`, `planted`, `allocated`, `delivered`… — `TREE_NAME` in `src/app/trees.ts`); a chart or plugin writes
-`trees(n)` or `TREE`. Never recolour it: it sits only in white text.
+Query the `…View` tables (`tallyView`, `bagUpView`, `blockView`…): each holds
+only the live version of every row. Their columns only gain, never change.
 
-## Refusals
-
-In place of its content, a tab says why it won't run when its `api` is not
-this Ops's major or the open file's schema is older than its `minSchema`. The
-Get Cache schema only adds tables and columns, so a plugin built for 57 keeps
-working on every newer file.
-
-## Versions
-
-Within a major, `ops` only gains members; changing or removing one is a new
-major, listed here.
-
-- **1.0.0** — `apiVersion`, `schemaVersion`, `query`, `tables`, `download`.
+Every tree count Ops shows carries the white pine, as Get Cache's does; draw it
+beside yours.

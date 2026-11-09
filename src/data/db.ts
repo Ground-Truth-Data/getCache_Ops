@@ -39,6 +39,9 @@ export async function openDatabase(data: ArrayBuffer | Uint8Array): Promise<void
 
 export const isOpen = () => !!db;
 
+/** The open file, read-only, as every built-in page reads it. */
+export type Ops = { query: typeof query };
+
 export function query(sql: string, bind?: unknown[]): Record<string, unknown>[] {
 	if (!db) throw new Error('No database open');
 	return db.exec({ sql, bind: bind as never, rowMode: 'object', returnValue: 'resultRows' });

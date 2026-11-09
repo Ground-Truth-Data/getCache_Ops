@@ -6,9 +6,9 @@
 	import Companies from '../company/Companies.svelte';
 	import Space from '../company/Space.svelte';
 	import Plugins from '../forms/Plugins.svelte';
-	import { openDatabase } from '../data/db';
-	import type { Ops, Plugin } from '../plugin/api';
-	import { customs, makeOps, refusal } from '../plugin/host';
+	import { openDatabase, query, type Ops } from '../data/db';
+	import Box from '../plugin/Box.svelte';
+	import { reports } from '../plugin/host';
 	import { VERSION } from '../version';
 	import Advanced from './Advanced.svelte';
 	import Custom from './Custom.svelte';
@@ -19,17 +19,17 @@
 	let error = $state<string>();
 	let source = $state('');
 
-	const pages = [...(space ? [['company', 'Organization']] : []), ['home', 'Home'], ['reports', 'Reports'], ['plugins', 'Plugins'], ...customs.map((p) => [`p/${p.id}`, p.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
+	const pages = [...(space ? [['company', 'Organization']] : []), ['home', 'Home'], ['reports', 'Reports'], ['plugins', 'Plugins'], ...reports.map((r) => [`p/${r.id}`, r.name]), ['custom', 'Custom'], ['advanced', 'Advanced']];
 	const parts = $derived(route.path.split('?')[0].split('/'));
 	// Organizations has no tab or tile: Chris parked companies (5 Nov); invite links still land here.
 	const orgsPage = $derived(parts[0] === 'organizations');
 	const page = $derived(pages.find(([path]) => path === parts.slice(0, parts[0] === 'p' ? 2 : 1).join('/')) ?? pages[0]);
-	const plugin = $derived(customs.find((p) => page[0] === `p/${p.id}`));
+	const report = $derived(reports.find((r) => page[0] === `p/${r.id}`));
 
 	async function open(bytes: ArrayBuffer | Uint8Array, name: string) {
 		try {
 			await openDatabase(bytes);
-			ops = makeOps();
+			ops = { query };
 			source = name;
 			error = undefined;
 		} catch (e) {
@@ -108,9 +108,6 @@
 		if (!account) openFile(e.dataTransfer?.files[0]);
 	}
 
-	function mount(el: HTMLElement, [plugin, ops]: [Plugin, Ops]) {
-		return { destroy: plugin.mount(el, ops) };
-	}
 </script>
 
 <svelte:head><title>{brand.name}</title><link rel="icon" type="image/png" href={brand.icon} /></svelte:head>
@@ -180,17 +177,9 @@
 				{#if ops}<Custom {ops} />{:else}<p class="text-muted" data-nodata>No data yet</p>{/if}
 			{:else if page[0] === 'advanced'}
 				{#if ops}<Advanced {ops} />{:else}<h1 class="mb-6 font-display text-3xl text-(--accent)">SQL Queries</h1><p class="text-muted" data-nodata>No data yet</p>{/if}
-			{:else if ops && plugin}
+			{:else if ops && report}
 				<!-- Each copy is a new ops: a live copy keeps one `source`, so keying on it froze the first. -->
-				{#key [plugin, ops]}
-					{@const why = refusal(plugin, ops.schemaVersion)}
-					{#if why}
-						<p class="text-muted" data-refused={plugin.id}>{why}</p>
-					{:else}
-						<!-- contain: paint clips a plugin to its box, so nothing it draws can cover Ops' header. -->
-						<div class="[contain:paint]" use:mount={[plugin, ops]}></div>
-					{/if}
-				{/key}
+				{#key [report, ops]}<Box {report} {ops} />{/key}
 			{:else}
 				<p class="text-muted" data-nodata>No data yet</p>
 			{/if}

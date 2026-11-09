@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Ops } from '../plugin/api';
+	import type { Ops } from '../data/db';
 	import Pill from '../../_rapper/rt/admin/Pill.svelte';
 	import { comment, prompt, refusal, sqlOf } from './ask';
 	import DataTable from './DataTable.svelte';

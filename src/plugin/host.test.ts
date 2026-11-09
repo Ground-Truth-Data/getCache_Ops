@@ -1,18 +1,18 @@
 import { expect, test } from 'vitest';
-import type { Plugin } from './api';
-import { refusal } from './host';
+import { answer, type Report } from './host';
 
-const plugin = (p: Partial<Plugin>): Plugin => ({ id: 'x', name: 'X', api: 1, minSchema: 57, mount: () => () => {}, ...p });
+const report: Report = { id: 'x', name: 'X', url: 'https://x.test/x.js', tables: ['tallyView'] };
+const query = (sql: string) => [{ sql }];
 
-test('a plugin built for this API and an old enough file is accepted', () => {
-	expect(refusal(plugin({}), 57)).toBeUndefined();
-	expect(refusal(plugin({}), 58)).toBeUndefined();
+test('the box gets rows of a table its manifest lists', () => {
+	expect(answer(report, { id: 1, rows: 'tallyView' }, query)).toEqual({ id: 1, rows: [{ sql: 'SELECT * FROM "tallyView"' }] });
 });
 
-test('a plugin built for another API major is refused', () => {
-	expect(refusal(plugin({ api: 2 }), 57)).toMatch(/plugin API 2/);
+test('any other table is refused, whatever else the message carries', () => {
+	expect(answer(report, { id: 2, rows: 'personEntity', sql: 'SELECT * FROM personEntity' }, query)).toEqual({ id: 2, error: 'X was not allowed personEntity.' });
 });
 
-test('a file older than the plugin understands is refused', () => {
-	expect(refusal(plugin({ minSchema: 58 }), 57)).toMatch(/schema 58/);
+test('a message that is not a request gets no answer', () => {
+	expect(answer(report, { sql: 'SELECT 1' }, query)).toBeUndefined();
+	expect(answer(report, 'tallyView', query)).toBeUndefined();
 });

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Ops } from '../plugin/api';
+	import type { Ops } from '../data/db';
 	import { reports, seasonReports } from '../reports';
 	import Pill from '../../_rapper/rt/admin/Pill.svelte';
 	import Filters from './Filters.svelte';
