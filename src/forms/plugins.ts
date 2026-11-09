@@ -152,8 +152,8 @@ export async function receive(bytes: Uint8Array): Promise<Record<string, number>
 	if (new TextDecoder().decode(bytes.subarray(0, 16)) !== 'SQLite format 3\0') throw new Error("isn't a Get Cache plugins file.");
 	let { sqlite3, db } = await answersDb();
 	const attach = () => (db.exec("ATTACH ':memory:' AS sent"), load(sqlite3, db, 'sent', bytes));
-	attach();
 	try {
+		attach();
 		const has = (schema: string) => new Set(rows(db, `SELECT name FROM ${schema}.sqlite_schema WHERE type = 'table'`).map((r) => r.name));
 		if (!TABLES.every((t) => has('sent').has(t))) throw new Error("isn't a Get Cache plugins file.");
 		const schema = rows(db, "SELECT sql FROM sent.sqlite_schema WHERE type IN ('table', 'trigger') AND sql IS NOT NULL ORDER BY type = 'trigger'").map((r) => r.sql as string);
