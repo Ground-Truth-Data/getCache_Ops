@@ -11,7 +11,7 @@ export function people(): Map<string, Identity> {
 	return new Map(
 		query("SELECT personKey, coalesce(nullif(alias, ''), username) AS name, color, colorPickedAt FROM personView").map((r) => [
 			r.name as string,
-			r.personKey === self ? { label: 'you', color: 'var(--accent)', self: true, picked: false } : { label: r.name as string, color: (r.color as string) ?? '', self: false, picked: !!r.colorPickedAt },
+			r.personKey === self ? { label: 'you', color: 'var(--accent)', self: true, picked: false } : { label: r.name as string, color: r.color as string, self: false, picked: !!r.colorPickedAt },
 		]),
 	);
 }
