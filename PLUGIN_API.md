@@ -1,7 +1,8 @@
 # Report API
 
 A company report is one JavaScript file at the company's own address, listed in
-`custom/reports/<id>.json` (`custom/README.md`). Copy `src/starters/report/report.js`.
+`custom/reports/<id>.json` (`custom/README.md`). To start one, follow
+`src/starters/report/README.md`.
 
 ## The box
 

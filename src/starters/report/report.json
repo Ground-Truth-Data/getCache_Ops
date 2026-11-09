@@ -1,0 +1,1 @@
+{ "id": "trees-by-day", "name": "Trees by day", "url": "https://your-company.example/trees-by-day.js", "tables": ["bagUpView", "tallyView"] }

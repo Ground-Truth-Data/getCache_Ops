@@ -21,5 +21,5 @@ only this, and fetches the code each time the tab opens.
 { "id": "jrp-payroll", "name": "Payroll", "url": "https://jrp.example/payroll.js", "tables": ["bagUpView", "tallyView"] }
 ```
 
-`PLUGIN_API.md` says what the code can do; `src/starters/report/report.js` is
-one to copy.
+`PLUGIN_API.md` says what the code can do; `src/starters/report/README.md`
+walks through making one.
