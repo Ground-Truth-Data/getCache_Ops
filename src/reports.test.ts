@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { beforeAll, expect, test } from 'vitest';
 import { openDatabase, query } from './data/db';
 import { reports, seasonReports } from './reports';
+import { PERSON_NAME } from './app/people';
 
 beforeAll(async () => {
 	await openDatabase(readFileSync(new URL('../public/sample.sqlite', import.meta.url)));
@@ -83,4 +84,15 @@ test('quality pays on the 704 curve', () => {
 		const a = (Quality as number) * 1.08;
 		expect(Payment).toBeCloseTo(Math.max(0, Math.min(100, a - (100 - a) ** 2 / 8)), 0);
 	}
+});
+
+test('every column of people’s names is headed so the table draws each name as their pill', () => {
+	const names = new Set(query("SELECT coalesce(nullif(alias, ''), username) AS n FROM personView").map((r) => r.n));
+	const unmarked = [...reports.map((r) => [r.slug, query(r.sql)] as const), ...seasonReports.map((r) => [r.slug, query(r.sql, [''])] as const)].flatMap(([slug, rs]) =>
+		Object.keys(rs[0] ?? {})
+			.filter((c) => rs.some((r) => r[c] != null) && rs.every((r) => r[c] == null || names.has(r[c])) && !PERSON_NAME.test(c))
+			.map((c) => `${slug}: ${c}`),
+	);
+	expect(unmarked).toEqual([]);
+	expect(['quality', 'bag-ups', 'people', 'maps'].every((s) => Object.keys(rows(s)[0]).some((c) => PERSON_NAME.test(c)))).toBe(true);
 });

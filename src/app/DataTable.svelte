@@ -15,6 +15,8 @@ import { hiddenFromParams, hiddenToParams, visibleColumns } from "../../_rapper/
 import { type SortState, sortRows } from "../../_rapper/rt/admin/sortRows";
 import { MONEY_NAME, RATE_NAME, amount, byCurrency, mark } from "./money";
 import { TREE, TREE_NAME } from "./trees";
+import IdentityPill from "../../_rapper/gc/IdentityPill.svelte";
+import { PERSON_NAME, people } from "./people";
 import { go, route } from "./route.svelte";
 import type { Snippet } from "svelte";
 
@@ -93,6 +95,8 @@ const label = (code: string) => (c: string) => (cash.includes(c) && code ? `${c}
 const exportLabel = (c: string) => (cash.includes(c) && codes.length === 1 ? `${c} (${mark(codes[0])})` : c);
 const exported = (rs: Row[]) => rs.map((r) => Object.fromEntries(exportCols.map((c) => [exportLabel(c), r[c]])));
 const cellText = (c: string, r: Row) => (cash.includes(c) ? amount(r[c], RATE_NAME.test(c)) : fmt(r[c]));
+
+const who = people();
 
 const countLine = $derived(
 	filter.trim()
@@ -175,6 +179,9 @@ function tickAll() {
 		rowClass={(r) => (ticked.has(rowKey(r)) ? "row-selected" : "")}
 		prefsKey={name}
 	>
+		{#snippet cell(c, row)}
+			{#if PERSON_NAME.test(c) && row[c] != null}<IdentityPill who={who.get(row[c] as string) ?? { label: String(row[c]), color: "", self: false, picked: false }} />{:else}{cellText(c, row)}{/if}
+		{/snippet}
 		{#snippet lead(row)}
 			{#if row === null}
 				<input
