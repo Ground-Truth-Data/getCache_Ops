@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { blank, fromDefinition, keyFor, toDefinition } from './forms';
+import { describe, expect, it, vi } from 'vitest';
+import { blank, forms, fromDefinition, keyFor, nthForm, orgAnswers, orgStore, toDefinition } from './forms';
 import type { Definition } from '../../_rapper/gc/form';
 
 const v1: Definition & Record<string, unknown> = {
@@ -119,5 +119,61 @@ describe('a Person question', () => {
 		const back = fromDefinition(structuredClone(d));
 		expect(back.fields.map((x) => [x.kind, x.key, x.choices])).toEqual([['person', 'boss', []]]);
 		expect(toDefinition(back.title, back.fields, back.rest)).toEqual(d);
+	});
+});
+
+const central = vi.hoisted(() => ({ calls: [] as unknown[][], reply: (_path: string, _method?: string): unknown => [] }));
+vi.mock('../company/central', () => ({ call: async (...a: [string, string?, unknown?]) => (central.calls.push(a.filter((x) => x !== undefined)), central.reply(a[0], a[1])) }));
+const sent = () => central.calls.splice(0);
+
+describe("a form's name when nobody names it", () => {
+	it('is one past the forms there are, stepping over a name already taken', () => {
+		expect(nthForm([])).toBe('Form 1');
+		expect(nthForm(['Tree check'])).toBe('Form 2');
+		expect(nthForm(['Form 2', 'Form 3'])).toBe('Form 4');
+	});
+});
+
+describe("a company form's store on Central", () => {
+	it('a new form loads nothing, its first save makes the row and takes its address, and later saves rewrite that row', async () => {
+		const replaced: string[] = [];
+		vi.stubGlobal('history', { replaceState: (_s: unknown, _t: string, url: string) => replaced.push(url) });
+		central.reply = (_path, method) => (method === 'POST' ? [{ id: 'f9' }] : []);
+		const store = orgStore('org1', 'new');
+		expect(await store.load()).toBeUndefined();
+		await store.save(v1);
+		await store.save({ ...v1, title: 'Tree check 2' });
+		await store.publish();
+		vi.unstubAllGlobals();
+		expect(replaced).toEqual(['company/form/f9']);
+		expect(sent()).toEqual([
+			['form', 'POST', { orgKey: 'org1', definition: v1 }],
+			['form?id=eq.f9', 'PATCH', { definition: { ...v1, title: 'Tree check 2' } }],
+			['form?id=eq.f9', 'PATCH', { publishedAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT/) }],
+		]);
+	});
+
+	it('an existing form loads its row, and a copy is made from it for the same company', async () => {
+		const row = { id: 'f1', definition: v1, publishedAt: null, copiedFrom: null };
+		central.reply = (path) => (path === 'rpc/copy_form' ? 'f2' : [row]);
+		const store = orgStore('org1', 'f1');
+		expect(await store.load()).toEqual(row);
+		expect(await store.copy()).toBe('f2');
+		expect(sent()).toEqual([['form?id=eq.f1&select=id,definition,publishedAt,copiedFrom,lockedAt,replacedBy'], ['rpc/copy_form', 'POST', { source: 'f1', org: 'org1' }]]);
+	});
+
+	it("a form's answers come with their repeating rows; a form with none asks for no rows", async () => {
+		central.reply = (path) => (path.startsWith('form?') ? [{ definition: v1 }] : path.startsWith('answer?') ? [{ id: 'a1' }, { id: 'a2' }] : [{ id: 'r1', answer: 'a1' }]);
+		expect(await orgAnswers('f1')).toEqual({ definition: v1, answers: [{ id: 'a1' }, { id: 'a2' }], rows: [{ id: 'r1', answer: 'a1' }] });
+		expect(sent().map(([path]) => path)).toEqual(['form?id=eq.f1&select=definition', 'answer?form=eq.f1&order=filledAt', 'answerRow?answer=in.(a1,a2)&order=n']);
+		central.reply = (path) => (path.startsWith('form?') ? [{ definition: v1 }] : []);
+		expect(await orgAnswers('f1')).toEqual({ definition: v1, answers: [], rows: [] });
+		expect(sent()).toHaveLength(2);
+	});
+
+	it("a company's forms are listed oldest first", async () => {
+		central.reply = () => [];
+		await forms('org1');
+		expect(sent()).toEqual([['form?orgKey=eq.org1&select=id,definition,publishedAt,copiedFrom,lockedAt,replacedBy&order=createdAt']]);
 	});
 });

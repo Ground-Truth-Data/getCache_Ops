@@ -1,5 +1,5 @@
-import { expect, test } from 'vitest';
-import { named, sections, sheets } from './answers';
+import { expect, test, vi } from 'vitest';
+import { download, named, sections, sheets, text } from './answers';
 import type { Answers } from './forms';
 
 const definition = {
@@ -67,4 +67,25 @@ test("a Person answer shows the username from the reader's contacts, an unknown 
 	expect(sheets(named(crew, (k) => people.get(k) ?? 'not in your contacts'))['responses.csv']).toBe(
 		'id,boss,note,saved\r\nr1,Carlie,p1,2026-11-07T10:00:00Z\r\nr2,not in your contacts,,2026-11-07T11:00:00Z\r\n',
 	);
+});
+
+test('a multi-answer prints as a comma list: chosen values as they are, picked people or files by name', () => {
+	expect(text(['pine', 3])).toBe('pine, 3');
+	expect(text([{ name: 'Sam Planter' }, { content: 'data:' }])).toBe('Sam Planter, ');
+	expect(text(undefined)).toBe('');
+	expect(text(0)).toBe('0');
+});
+
+test('each sheet downloads as its own csv, and its object URL is let go', async () => {
+	const links: { href: string; download: string; clicked: boolean }[] = [];
+	const made: Blob[] = [];
+	const revoked: string[] = [];
+	vi.stubGlobal('document', { createElement: () => { const a = { href: '', download: '', clicked: false, click: () => (a.clicked = true) }; links.push(a); return a; } });
+	vi.stubGlobal('URL', { createObjectURL: (b: Blob) => (made.push(b), `blob:${made.length}`), revokeObjectURL: (u: string) => revoked.push(u) });
+	download({ 'responses.csv': 'id\r\n', 'trees.csv': 'n\r\n' });
+	vi.unstubAllGlobals();
+	expect(links).toEqual([{ href: 'blob:1', download: 'responses.csv', clicked: true }, { href: 'blob:2', download: 'trees.csv', clicked: true }].map((l) => expect.objectContaining(l)));
+	expect(revoked).toEqual(['blob:1', 'blob:2']);
+	expect(await Promise.all(made.map((b) => b.text()))).toEqual(['id\r\n', 'n\r\n']);
+	expect(made.map((b) => b.type)).toEqual(['text/csv', 'text/csv']);
 });
