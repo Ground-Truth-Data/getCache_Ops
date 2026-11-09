@@ -18,7 +18,7 @@ const PREAMBLE = 'for (const k of Object.getOwnPropertyNames(window)) if (/RTC|W
  * no frames or workers, images only from data and blob. Ops' own page forbids frames navigating anywhere.
  */
 export async function srcdoc(code: string): Promise<string> {
-	const script = PREAMBLE + code.replaceAll('</script', '<\\/script');
+	const script = PREAMBLE + code.replace(/<\/(script)/gi, '<\\/$1');
 	const hash = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(script)))));
 	const csp = `default-src 'none'; script-src 'sha256-${hash}'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'`;
 	return `<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><body><script>${script}</script>`;
