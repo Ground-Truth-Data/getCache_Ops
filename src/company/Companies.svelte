@@ -15,9 +15,16 @@
 		FROM orgTable o JOIN orgNameView n USING (orgKey) ORDER BY n.orgName COLLATE NOCASE`;
 	const orgs = $derived((ops?.query(ORGS) ?? []) as Org[]);
 	let mine = $state(new Map<string, Company>());
-	let found = $state(new Map<string, Awaited<ReturnType<typeof check>>>());
+	type Answer = { sub: string; ok?: true };
+	const answer = (name: string): Promise<Answer> =>
+		check(name).then(
+			(f) => (f?.refused ? { sub: f.refused } : f?.taken ? { sub: 'That name is taken' } : { sub: `${f?.slug}.getcache.org`, ok: true }),
+			(e: Error) => ({ sub: e.message }),
+		);
 	let loaded = $state(false);
 	let view = $state<'grid' | 'join' | 'new' | 'sent'>('grid');
+	// Asked again whenever the org list changes, so a list that loads after the page opens still gets its answers.
+	const found = $derived(view === 'new' ? new Map(orgs.filter((o) => !mine.has(o.orgKey)).map((o) => [o.orgKey, answer(o.orgName)])) : new Map<string, Promise<Answer>>());
 	let paste = $state('');
 	let note = $state('');
 
@@ -25,9 +32,6 @@
 		if (!me) return;
 		mine = new Map((await companies()).map((c) => [c.orgKey, c]));
 		loaded = true;
-	}
-	async function lookUp() {
-		found = new Map(await Promise.all(orgs.filter((o) => !mine.has(o.orgKey)).map(async (o) => [o.orgKey, await check(o.orgName)] as const)));
 	}
 	$effect(() => void load().catch((e) => (note = e.message)));
 
@@ -67,6 +71,10 @@
 	const chevron = 'M15 6l-6 6 6 6';
 </script>
 
+{#snippet pick(o: Org, a: Answer)}
+	<OrgCard name={o.orgName} color={o.color} sub={a.sub} end={a.ok ? 'Make' : ''} onclick={a.ok ? act(() => makeCompany(o.orgKey)) : undefined} data-make={o.orgName} />
+{/snippet}
+
 {#snippet header(title: string, info: string)}
 	<div class="mb-7 flex flex-wrap items-center gap-4">
 		{#if view === 'grid'}
@@ -102,9 +110,11 @@
 	{@render header('New organization', 'These are the organizations in your Get Cache app (Account → Contacts → Orgs). Tap one to make it a company: it opens at once.')}
 	<div class="org-list max-w-xl" data-orgs>
 		{#each orgs.filter((o) => !mine.has(o.orgKey)) as o (o.orgKey)}
-			{@const f = found.get(o.orgKey)}
-			{@const why = f?.refused ?? (f?.taken ? 'That name is taken' : f ? null : 'Checking the name…')}
-			<OrgCard name={o.orgName} color={o.color} sub={why ?? `${f?.slug}.getcache.org`} end={why ? '' : 'Make'} onclick={why ? undefined : act(() => makeCompany(o.orgKey))} data-make={o.orgName} />
+			{#await found.get(o.orgKey)}
+				{@render pick(o, { sub: 'Checking the name…' })}
+			{:then a}
+				{@render pick(o, a!)}
+			{/await}
 		{:else}
 			<p class="px-4 py-5 text-muted" data-none>Add one in the Get Cache app first (Account → Contacts → Orgs).</p>
 		{/each}
@@ -130,7 +140,7 @@
 			>Join with invite link</button
 		>
 	</div>
-	<button class="small-btn mt-12 border-dashed text-[#8a857b]" onclick={() => ((view = 'new'), void lookUp())} data-new
+	<button class="small-btn mt-12 border-dashed text-[#8a857b]" onclick={() => (view = 'new')} data-new
 		><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12" /></svg>Start a new organization</button
 	>
 {/if}
