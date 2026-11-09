@@ -13,7 +13,7 @@ import JsonPeek from "../../_rapper/rt/admin/JsonPeek.svelte";
 import TableToolbar from "../../_rapper/rt/admin/TableToolbar.svelte";
 import { hiddenFromParams, hiddenToParams, visibleColumns } from "../../_rapper/rt/admin/columnPrefs";
 import { type SortState, sortRows } from "../../_rapper/rt/admin/sortRows";
-import { MONEY_NAME, RATE_NAME, amount, byCurrency, mark } from "./money";
+import { MONEY_NAME, RATE_NAME, amount, byCurrency, columnTotals, mark } from "./money";
 import { TREE, TREE_NAME } from "./trees";
 import IdentityPill from "../../_rapper/gc/IdentityPill.svelte";
 import { PERSON_NAME, people } from "./people";
@@ -78,17 +78,7 @@ function onFilter(v: string) {
 
 const groups = $derived(cash.length ? byCurrency(shown, cur) : [["", shown] as [string, Row[]]]);
 const inGroup = (code: string) => (cash.length ? matched.filter((r) => String(r[cur] ?? "") === code) : matched);
-const totals = (these: Row[]) => {
-	const out: Record<string, string> = {};
-	for (const c of cols) {
-		if (noSum.includes(c) || (cash.includes(c) && RATE_NAME.test(c))) continue;
-		const vals = these.map((r) => r[c]);
-		if (!vals.length || !vals.some((v) => typeof v === "number") || !vals.every((v) => v == null || typeof v === "number")) continue;
-		const sum = (vals as number[]).reduce((a, b) => a + (b ?? 0), 0);
-		out[c] = cash.includes(c) ? amount(sum) : sum.toLocaleString();
-	}
-	return out;
-};
+const totals = (these: Row[]) => columnTotals(these, cols, cash, noSum);
 const isTrees = (c: string) => TREE_NAME.test(c) && rows.some((r) => typeof r[c] === "number");
 const label = (code: string) => (c: string) => (cash.includes(c) && code ? `${c} (${mark(code)})` : isTrees(c) ? `${c} ${TREE}` : c);
 // The pine is Ops' font, so a sheet says "trees"; a currency stays in the header only while there is one.

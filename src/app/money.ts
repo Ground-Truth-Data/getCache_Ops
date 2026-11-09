@@ -22,3 +22,16 @@ export function byCurrency<R extends Record<string, unknown>>(rows: readonly R[]
 /** A query names its own columns, so money is inferred: a table with a currency column, and a column named like money. */
 export const MONEY_NAME = /earn|price|value|pay|cost|amount|wage|income|per tree|\$/i;
 export const RATE_NAME = /per tree|price/i;
+
+/** The Σ row of one currency's rows: each numeric column summed, never a rate, a money column as money. */
+export function columnTotals(rows: readonly Record<string, unknown>[], cols: readonly string[], cash: readonly string[], noSum: readonly string[], lang?: string): Record<string, string> {
+	const out: Record<string, string> = {};
+	for (const c of cols) {
+		if (noSum.includes(c) || (cash.includes(c) && RATE_NAME.test(c))) continue;
+		const vals = rows.map((r) => r[c]);
+		if (!vals.length || !vals.some((v) => typeof v === 'number') || !vals.every((v) => v == null || typeof v === 'number')) continue;
+		const sum = (vals as number[]).reduce((a, b) => a + (b ?? 0), 0);
+		out[c] = cash.includes(c) ? amount(sum, false, lang) : sum.toLocaleString(lang);
+	}
+	return out;
+}
