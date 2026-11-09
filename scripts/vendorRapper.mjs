@@ -20,7 +20,7 @@ const files = [
 	'gc/formSurvey.ts',
 	'gc/FormView.svelte',
 	// The inbox's furniture: Plugins draws through it.
-	...['InboxChrome', 'RowShell', 'RowGrip', 'SearchInput', 'FancyButton', 'Icon', 'IdentityPill', 'HeaderLink', 'OrgCard'].map((f) => `gc/${f}.svelte`),
+	...['InboxChrome', 'GoChevron', 'RowShell', 'RowGrip', 'SearchInput', 'FancyButton', 'Icon', 'IdentityPill', 'HeaderLink', 'OrgCard'].map((f) => `gc/${f}.svelte`),
 	'gc/rowDrag.ts',
 	// The one plugins list, the phone's too.
 	...['PluginCard.svelte', 'PluginList.svelte', 'ago.ts'].map((f) => `gc/${f}`),

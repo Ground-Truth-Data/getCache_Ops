@@ -11,6 +11,7 @@
 	import Response from './Response.svelte';
 	import { session } from '../data/auth';
 	import InboxChrome from '../../_rapper/gc/InboxChrome.svelte';
+	import GoChevron from '../../_rapper/gc/GoChevron.svelte';
 	import RowShell from '../../_rapper/gc/RowShell.svelte';
 	import IdentityPill, { type Identity } from '../../_rapper/gc/IdentityPill.svelte';
 	import HeaderLink from '../../_rapper/gc/HeaderLink.svelte';
@@ -211,8 +212,6 @@
 {#snippet gcIcon()}<img src="gc_logo.webp" alt="" class="h-10 w-auto" />{/snippet}
 {#snippet pluginIcon()}<img src="plugin_white.webp" alt="" class="h-8 w-auto" />{/snippet}
 
-{#snippet go()}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg>{/snippet}
-
 {#snippet mark(src: string | null, size: string)}
 	<img src={src ?? 'plugin_gold.webp'} alt="" class="{size} shrink-0 rounded-2xl object-contain" />
 {/snippet}
@@ -319,7 +318,7 @@
 									{#if a.lat != null}<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--rt-cream)" stroke-width="1.7" stroke-linejoin="round" role="img" aria-label="GPS stamped" data-gps><path d="M6 4h12l4 5-10 11L2 9z M2 9h20 M9 4l-2 5 5 11 5-11-2-5" /></svg>{/if}
 								{/snippet}
 								{#snippet end()}
-									<span class="rt-row__cell rt-row__cell--chevron" aria-hidden="true"><span class="rt-row__when text-(--rt-sage)!">{ago(a.filledAt)}</span>{@render go()}</span>
+									<span class="rt-row__cell rt-row__cell--chevron" aria-hidden="true"><span class="rt-row__when text-(--rt-sage)!">{ago(a.filledAt)}</span><GoChevron /></span>
 								{/snippet}
 							</RowShell>
 						</div>
