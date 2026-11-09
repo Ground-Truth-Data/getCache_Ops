@@ -81,6 +81,18 @@ test('a table Central lacks comes back empty, and the rest still loads', async (
 	expect(query(perDay)).toEqual(sample.prepare(perDay).all().map((r) => ({ ...r })));
 });
 
+test('a company deleted on the phone is gone from the reports, a renamed one shows its new name', async () => {
+	const names = [
+		{ versionKey: 'a1', orgKey: 'acme', orgName: 'Acme', color: '', createdAt: '2026-11-01', replacedAt: '', replacesKey: '', isDeleted: 0 },
+		{ versionKey: 'a2', orgKey: 'acme', orgName: 'Acme Ltd', color: '', createdAt: '2026-11-02', replacedAt: '', replacesKey: 'a1', isDeleted: 0 },
+		{ versionKey: 'b1', orgKey: 'gone', orgName: 'Gone Co', color: '', createdAt: '2026-11-01', replacedAt: '', replacesKey: '', isDeleted: 0 },
+		{ versionKey: 'b2', orgKey: 'gone', orgName: 'Gone Co', color: '', createdAt: '2026-11-02', replacedAt: '', replacesKey: 'b1', isDeleted: 1 },
+	];
+	const only = async (path: string) => Response.json(path.startsWith('orgNameTable?') ? names : []);
+	await openDatabase(await build(only));
+	expect(query('SELECT orgKey, orgName FROM orgNameView')).toEqual([{ orgKey: 'acme', orgName: 'Acme Ltd' }]);
+});
+
 test("builds the Phone schema from Central's rows, and the reports read it", async () => {
 	// Pages of 100 against 926 tallies: the last short page ends each table.
 	await openDatabase(await build(central, 100));

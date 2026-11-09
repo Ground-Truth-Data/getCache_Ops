@@ -6,13 +6,17 @@ CREATE TABLE `allocationTable` (
 	`boxKey` text,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
+	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`allocatedByKey` text NOT NULL,
-	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`allocatedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "allocationTable_treesQty" CHECK("allocationTable"."treesQty" >= 0)
 );
-CREATE INDEX `allocationTable_live_idx` ON `allocationTable` (`blockKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `allocationTable_live_idx` ON `allocationTable` (`blockKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `allocationTable_replaces_idx` ON `allocationTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `appState` (
 	`appStateId` text PRIMARY KEY NOT NULL,
 	`gridMode` text DEFAULT 'off' NOT NULL,
@@ -21,8 +25,8 @@ CREATE TABLE `appState` (
 	`lastParityResetAt` text,
 	`blockKey` text,
 	`mapFeatureKey` text,
-	`mapKey` text NOT NULL,
-	`qaSurveyKey` text NOT NULL,
+	`mapKey` text,
+	`qaSurveyKey` text,
 	`selfKey` text NOT NULL,
 	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE set null,
@@ -30,12 +34,14 @@ CREATE TABLE `appState` (
 	FOREIGN KEY (`qaSurveyKey`) REFERENCES `qaSurveyEntity`(`qaSurveyKey`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`selfKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `bagEntity` (
 	`bagKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `bagTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`bagKey` text NOT NULL,
@@ -53,8 +59,9 @@ CREATE TABLE `bagTable` (
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`editedByKey` text NOT NULL,
-	FOREIGN KEY (`bagKey`) REFERENCES `bagEntity`(`bagKey`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`bagKey`) REFERENCES `bagEntity`(`bagKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "bagTable_counts" CHECK(("bagTable"."boxQty" IS NULL OR "bagTable"."boxQty" >= 0)
@@ -69,13 +76,16 @@ CREATE TABLE `bagTable` (
 			            THEN "bagTable"."bundlesInBags" = 0 AND "bagTable"."bundlesOnGround" = 0
 			            ELSE "bagTable"."bundlesInBags" + "bagTable"."bundlesOnGround" > 0 END))
 );
-CREATE INDEX `bagTable_live_idx` ON `bagTable` (`bagKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `bagTable_live_idx` ON `bagTable` (`bagKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `bagTable_replaces_idx` ON `bagTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `bagUpEntity` (
 	`bagUpKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `bagUpTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`bagUpKey` text NOT NULL,
@@ -86,21 +96,25 @@ CREATE TABLE `bagUpTable` (
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`editedByKey` text NOT NULL,
-	FOREIGN KEY (`bagUpKey`) REFERENCES `bagUpEntity`(`bagUpKey`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`bagUpKey`) REFERENCES `bagUpEntity`(`bagUpKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "bagUpTable_workMode" CHECK("bagUpTable"."workMode" IN ('planting', 'fruit', 'cones', 'seeds')),
 	CONSTRAINT "bagUpTable_plantedDt" CHECK("bagUpTable"."plantedDt" = '' OR "bagUpTable"."plantedDt" GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')
 );
-CREATE INDEX `bagUpTable_live_idx` ON `bagUpTable` (`bagUpKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `bagUpTable_live_idx` ON `bagUpTable` (`bagUpKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `bagUpTable_replaces_idx` ON `bagUpTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `blockEntity` (
 	`blockKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `blockTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`blockKey` text NOT NULL,
@@ -110,18 +124,22 @@ CREATE TABLE `blockTable` (
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`editedByKey` text NOT NULL,
-	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE set null,
+	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
-CREATE INDEX `blockTable_live_idx` ON `blockTable` (`blockKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `blockTable_live_idx` ON `blockTable` (`blockKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `blockTable_replaces_idx` ON `blockTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `boxEntity` (
 	`boxKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `boxTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`boxKey` text NOT NULL,
@@ -133,23 +151,30 @@ CREATE TABLE `boxTable` (
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`editedByKey` text NOT NULL,
-	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "boxTable_sizes" CHECK(("boxTable"."boxSizeQty" IS NULL OR "boxTable"."boxSizeQty" > 0)
 			  AND ("boxTable"."bundleSizeQty" IS NULL OR "boxTable"."bundleSizeQty" > 0))
 );
-CREATE INDEX `boxTable_live_idx` ON `boxTable` (`boxKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `boxTable_live_idx` ON `boxTable` (`boxKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `boxTable_replaces_idx` ON `boxTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `crewTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapFeatureKey` text NOT NULL,
 	`memberKey` text NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
-	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE cascade,
+	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
+	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`memberKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
-CREATE INDEX `crewTable_live_idx` ON `crewTable` (`mapFeatureKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `crewTable_live_idx` ON `crewTable` (`mapFeatureKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `crewTable_replaces_idx` ON `crewTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `deliveryTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapFeatureKey` text NOT NULL,
@@ -162,15 +187,18 @@ CREATE TABLE `deliveryTable` (
 	`closeReason` text DEFAULT '' NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
+	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`deliveredByKey` text NOT NULL,
-	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`deliveredByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "deliveryTable_kind" CHECK("deliveryTable"."kind" IN ('delivered', 'closed')),
-	CONSTRAINT "deliveryTable_delivered_has_a_fix" CHECK("deliveryTable"."kind" = 'closed' OR ("deliveryTable"."lat" IS NOT NULL AND "deliveryTable"."lng" IS NOT NULL AND "deliveryTable"."distanceM" IS NOT NULL)),
-	CONSTRAINT "deliveryTable_closeReason" CHECK("deliveryTable"."closeReason" = '' OR "deliveryTable"."kind" = 'closed')
+	CONSTRAINT "deliveryTable_delivered_has_a_fix" CHECK("deliveryTable"."kind" = 'closed' OR ("deliveryTable"."lat" IS NOT NULL AND "deliveryTable"."lng" IS NOT NULL AND "deliveryTable"."distanceM" IS NOT NULL))
 );
-CREATE INDEX `deliveryTable_live_idx` ON `deliveryTable` (`mapFeatureKey`,`boxKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `deliveryTable_live_idx` ON `deliveryTable` (`mapFeatureKey`,`boxKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `deliveryTable_replaces_idx` ON `deliveryTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `editNoteTable` (
 	`noteKey` text PRIMARY KEY NOT NULL,
 	`tableName` text NOT NULL,
@@ -182,19 +210,22 @@ CREATE TABLE `editNoteTable` (
 	CONSTRAINT "editNoteTable_named" CHECK("editNoteTable"."tableName" <> '' AND "editNoteTable"."rowKey" <> ''),
 	CONSTRAINT "editNoteTable_reason" CHECK(trim("editNoteTable"."reason") <> '')
 );
-CREATE INDEX `editNoteTable_row_idx` ON `editNoteTable` (`rowKey`,`createdAt`);
+--> statement-breakpoint
+CREATE INDEX `editNoteTable_row_idx` ON `editNoteTable` (`rowKey`,`createdAt`);--> statement-breakpoint
 CREATE TABLE `mapEntity` (
 	`mapKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `mapFeatureEntity` (
 	`mapFeatureKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `mapFeatureTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapFeatureKey` text NOT NULL,
@@ -215,9 +246,10 @@ CREATE TABLE `mapFeatureTable` (
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`editedByKey` text NOT NULL,
-	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`linkedBlockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "mapFeatureTable_geometryJson_bare" CHECK("mapFeatureTable"."geometryJson" IS NULL OR (json_valid("mapFeatureTable"."geometryJson")
@@ -227,7 +259,9 @@ CREATE TABLE `mapFeatureTable` (
 	CONSTRAINT "mapFeatureTable_linkedBlockKey_on_a_pin" CHECK("mapFeatureTable"."linkedBlockKey" IS NULL OR json_extract("mapFeatureTable"."geometryJson", '$.type') = 'Point'),
 	CONSTRAINT "mapFeatureTable_fillOpacity" CHECK("mapFeatureTable"."fillOpacity" IS NULL OR ("mapFeatureTable"."fillOpacity" >= 0 AND "mapFeatureTable"."fillOpacity" <= 1))
 );
-CREATE INDEX `mapFeatureTable_live_idx` ON `mapFeatureTable` (`mapFeatureKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `mapFeatureTable_live_idx` ON `mapFeatureTable` (`mapFeatureKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `mapFeatureTable_replaces_idx` ON `mapFeatureTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `mapTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapKey` text NOT NULL,
@@ -235,21 +269,28 @@ CREATE TABLE `mapTable` (
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`editedByKey` text NOT NULL,
-	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
-CREATE INDEX `mapTable_live_idx` ON `mapTable` (`mapKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `mapTable_live_idx` ON `mapTable` (`mapKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `mapTable_replaces_idx` ON `mapTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `orgKindTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`orgKey` text NOT NULL,
 	`kind` text NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
-	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE cascade,
+	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
+	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "orgKindTable_kind" CHECK("orgKindTable"."kind" IN ('plantingCompany', 'consultant', 'mill', 'nursery', 'government', 'ngo', 'contractor'))
 );
-CREATE INDEX `orgKindTable_live_idx` ON `orgKindTable` (`orgKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `orgKindTable_live_idx` ON `orgKindTable` (`orgKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `orgKindTable_replaces_idx` ON `orgKindTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `orgNameTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`orgKey` text NOT NULL,
@@ -257,15 +298,20 @@ CREATE TABLE `orgNameTable` (
 	`color` text DEFAULT '' NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
-	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE cascade
+	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
+	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE no action
 );
-CREATE INDEX `orgNameTable_live_idx` ON `orgNameTable` (`orgKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `orgNameTable_live_idx` ON `orgNameTable` (`orgKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `orgNameTable_replaces_idx` ON `orgNameTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `orgTable` (
 	`orgKey` text PRIMARY KEY NOT NULL,
 	`orgName` text DEFAULT '' NOT NULL,
 	`color` text DEFAULT '' NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL
 );
+--> statement-breakpoint
 CREATE TABLE `orgTagTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`orgKey` text NOT NULL,
@@ -273,19 +319,24 @@ CREATE TABLE `orgTagTable` (
 	`blockKey` text,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
-	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE cascade,
+	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
+	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "orgTagTable_oneOwner" CHECK(("orgTagTable"."mapKey" IS NULL) <> ("orgTagTable"."blockKey" IS NULL))
 );
-CREATE INDEX `orgTagTable_map_idx` ON `orgTagTable` (`mapKey`,`replacedAt`);
-CREATE INDEX `orgTagTable_block_idx` ON `orgTagTable` (`blockKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `orgTagTable_map_idx` ON `orgTagTable` (`mapKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `orgTagTable_replaces_idx` ON `orgTagTable` (`replacesKey`);--> statement-breakpoint
+CREATE INDEX `orgTagTable_block_idx` ON `orgTagTable` (`blockKey`,`replacedAt`);--> statement-breakpoint
 CREATE TABLE `packageEntity` (
 	`packageKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `packageTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`packageKey` text NOT NULL,
@@ -307,25 +358,31 @@ CREATE TABLE `packageTable` (
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`editedByKey` text NOT NULL,
-	FOREIGN KEY (`packageKey`) REFERENCES `packageEntity`(`packageKey`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`packageKey`) REFERENCES `packageEntity`(`packageKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "packageTable_direction" CHECK("packageTable"."direction" IN ('in', 'out')),
 	CONSTRAINT "packageTable_packageType" CHECK("packageTable"."packageType" IN ('map', 'feat', 'tally', 'cache', 'qc', 'backup', 'block', 'refused', 'request', 'report')),
 	CONSTRAINT "packageTable_in_received" CHECK("packageTable"."direction" = 'out' OR "packageTable"."receivedAt" <> ''),
-	CONSTRAINT "packageTable_out_bare" CHECK("packageTable"."direction" = 'in' OR "packageTable"."rawJson" = '')
+	CONSTRAINT "packageTable_out_bare" CHECK("packageTable"."direction" = 'in' OR "packageTable"."rawJson" = ''),
+	CONSTRAINT "packageTable_shareAccess" CHECK("packageTable"."shareAccess" IN ('', 'follow', 'join'))
 );
-CREATE INDEX `packageTable_live_idx` ON `packageTable` (`packageKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `packageTable_live_idx` ON `packageTable` (`packageKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `packageTable_replaces_idx` ON `packageTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `personEntity` (
 	`personKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL
 );
+--> statement-breakpoint
 CREATE TABLE `personIdTable` (
 	`personId` text PRIMARY KEY NOT NULL,
 	`personKey` text NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
 	FOREIGN KEY (`personKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `personTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`personKey` text NOT NULL,
@@ -338,11 +395,14 @@ CREATE TABLE `personTable` (
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	FOREIGN KEY (`personKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`sameAsKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE set null,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
+	FOREIGN KEY (`personKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`sameAsKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "personTable_alias" CHECK("personTable"."alias" = '' OR "personTable"."alias" <> "personTable"."username")
 );
-CREATE INDEX `personTable_live_idx` ON `personTable` (`personKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `personTable_live_idx` ON `personTable` (`personKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `personTable_replaces_idx` ON `personTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `purgatoryTable` (
 	`reviewKey` text PRIMARY KEY NOT NULL,
 	`versionKey` text NOT NULL,
@@ -355,13 +415,14 @@ CREATE TABLE `purgatoryTable` (
 	`packageKey` text NOT NULL,
 	`decidedAt` text DEFAULT '' NOT NULL,
 	`decidedByKey` text,
-	FOREIGN KEY (`packageKey`) REFERENCES `packageEntity`(`packageKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`decidedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE set null,
-	CONSTRAINT "purgatoryTable_tableName" CHECK("purgatoryTable"."tableName" IN ('tallyTable', 'bagUpTable', 'qaPlotTable')),
+	FOREIGN KEY (`packageKey`) REFERENCES `packageEntity`(`packageKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`decidedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "purgatoryTable_tableName" CHECK("purgatoryTable"."tableName" IN ('tallyTable', 'bagUpTable', 'qaPlotTable', 'mapFeatureTable')),
 	CONSTRAINT "purgatoryTable_decision" CHECK("purgatoryTable"."decision" IN ('', 'accepted', 'rejected')),
 	CONSTRAINT "purgatoryTable_decided" CHECK(("purgatoryTable"."decision" = '') = ("purgatoryTable"."decidedAt" = ''))
 );
-CREATE INDEX `purgatoryTable_version_idx` ON `purgatoryTable` (`versionKey`,`decidedAt`);
+--> statement-breakpoint
+CREATE INDEX `purgatoryTable_version_idx` ON `purgatoryTable` (`versionKey`,`decidedAt`);--> statement-breakpoint
 CREATE TABLE `qaPlotEntity` (
 	`qaPlotKey` text PRIMARY KEY NOT NULL,
 	`plotNo` integer DEFAULT 0 NOT NULL,
@@ -372,7 +433,8 @@ CREATE TABLE `qaPlotEntity` (
 	FOREIGN KEY (`qaSurveyKey`) REFERENCES `qaSurveyEntity`(`qaSurveyKey`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
-CREATE UNIQUE INDEX `qaPlotEntity_plotNo_uq` ON `qaPlotEntity` (`qaSurveyKey`,`plotNo`) WHERE "qaPlotEntity"."plotNo" <> 0;
+--> statement-breakpoint
+CREATE UNIQUE INDEX `qaPlotEntity_plotNo_uq` ON `qaPlotEntity` (`qaSurveyKey`,`plotNo`) WHERE "qaPlotEntity"."plotNo" <> 0;--> statement-breakpoint
 CREATE TABLE `qaPlotTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`qaPlotKey` text NOT NULL,
@@ -383,25 +445,30 @@ CREATE TABLE `qaPlotTable` (
 	`splitPlantJson` text DEFAULT '' NOT NULL,
 	`plotDesc` text DEFAULT '' NOT NULL,
 	`isOccupied` integer DEFAULT 0 NOT NULL,
+	`isAtUserLocation` integer DEFAULT 0 NOT NULL,
 	`openLocode` text DEFAULT '' NOT NULL,
 	`qaSurveyKey` text NOT NULL,
 	`mapFeatureKey` text,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`editedByKey` text NOT NULL,
-	FOREIGN KEY (`qaPlotKey`) REFERENCES `qaPlotEntity`(`qaPlotKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`qaSurveyKey`) REFERENCES `qaSurveyEntity`(`qaSurveyKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE set null,
+	FOREIGN KEY (`qaPlotKey`) REFERENCES `qaPlotEntity`(`qaPlotKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`qaSurveyKey`) REFERENCES `qaSurveyEntity`(`qaSurveyKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
-CREATE INDEX `qaPlotTable_live_idx` ON `qaPlotTable` (`qaPlotKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `qaPlotTable_live_idx` ON `qaPlotTable` (`qaPlotKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `qaPlotTable_replaces_idx` ON `qaPlotTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `qaSurveyEntity` (
 	`qaSurveyKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `qaSurveyTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`qaSurveyKey` text NOT NULL,
@@ -416,15 +483,18 @@ CREATE TABLE `qaSurveyTable` (
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`editedByKey` text NOT NULL,
-	FOREIGN KEY (`qaSurveyKey`) REFERENCES `qaSurveyEntity`(`qaSurveyKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE set null,
+	FOREIGN KEY (`qaSurveyKey`) REFERENCES `qaSurveyEntity`(`qaSurveyKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "qaSurveyTable_species_not_empty_list" CHECK("qaSurveyTable"."speciesChoicesJson" <> '[]'),
 	CONSTRAINT "qaSurveyTable_currency" CHECK("qaSurveyTable"."currency" GLOB '[A-Z][A-Z][A-Z]')
 );
-CREATE INDEX `qaSurveyTable_live_idx` ON `qaSurveyTable` (`qaSurveyKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `qaSurveyTable_live_idx` ON `qaSurveyTable` (`qaSurveyKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `qaSurveyTable_replaces_idx` ON `qaSurveyTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `settingTable` (
 	`settingKey` text NOT NULL,
 	`workMode` text DEFAULT '' NOT NULL,
@@ -435,6 +505,12 @@ CREATE TABLE `settingTable` (
 	CONSTRAINT "settingTable_workMode" CHECK("settingTable"."workMode" = '' OR "settingTable"."workMode" IN ('planting', 'fruit', 'cones', 'seeds')),
 	CONSTRAINT "settingTable_mode_global" CHECK("settingTable"."settingKey" <> 'mode' OR "settingTable"."workMode" = '')
 );
+--> statement-breakpoint
+CREATE TABLE `stackDirty` (
+	`n` integer PRIMARY KEY NOT NULL,
+	`scopeKey` text NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE `stockTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapFeatureKey` text NOT NULL,
@@ -443,21 +519,26 @@ CREATE TABLE `stockTable` (
 	`treesQty` real,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
+	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`countedByKey` text NOT NULL,
-	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`countedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "stockTable_oneQty" CHECK(("stockTable"."boxQty" IS NULL) <> ("stockTable"."treesQty" IS NULL)),
 	CONSTRAINT "stockTable_boxQty" CHECK("stockTable"."boxQty" >= 0),
 	CONSTRAINT "stockTable_treesQty" CHECK("stockTable"."treesQty" >= 0)
 );
-CREATE INDEX `stockTable_live_idx` ON `stockTable` (`mapFeatureKey`,`boxKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `stockTable_live_idx` ON `stockTable` (`mapFeatureKey`,`boxKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `stockTable_replaces_idx` ON `stockTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `tallyEntity` (
 	`tallyKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
+--> statement-breakpoint
 CREATE TABLE `tallyTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`tallyKey` text NOT NULL,
@@ -472,21 +553,25 @@ CREATE TABLE `tallyTable` (
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
+	`isDeleted` integer DEFAULT 0 NOT NULL,
 	`editedByKey` text NOT NULL,
-	FOREIGN KEY (`tallyKey`) REFERENCES `tallyEntity`(`tallyKey`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`bagUpKey`) REFERENCES `bagUpEntity`(`bagUpKey`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`tallyKey`) REFERENCES `tallyEntity`(`tallyKey`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`bagUpKey`) REFERENCES `bagUpEntity`(`bagUpKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`bagKey`) REFERENCES `bagEntity`(`bagKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "tallyTable_plantedQty" CHECK("tallyTable"."plantedQty" <> 0),
 	CONSTRAINT "tallyTable_currency" CHECK(("tallyTable"."currency" IS NOT NULL AND "tallyTable"."currency" GLOB '[A-Z][A-Z][A-Z]') OR ("tallyTable"."currency" IS NULL AND "tallyTable"."pricePerTree" IS NULL))
 );
-CREATE INDEX `tallyTable_live_idx` ON `tallyTable` (`tallyKey`,`replacedAt`);
+--> statement-breakpoint
+CREATE INDEX `tallyTable_live_idx` ON `tallyTable` (`tallyKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `tallyTable_replaces_idx` ON `tallyTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `touchTable` (
 	`entityKey` text PRIMARY KEY NOT NULL,
 	`lastTouchedAt` text DEFAULT '' NOT NULL,
 	`sortAt` text DEFAULT '' NOT NULL
 );
+--> statement-breakpoint
 CREATE TABLE `userProfile` (
 	`userProfileId` text PRIMARY KEY NOT NULL,
 	`displayName` text,
@@ -496,170 +581,140 @@ CREATE TABLE `userProfile` (
 	`personId` text DEFAULT '' NOT NULL,
 	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE set null
 );
-CREATE VIEW `allocationView` AS SELECT * FROM allocationTable a WHERE a.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM allocationTable w
-	   WHERE w.blockKey = a.blockKey AND w.replacedAt = '' AND w.createdAt > a.createdAt)
-/* allocationView(versionKey,blockKey,treesQty,sortOrder,boxKey,createdAt,replacedAt,allocatedByKey) */;
-CREATE VIEW `bagUpFlagView` AS WITH line AS (SELECT b.bagUpKey, b.createdByKey AS personKey, b.workMode AS unit, b.plantedDt AS day, SUM(t.plantedQty) AS treesQty
-	   FROM bagUpView b JOIN tallyView t USING (bagUpKey) GROUP BY b.bagUpKey),
-		days AS (SELECT DISTINCT personKey, unit, day FROM line),
-		sample AS (
-		  SELECT d.personKey, d.unit, d.day, w.treesQty AS treesQty
-		    FROM days d JOIN line w ON w.personKey = d.personKey AND w.unit = d.unit AND w.day BETWEEN date(d.day, '-30 days') AND d.day),
-		ranked AS (
-		  SELECT *, COUNT(treesQty) OVER (PARTITION BY personKey, unit, day) AS nTrees, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY treesQty DESC) AS rTrees
-		    FROM sample),
-		med AS (
-		  SELECT personKey, unit, day, MAX(nTrees) AS nTrees, AVG(CASE WHEN rTrees IN ((nTrees + 1) / 2, (nTrees + 2) / 2) THEN treesQty END) AS normTrees
-		    FROM ranked GROUP BY personKey, unit, day),
-		spread AS (
-		  SELECT s.personKey, s.unit, s.day,
-		         abs(s.treesQty - m.normTrees) AS dTrees, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.treesQty - m.normTrees) DESC) AS rTrees
-		    FROM sample s JOIN med m USING (personKey, unit, day)),
-		norm AS (
-		  SELECT m.*, AVG(CASE WHEN s.rTrees IN ((m.nTrees + 1) / 2, (m.nTrees + 2) / 2) THEN s.dTrees END) AS madTrees
-		    FROM med m JOIN spread s USING (personKey, unit, day) GROUP BY m.personKey, m.unit, m.day)
-		SELECT l.*, n.normTrees, n.madTrees, n.nTrees,
-		       TRIM(CASE WHEN n.nTrees >= 5 AND n.madTrees > 0 AND abs(0.6745 * (l.treesQty - n.normTrees) / n.madTrees) > 3.5 THEN 'trees ' || rtrim(rtrim(printf('%.2f', l.treesQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normTrees), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
-		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day
-/* bagUpFlagView(bagUpKey,personKey,unit,day,treesQty,normTrees,madTrees,nTrees,flag) */;
-CREATE VIEW `bagUpView` AS SELECT v.versionKey, v.bagUpKey, v.plantedDt, v.workMode, v.blockKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
-		   FROM bagUpTable v JOIN bagUpEntity e USING (bagUpKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM bagUpTable w WHERE w.bagUpKey = v.bagUpKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* bagUpView(versionKey,bagUpKey,plantedDt,workMode,blockKey,mapFeatureKey,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
-CREATE VIEW `bagView` AS SELECT v.versionKey, v.bagKey, v.boxQty, v.bundleQty, v.pricePerTree, v.currency, v.isBox, v.isBagged, v.bundlesInBags, v.bundlesOnGround, v.halfBoxParity, v.sortOrder, v.boxKey, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
-		   FROM bagTable v JOIN bagEntity e USING (bagKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM bagTable w WHERE w.bagKey = v.bagKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* bagView(versionKey,bagKey,boxQty,bundleQty,pricePerTree,currency,isBox,isBagged,bundlesInBags,bundlesOnGround,halfBoxParity,sortOrder,boxKey,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
-CREATE VIEW `blockFlagView` AS WITH line AS (SELECT v.blockKey, v.allocatedQty, v.editedByKey AS personKey, '' AS unit, date(x.createdAt) AS day
-	   FROM blockView v JOIN blockTable x USING (versionKey) WHERE v.allocatedQty IS NOT NULL),
-		days AS (SELECT DISTINCT personKey, unit, day FROM line),
-		sample AS (
-		  SELECT d.personKey, d.unit, d.day, w.allocatedQty AS allocatedQty
-		    FROM days d JOIN line w ON w.personKey = d.personKey AND w.unit = d.unit AND w.day BETWEEN date(d.day, '-30 days') AND d.day),
-		ranked AS (
-		  SELECT *, COUNT(allocatedQty) OVER (PARTITION BY personKey, unit, day) AS nAllocated, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY allocatedQty DESC) AS rAllocated
-		    FROM sample),
-		med AS (
-		  SELECT personKey, unit, day, MAX(nAllocated) AS nAllocated, AVG(CASE WHEN rAllocated IN ((nAllocated + 1) / 2, (nAllocated + 2) / 2) THEN allocatedQty END) AS normAllocated
-		    FROM ranked GROUP BY personKey, unit, day),
-		spread AS (
-		  SELECT s.personKey, s.unit, s.day,
-		         abs(s.allocatedQty - m.normAllocated) AS dAllocated, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.allocatedQty - m.normAllocated) DESC) AS rAllocated
-		    FROM sample s JOIN med m USING (personKey, unit, day)),
-		norm AS (
-		  SELECT m.*, AVG(CASE WHEN s.rAllocated IN ((m.nAllocated + 1) / 2, (m.nAllocated + 2) / 2) THEN s.dAllocated END) AS madAllocated
-		    FROM med m JOIN spread s USING (personKey, unit, day) GROUP BY m.personKey, m.unit, m.day)
-		SELECT l.*, n.normAllocated, n.madAllocated, n.nAllocated,
-		       TRIM(CASE WHEN n.nAllocated >= 5 AND n.madAllocated > 0 AND abs(0.6745 * (l.allocatedQty - n.normAllocated) / n.madAllocated) > 3.5 THEN 'allocated ' || rtrim(rtrim(printf('%.2f', l.allocatedQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normAllocated), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
-		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day
-/* blockFlagView(blockKey,allocatedQty,personKey,unit,day,normAllocated,madAllocated,nAllocated,flag) */;
-CREATE VIEW `blockView` AS SELECT v.versionKey, v.blockKey, v.blockName, v.allocatedQty, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
-		   FROM blockTable v JOIN blockEntity e USING (blockKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM blockTable w WHERE w.blockKey = v.blockKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* blockView(versionKey,blockKey,blockName,allocatedQty,mapFeatureKey,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
-CREATE VIEW `boxFlagView` AS WITH line AS (SELECT v.boxKey, v.boxSizeQty, v.bundleSizeQty, v.editedByKey AS personKey, '' AS unit, date(x.createdAt) AS day
-	   FROM boxView v JOIN boxTable x USING (versionKey) WHERE v.boxSizeQty IS NOT NULL OR v.bundleSizeQty IS NOT NULL),
-		days AS (SELECT DISTINCT personKey, unit, day FROM line),
-		sample AS (
-		  SELECT d.personKey, d.unit, d.day, w.boxSizeQty AS boxSizeQty, w.bundleSizeQty AS bundleSizeQty
-		    FROM days d JOIN line w ON w.personKey = d.personKey AND w.unit = d.unit AND w.day BETWEEN date(d.day, '-30 days') AND d.day),
-		ranked AS (
-		  SELECT *, COUNT(boxSizeQty) OVER (PARTITION BY personKey, unit, day) AS nBoxSize, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY boxSizeQty DESC) AS rBoxSize, COUNT(bundleSizeQty) OVER (PARTITION BY personKey, unit, day) AS nBundleSize, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY bundleSizeQty DESC) AS rBundleSize
-		    FROM sample),
-		med AS (
-		  SELECT personKey, unit, day, MAX(nBoxSize) AS nBoxSize, AVG(CASE WHEN rBoxSize IN ((nBoxSize + 1) / 2, (nBoxSize + 2) / 2) THEN boxSizeQty END) AS normBoxSize, MAX(nBundleSize) AS nBundleSize, AVG(CASE WHEN rBundleSize IN ((nBundleSize + 1) / 2, (nBundleSize + 2) / 2) THEN bundleSizeQty END) AS normBundleSize
-		    FROM ranked GROUP BY personKey, unit, day),
-		spread AS (
-		  SELECT s.personKey, s.unit, s.day,
-		         abs(s.boxSizeQty - m.normBoxSize) AS dBoxSize, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.boxSizeQty - m.normBoxSize) DESC) AS rBoxSize, abs(s.bundleSizeQty - m.normBundleSize) AS dBundleSize, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.bundleSizeQty - m.normBundleSize) DESC) AS rBundleSize
-		    FROM sample s JOIN med m USING (personKey, unit, day)),
-		norm AS (
-		  SELECT m.*, AVG(CASE WHEN s.rBoxSize IN ((m.nBoxSize + 1) / 2, (m.nBoxSize + 2) / 2) THEN s.dBoxSize END) AS madBoxSize, AVG(CASE WHEN s.rBundleSize IN ((m.nBundleSize + 1) / 2, (m.nBundleSize + 2) / 2) THEN s.dBundleSize END) AS madBundleSize
-		    FROM med m JOIN spread s USING (personKey, unit, day) GROUP BY m.personKey, m.unit, m.day)
-		SELECT l.*, n.normBoxSize, n.madBoxSize, n.nBoxSize, n.normBundleSize, n.madBundleSize, n.nBundleSize,
-		       TRIM(CASE WHEN n.nBoxSize >= 5 AND n.madBoxSize > 0 AND abs(0.6745 * (l.boxSizeQty - n.normBoxSize) / n.madBoxSize) > 3.5 THEN 'box size ' || rtrim(rtrim(printf('%.2f', l.boxSizeQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normBoxSize), '0'), '.') || '; ' ELSE '' END || CASE WHEN n.nBundleSize >= 5 AND n.madBundleSize > 0 AND abs(0.6745 * (l.bundleSizeQty - n.normBundleSize) / n.madBundleSize) > 3.5 THEN 'bundle size ' || rtrim(rtrim(printf('%.2f', l.bundleSizeQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normBundleSize), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
-		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day
-/* boxFlagView(boxKey,boxSizeQty,bundleSizeQty,personKey,unit,day,normBoxSize,madBoxSize,nBoxSize,normBundleSize,madBundleSize,nBundleSize,flag) */;
-CREATE VIEW `boxView` AS SELECT v.versionKey, v.boxKey, v.boxTag, v.speciesCode, v.seedlot, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
-		   FROM boxTable v JOIN boxEntity e USING (boxKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM boxTable w WHERE w.boxKey = v.boxKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* boxView(versionKey,boxKey,boxTag,speciesCode,seedlot,boxSizeQty,bundleSizeQty,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
-CREATE VIEW `crewView` AS SELECT * FROM crewTable WHERE replacedAt = ''
-/* crewView(versionKey,mapFeatureKey,memberKey,createdAt,replacedAt) */;
-CREATE VIEW `deliveryView` AS SELECT * FROM deliveryTable d WHERE d.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM deliveryTable w
-	   WHERE w.mapFeatureKey = d.mapFeatureKey AND w.boxKey = d.boxKey AND w.replacedAt = ''
-	     AND (w.createdAt > d.createdAt OR (w.createdAt = d.createdAt AND w.versionKey > d.versionKey)))
-/* deliveryView(versionKey,mapFeatureKey,boxKey,kind,lat,lng,accuracyM,distanceM,closeReason,createdAt,replacedAt,deliveredByKey) */;
-CREATE VIEW `mapFeatureView` AS SELECT v.versionKey, v.mapFeatureKey, v.featureName, v.featureType, v.geometryJson, v.featureDesc, v.featureDataJson, v.pinIcon, v.fillOpacity, v.isTitleShown, v.overlayJson, v.featureOrigin, v.mapKey, v.linkedBlockKey, v.mergedFromJson, v.editorName, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
-		   FROM mapFeatureTable v JOIN mapFeatureEntity e USING (mapFeatureKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM mapFeatureTable w WHERE w.mapFeatureKey = v.mapFeatureKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* mapFeatureView(versionKey,mapFeatureKey,featureName,featureType,geometryJson,featureDesc,featureDataJson,pinIcon,fillOpacity,isTitleShown,overlayJson,featureOrigin,mapKey,linkedBlockKey,mergedFromJson,editorName,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
-CREATE VIEW `mapView` AS SELECT v.versionKey, v.mapKey, v.mapName, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
-		   FROM mapTable v JOIN mapEntity e USING (mapKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM mapTable w WHERE w.mapKey = v.mapKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* mapView(versionKey,mapKey,mapName,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
-CREATE VIEW `orgKindView` AS SELECT * FROM orgKindTable WHERE replacedAt = ''
-/* orgKindView(versionKey,orgKey,kind,createdAt,replacedAt) */;
-CREATE VIEW `orgNameView` AS SELECT * FROM orgNameTable n WHERE n.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM orgNameTable w
-	   WHERE w.orgKey = n.orgKey AND w.replacedAt = ''
-	     AND (w.createdAt > n.createdAt OR (w.createdAt = n.createdAt AND w.versionKey > n.versionKey)))
-/* orgNameView(versionKey,orgKey,orgName,color,createdAt,replacedAt) */;
-CREATE VIEW `orgTagView` AS SELECT * FROM orgTagTable WHERE replacedAt = ''
-/* orgTagView(versionKey,orgKey,mapKey,blockKey,createdAt,replacedAt) */;
-CREATE VIEW `packageView` AS SELECT v.versionKey, v.packageKey, v.fileName, v.direction, v.packageType, v.plantedDt, v.sentAt, v.receivedAt, v.rawJson, v.byteSize, v.logLine, v.countsJson, v.sentVersionKeysJson, v.senderHighWaterAt, v.shareLinkId, v.shareDeleteToken, v.shareAccess, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
-		   FROM packageTable v JOIN packageEntity e USING (packageKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM packageTable w WHERE w.packageKey = v.packageKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* packageView(versionKey,packageKey,fileName,direction,packageType,plantedDt,sentAt,receivedAt,rawJson,byteSize,logLine,countsJson,sentVersionKeysJson,senderHighWaterAt,shareLinkId,shareDeleteToken,shareAccess,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
-CREATE VIEW `personView` AS SELECT v.versionKey, v.personKey, v.username, v.alias, v.color, v.colorPickedAt, v.sameAsKey, v.hiddenAt, e.createdAt, v.replacedAt, v.replacesKey
-		   FROM personTable v JOIN personEntity e USING (personKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM personTable w WHERE w.personKey = v.personKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* personView(versionKey,personKey,username,alias,color,colorPickedAt,sameAsKey,hiddenAt,createdAt,replacedAt,replacesKey) */;
-CREATE VIEW `qaPlotFlagView` AS WITH line AS (SELECT v.qaPlotKey, v.plantedQty, v.editedByKey AS personKey, '' AS unit, date(x.createdAt) AS day
-	   FROM qaPlotView v JOIN qaPlotTable x USING (versionKey) WHERE v.plantedQty >= 0),
-		days AS (SELECT DISTINCT personKey, unit, day FROM line),
-		sample AS (
-		  SELECT d.personKey, d.unit, d.day, w.plantedQty AS plantedQty
-		    FROM days d JOIN line w ON w.personKey = d.personKey AND w.unit = d.unit AND w.day BETWEEN date(d.day, '-30 days') AND d.day),
-		ranked AS (
-		  SELECT *, COUNT(plantedQty) OVER (PARTITION BY personKey, unit, day) AS nPlanted, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY plantedQty DESC) AS rPlanted
-		    FROM sample),
-		med AS (
-		  SELECT personKey, unit, day, MAX(nPlanted) AS nPlanted, AVG(CASE WHEN rPlanted IN ((nPlanted + 1) / 2, (nPlanted + 2) / 2) THEN plantedQty END) AS normPlanted
-		    FROM ranked GROUP BY personKey, unit, day),
-		spread AS (
-		  SELECT s.personKey, s.unit, s.day,
-		         abs(s.plantedQty - m.normPlanted) AS dPlanted, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.plantedQty - m.normPlanted) DESC) AS rPlanted
-		    FROM sample s JOIN med m USING (personKey, unit, day)),
-		norm AS (
-		  SELECT m.*, AVG(CASE WHEN s.rPlanted IN ((m.nPlanted + 1) / 2, (m.nPlanted + 2) / 2) THEN s.dPlanted END) AS madPlanted
-		    FROM med m JOIN spread s USING (personKey, unit, day) GROUP BY m.personKey, m.unit, m.day)
-		SELECT l.*, n.normPlanted, n.madPlanted, n.nPlanted,
-		       TRIM(CASE WHEN n.nPlanted >= 5 AND n.madPlanted > 0 AND abs(0.6745 * (l.plantedQty - n.normPlanted) / n.madPlanted) > 3.5 THEN 'plot ' || rtrim(rtrim(printf('%.2f', l.plantedQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normPlanted), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
-		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day
-/* qaPlotFlagView(qaPlotKey,plantedQty,personKey,unit,day,normPlanted,madPlanted,nPlanted,flag) */;
-CREATE VIEW `qaPlotView` AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plantableSpotsQty, v.plantableSpotsOverrideQty, v.faultsJson, v.splitPlantJson, v.plotDesc, v.isOccupied, v.openLocode, v.qaSurveyKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
-		   FROM qaPlotTable v JOIN qaPlotEntity e USING (qaPlotKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM qaPlotTable w WHERE w.qaPlotKey = v.qaPlotKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* qaPlotView(versionKey,qaPlotKey,plantedQty,plantableSpotsQty,plantableSpotsOverrideQty,faultsJson,splitPlantJson,plotDesc,isOccupied,openLocode,qaSurveyKey,mapFeatureKey,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
-CREATE VIEW `qaSurveyView` AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.areaHa, v.treesPerHa, v.pricePerTree, v.currency, v.speciesChoicesJson, v.mapKey, v.blockKey, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
-		   FROM qaSurveyTable v JOIN qaSurveyEntity e USING (qaSurveyKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM qaSurveyTable w WHERE w.qaSurveyKey = v.qaSurveyKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* qaSurveyView(versionKey,qaSurveyKey,surveyName,areaHa,treesPerHa,pricePerTree,currency,speciesChoicesJson,mapKey,blockKey,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
-CREATE VIEW `stockView` AS SELECT * FROM stockTable s WHERE s.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM stockTable w
-	   WHERE w.mapFeatureKey = s.mapFeatureKey AND w.boxKey = s.boxKey AND w.replacedAt = ''
-	     AND (w.createdAt > s.createdAt OR (w.createdAt = s.createdAt AND w.versionKey > s.versionKey)))
-/* stockView(versionKey,mapFeatureKey,boxKey,boxQty,treesQty,createdAt,replacedAt,countedByKey) */;
-CREATE VIEW `tallyFlagView` AS WITH line AS (SELECT t.*, b.plantedDt, b.createdByKey AS personKey, COALESCE(t.currency, '') AS unit, b.plantedDt AS day,
+
+CREATE VIEW mapView AS SELECT v.versionKey, v.mapKey, v.mapName, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM mapTable v JOIN mapEntity e USING (mapKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM mapTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM mapTable w WHERE w.mapKey = v.mapKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM mapTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW mapFeatureView AS SELECT v.versionKey, v.mapFeatureKey, v.featureName, v.featureType, v.geometryJson, v.featureDesc, v.featureDataJson, v.pinIcon, v.fillOpacity, v.isTitleShown, v.overlayJson, v.featureOrigin, v.mapKey, v.linkedBlockKey, v.mergedFromJson, v.editorName, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM mapFeatureTable v JOIN mapFeatureEntity e USING (mapFeatureKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM mapFeatureTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM mapFeatureTable w WHERE w.mapFeatureKey = v.mapFeatureKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM mapFeatureTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW qaSurveyView AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.areaHa, v.treesPerHa, v.pricePerTree, v.currency, v.speciesChoicesJson, v.mapKey, v.blockKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaSurveyTable v JOIN qaSurveyEntity e USING (qaSurveyKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM qaSurveyTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM qaSurveyTable w WHERE w.qaSurveyKey = v.qaSurveyKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM qaSurveyTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW qaPlotView AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plantableSpotsQty, v.plantableSpotsOverrideQty, v.faultsJson, v.splitPlantJson, v.plotDesc, v.isOccupied, v.isAtUserLocation, v.openLocode, v.qaSurveyKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaPlotTable v JOIN qaPlotEntity e USING (qaPlotKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM qaPlotTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM qaPlotTable w WHERE w.qaPlotKey = v.qaPlotKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM qaPlotTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW blockView AS SELECT v.versionKey, v.blockKey, v.blockName, v.allocatedQty, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM blockTable v JOIN blockEntity e USING (blockKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM blockTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM blockTable w WHERE w.blockKey = v.blockKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM blockTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW boxView AS SELECT v.versionKey, v.boxKey, v.boxTag, v.speciesCode, v.seedlot, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM boxTable v JOIN boxEntity e USING (boxKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM boxTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM boxTable w WHERE w.boxKey = v.boxKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM boxTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW bagView AS SELECT v.versionKey, v.bagKey, v.boxQty, v.bundleQty, v.pricePerTree, v.currency, v.isBox, v.isBagged, v.bundlesInBags, v.bundlesOnGround, v.halfBoxParity, v.sortOrder, v.boxKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM bagTable v JOIN bagEntity e USING (bagKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM bagTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM bagTable w WHERE w.bagKey = v.bagKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM bagTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW bagUpView AS SELECT v.versionKey, v.bagUpKey, v.plantedDt, v.workMode, v.blockKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM bagUpTable v JOIN bagUpEntity e USING (bagUpKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM bagUpTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM bagUpTable w WHERE w.bagUpKey = v.bagUpKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM bagUpTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW tallyView AS SELECT v.versionKey, v.tallyKey, v.boxTag, v.speciesCode, v.plantedQty, v.pricePerTree, v.currency, v.bagUpKey, v.bagKey, v.boxKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM tallyTable v JOIN tallyEntity e USING (tallyKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM tallyTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM tallyTable w WHERE w.tallyKey = v.tallyKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM tallyTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW packageView AS SELECT v.versionKey, v.packageKey, v.fileName, v.direction, v.packageType, v.plantedDt, v.sentAt, v.receivedAt, v.rawJson, v.byteSize, v.logLine, v.countsJson, v.sentVersionKeysJson, v.senderHighWaterAt, v.shareLinkId, v.shareDeleteToken, v.shareAccess, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM packageTable v JOIN packageEntity e USING (packageKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM packageTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM packageTable w WHERE w.packageKey = v.packageKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM packageTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW personView AS SELECT v.versionKey, v.personKey, v.username, v.alias, v.color, v.colorPickedAt, v.sameAsKey, v.hiddenAt, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted FROM personTable v JOIN personEntity e USING (personKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM personTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM personTable w WHERE w.personKey = v.personKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM personTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW crewView AS SELECT * FROM crewTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM crewTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW orgKindView AS SELECT * FROM orgKindTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM orgKindTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW orgTagView AS SELECT * FROM orgTagTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM orgTagTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW orgNameView AS SELECT * FROM orgNameTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM orgNameTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM orgNameTable w WHERE w.orgKey = v.orgKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM orgNameTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW stockView AS SELECT * FROM stockTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM stockTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM stockTable w WHERE w.mapFeatureKey = v.mapFeatureKey AND w.boxKey = v.boxKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM stockTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW deliveryView AS SELECT * FROM deliveryTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM deliveryTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM deliveryTable w WHERE w.mapFeatureKey = v.mapFeatureKey AND w.boxKey = v.boxKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM deliveryTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
+CREATE VIEW allocationView AS SELECT * FROM allocationTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM allocationTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM allocationTable w WHERE w.blockKey = v.blockKey
+	   AND w.replacedAt = '' AND w.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
+	 AND NOT EXISTS (SELECT 1 FROM allocationTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND w.createdAt > v.createdAt) AND v.isDeleted = 0;
+CREATE VIEW tallyFlagView AS SELECT * FROM (WITH line AS (SELECT t.*, b.plantedDt, b.createdByKey AS personKey, COALESCE(t.currency, '') || '/' || t.speciesCode AS unit, b.plantedDt AS day,
 	        t.plantedQty * t.pricePerTree AS total,
 	        SUM(t.plantedQty * t.pricePerTree) OVER (PARTITION BY b.createdByKey, b.plantedDt, t.currency) AS dayTotal,
 	        ROW_NUMBER() OVER (PARTITION BY b.createdByKey, b.plantedDt, t.currency ORDER BY t.createdAt DESC, t.versionKey DESC) AS fromLast
@@ -683,67 +738,92 @@ CREATE VIEW `tallyFlagView` AS WITH line AS (SELECT t.*, b.plantedDt, b.createdB
 		    FROM med m JOIN spread s USING (personKey, unit, day) GROUP BY m.personKey, m.unit, m.day)
 		SELECT l.*, n.normPrice, n.madPrice, n.nPrice, n.normTrees, n.madTrees, n.nTrees, n.normTotal, n.madTotal, n.nTotal,
 		       TRIM(CASE WHEN n.nPrice >= 5 AND n.madPrice > 0 AND abs(0.6745 * (l.pricePerTree - n.normPrice) / n.madPrice) > 3.5 THEN 'price ' || rtrim(rtrim(printf('%.2f', l.pricePerTree), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normPrice), '0'), '.') || '; ' ELSE '' END || CASE WHEN n.nTrees >= 5 AND n.madTrees > 0 AND abs(0.6745 * (l.plantedQty - n.normTrees) / n.madTrees) > 3.5 THEN 'trees ' || rtrim(rtrim(printf('%.2f', l.plantedQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normTrees), '0'), '.') || '; ' ELSE '' END || CASE WHEN n.nTotal >= 5 AND n.madTotal > 0 AND abs(0.6745 * (l.total - n.normTotal) / n.madTotal) > 3.5 THEN 'total ' || rtrim(rtrim(printf('%.2f', l.total), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normTotal), '0'), '.') || '; ' ELSE '' END || CASE WHEN l.fromLast = 1 AND l.dayTotal > CASE l.currency WHEN 'CAD' THEN 1000 WHEN 'USD' THEN 1000 WHEN 'EUR' THEN 900 WHEN 'GBP' THEN 800 WHEN 'CHF' THEN 800 WHEN 'AUD' THEN 2000 WHEN 'NZD' THEN 2000 WHEN 'SGD' THEN 1000 WHEN 'BTC' THEN 0.01 WHEN 'AZN' THEN 2000 WHEN 'GEL' THEN 3000 WHEN 'AED' THEN 4000 WHEN 'SAR' THEN 4000 WHEN 'ILS' THEN 4000 WHEN 'PEN' THEN 4000 WHEN 'PLN' THEN 4000 WHEN 'MYR' THEN 4000 WHEN 'RON' THEN 5000 WHEN 'BRL' THEN 6000 WHEN 'DKK' THEN 7000 WHEN 'CNY' THEN 7000 WHEN 'HKD' THEN 8000 WHEN 'SEK' THEN 10000 WHEN 'NOK' THEN 10000 WHEN 'GHS' THEN 10000 WHEN 'ZAR' THEN 20000 WHEN 'MXN' THEN 20000 WHEN 'CZK' THEN 20000 WHEN 'TWD' THEN 30000 WHEN 'THB' THEN 30000 WHEN 'TRY' THEN 40000 WHEN 'UAH' THEN 40000 WHEN 'MKD' THEN 60000 WHEN 'PHP' THEN 60000 WHEN 'AFN' THEN 70000 WHEN 'RUB' THEN 90000 WHEN 'KGS' THEN 90000 WHEN 'INR' THEN 90000 WHEN 'BDT' THEN 100000 WHEN 'ISK' THEN 100000 WHEN 'KES' THEN 100000 WHEN 'JPY' THEN 200000 WHEN 'HUF' THEN 400000 WHEN 'AMD' THEN 400000 WHEN 'CRC' THEN 500000 WHEN 'KZT' THEN 500000 WHEN 'CLP' THEN 1000000 WHEN 'KRW' THEN 1000000 WHEN 'ARS' THEN 1000000 WHEN 'NGN' THEN 2000000 WHEN 'MNT' THEN 4000000 WHEN 'KHR' THEN 4000000 WHEN 'COP' THEN 4000000 WHEN 'PYG' THEN 8000000 WHEN 'IDR' THEN 20000000 WHEN 'LAK' THEN 20000000 WHEN 'VND' THEN 30000000 WHEN 'IRR' THEN 1000000000 END THEN 'day ' || rtrim(rtrim(printf('%.2f', l.dayTotal), '0'), '.') || ' over ' || rtrim(rtrim(printf('%.2f', CASE l.currency WHEN 'CAD' THEN 1000 WHEN 'USD' THEN 1000 WHEN 'EUR' THEN 900 WHEN 'GBP' THEN 800 WHEN 'CHF' THEN 800 WHEN 'AUD' THEN 2000 WHEN 'NZD' THEN 2000 WHEN 'SGD' THEN 1000 WHEN 'BTC' THEN 0.01 WHEN 'AZN' THEN 2000 WHEN 'GEL' THEN 3000 WHEN 'AED' THEN 4000 WHEN 'SAR' THEN 4000 WHEN 'ILS' THEN 4000 WHEN 'PEN' THEN 4000 WHEN 'PLN' THEN 4000 WHEN 'MYR' THEN 4000 WHEN 'RON' THEN 5000 WHEN 'BRL' THEN 6000 WHEN 'DKK' THEN 7000 WHEN 'CNY' THEN 7000 WHEN 'HKD' THEN 8000 WHEN 'SEK' THEN 10000 WHEN 'NOK' THEN 10000 WHEN 'GHS' THEN 10000 WHEN 'ZAR' THEN 20000 WHEN 'MXN' THEN 20000 WHEN 'CZK' THEN 20000 WHEN 'TWD' THEN 30000 WHEN 'THB' THEN 30000 WHEN 'TRY' THEN 40000 WHEN 'UAH' THEN 40000 WHEN 'MKD' THEN 60000 WHEN 'PHP' THEN 60000 WHEN 'AFN' THEN 70000 WHEN 'RUB' THEN 90000 WHEN 'KGS' THEN 90000 WHEN 'INR' THEN 90000 WHEN 'BDT' THEN 100000 WHEN 'ISK' THEN 100000 WHEN 'KES' THEN 100000 WHEN 'JPY' THEN 200000 WHEN 'HUF' THEN 400000 WHEN 'AMD' THEN 400000 WHEN 'CRC' THEN 500000 WHEN 'KZT' THEN 500000 WHEN 'CLP' THEN 1000000 WHEN 'KRW' THEN 1000000 WHEN 'ARS' THEN 1000000 WHEN 'NGN' THEN 2000000 WHEN 'MNT' THEN 4000000 WHEN 'KHR' THEN 4000000 WHEN 'COP' THEN 4000000 WHEN 'PYG' THEN 8000000 WHEN 'IDR' THEN 20000000 WHEN 'LAK' THEN 20000000 WHEN 'VND' THEN 30000000 WHEN 'IRR' THEN 1000000000 END), '0'), '.') ELSE '' END, '; ') AS flag
-		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day
-/* tallyFlagView(versionKey,tallyKey,boxTag,speciesCode,plantedQty,pricePerTree,currency,bagUpKey,bagKey,boxKey,createdAt,replacedAt,replacesKey,editedByKey,createdByKey,plantedDt,personKey,unit,day,total,dayTotal,fromLast,normPrice,madPrice,nPrice,normTrees,madTrees,nTrees,normTotal,madTotal,nTotal,flag) */;
-CREATE VIEW `tallyView` AS SELECT v.versionKey, v.tallyKey, v.boxTag, v.speciesCode, v.plantedQty, v.pricePerTree, v.currency, v.bagUpKey, v.bagKey, v.boxKey, e.createdAt, v.replacedAt, v.replacesKey, v.editedByKey, e.createdByKey
-		   FROM tallyTable v JOIN tallyEntity e USING (tallyKey)
-		  WHERE v.replacedAt = '' AND NOT EXISTS (SELECT 1 FROM tallyTable w WHERE w.tallyKey = v.tallyKey
-	   AND w.replacedAt = '' AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey)))
-/* tallyView(versionKey,tallyKey,boxTag,speciesCode,plantedQty,pricePerTree,currency,bagUpKey,bagKey,boxKey,createdAt,replacedAt,replacesKey,editedByKey,createdByKey) */;
-CREATE TRIGGER `mapEntity_birth_is_a_fact` BEFORE UPDATE OF createdByKey, createdAt ON `mapEntity`
-	  WHEN NEW.createdByKey IS NOT OLD.createdByKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'mapEntity.createdByKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `mapFeatureEntity_birth_is_a_fact` BEFORE UPDATE OF createdByKey, createdAt ON `mapFeatureEntity`
-	  WHEN NEW.createdByKey IS NOT OLD.createdByKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'mapFeatureEntity.createdByKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `qaSurveyEntity_birth_is_a_fact` BEFORE UPDATE OF createdByKey, createdAt ON `qaSurveyEntity`
-	  WHEN NEW.createdByKey IS NOT OLD.createdByKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'qaSurveyEntity.createdByKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `qaPlotEntity_birth_is_a_fact` BEFORE UPDATE OF createdByKey, createdAt ON `qaPlotEntity`
-	  WHEN NEW.createdByKey IS NOT OLD.createdByKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'qaPlotEntity.createdByKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `blockEntity_birth_is_a_fact` BEFORE UPDATE OF createdByKey, createdAt ON `blockEntity`
-	  WHEN NEW.createdByKey IS NOT OLD.createdByKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'blockEntity.createdByKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `boxEntity_birth_is_a_fact` BEFORE UPDATE OF createdByKey, createdAt ON `boxEntity`
-	  WHEN NEW.createdByKey IS NOT OLD.createdByKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'boxEntity.createdByKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `bagEntity_birth_is_a_fact` BEFORE UPDATE OF createdByKey, createdAt ON `bagEntity`
-	  WHEN NEW.createdByKey IS NOT OLD.createdByKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'bagEntity.createdByKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `bagUpEntity_birth_is_a_fact` BEFORE UPDATE OF createdByKey, createdAt ON `bagUpEntity`
-	  WHEN NEW.createdByKey IS NOT OLD.createdByKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'bagUpEntity.createdByKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `tallyEntity_birth_is_a_fact` BEFORE UPDATE OF createdByKey, createdAt ON `tallyEntity`
-	  WHEN NEW.createdByKey IS NOT OLD.createdByKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'tallyEntity.createdByKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `packageEntity_birth_is_a_fact` BEFORE UPDATE OF createdByKey, createdAt ON `packageEntity`
-	  WHEN NEW.createdByKey IS NOT OLD.createdByKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'packageEntity.createdByKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `personEntity_birth_is_a_fact` BEFORE UPDATE OF personKey, createdAt ON `personEntity`
-	  WHEN NEW.personKey IS NOT OLD.personKey OR NEW.createdAt IS NOT OLD.createdAt
-	  BEGIN SELECT RAISE(ABORT, 'personEntity.personKey/createdAt is a fact: written once, never updated'); END;
-CREATE TRIGGER `bagTable_bagged_is_counted` BEFORE INSERT ON `bagTable` WHEN NEW.isBagged = 1 AND NEW.replacedAt = ''
-	   AND EXISTS (SELECT 1 FROM boxTable x WHERE x.boxKey = NEW.boxKey AND x.replacedAt = '' AND NOT (CASE WHEN NEW.isBox = 1
-	    THEN COALESCE(NEW.boxQty, 0) > 0 AND COALESCE(x.boxSizeQty, 0) > 0
-	     AND (NEW.boxQty = CAST(NEW.boxQty AS INTEGER) OR COALESCE(x.bundleSizeQty, 0) > 0)
-	    ELSE COALESCE(NEW.bundleQty, 0) > 0 AND COALESCE(x.bundleSizeQty, 0) > 0 END))
-	  BEGIN SELECT RAISE(ABORT, 'bagged with no tree count: the box needs its size'); END;
-CREATE TRIGGER `bagTable_bagged_stays_counted` BEFORE UPDATE OF isBagged, isBox, boxQty, bundleQty, boxKey ON `bagTable` WHEN NEW.isBagged = 1 AND NEW.replacedAt = ''
-	   AND EXISTS (SELECT 1 FROM boxTable x WHERE x.boxKey = NEW.boxKey AND x.replacedAt = '' AND NOT (CASE WHEN NEW.isBox = 1
-	    THEN COALESCE(NEW.boxQty, 0) > 0 AND COALESCE(x.boxSizeQty, 0) > 0
-	     AND (NEW.boxQty = CAST(NEW.boxQty AS INTEGER) OR COALESCE(x.bundleSizeQty, 0) > 0)
-	    ELSE COALESCE(NEW.bundleQty, 0) > 0 AND COALESCE(x.bundleSizeQty, 0) > 0 END))
-	  BEGIN SELECT RAISE(ABORT, 'bagged with no tree count: the box needs its size'); END;
-CREATE TRIGGER `boxTable_bagged_is_counted` BEFORE INSERT ON `boxTable` WHEN NEW.replacedAt = ''
-	   AND EXISTS (SELECT 1 FROM bagTable c WHERE c.boxKey = NEW.boxKey AND c.replacedAt = '' AND c.isBagged = 1 AND NOT (CASE WHEN c.isBox = 1
-	    THEN COALESCE(c.boxQty, 0) > 0 AND COALESCE(NEW.boxSizeQty, 0) > 0
-	     AND (c.boxQty = CAST(c.boxQty AS INTEGER) OR COALESCE(NEW.bundleSizeQty, 0) > 0)
-	    ELSE COALESCE(c.bundleQty, 0) > 0 AND COALESCE(NEW.bundleSizeQty, 0) > 0 END))
-	  BEGIN SELECT RAISE(ABORT, 'bagged with no tree count: the box needs its size'); END;
-CREATE TRIGGER `boxTable_bagged_stays_counted` BEFORE UPDATE OF boxSizeQty, bundleSizeQty ON `boxTable` WHEN NEW.replacedAt = ''
-	   AND EXISTS (SELECT 1 FROM bagTable c WHERE c.boxKey = NEW.boxKey AND c.replacedAt = '' AND c.isBagged = 1 AND NOT (CASE WHEN c.isBox = 1
-	    THEN COALESCE(c.boxQty, 0) > 0 AND COALESCE(NEW.boxSizeQty, 0) > 0
-	     AND (c.boxQty = CAST(c.boxQty AS INTEGER) OR COALESCE(NEW.bundleSizeQty, 0) > 0)
-	    ELSE COALESCE(c.bundleQty, 0) > 0 AND COALESCE(NEW.bundleSizeQty, 0) > 0 END))
-	  BEGIN SELECT RAISE(ABORT, 'bagged with no tree count: the box needs its size'); END;
+		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day);
+CREATE VIEW bagUpFlagView AS SELECT * FROM (WITH line AS (SELECT b.bagUpKey, b.createdByKey AS personKey, b.workMode AS unit, b.plantedDt AS day, SUM(t.plantedQty) AS treesQty
+	   FROM bagUpView b JOIN tallyView t USING (bagUpKey) GROUP BY b.bagUpKey),
+		days AS (SELECT DISTINCT personKey, unit, day FROM line),
+		sample AS (
+		  SELECT d.personKey, d.unit, d.day, w.treesQty AS treesQty
+		    FROM days d JOIN line w ON w.personKey = d.personKey AND w.unit = d.unit AND w.day BETWEEN date(d.day, '-30 days') AND d.day),
+		ranked AS (
+		  SELECT *, COUNT(treesQty) OVER (PARTITION BY personKey, unit, day) AS nTrees, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY treesQty DESC) AS rTrees
+		    FROM sample),
+		med AS (
+		  SELECT personKey, unit, day, MAX(nTrees) AS nTrees, AVG(CASE WHEN rTrees IN ((nTrees + 1) / 2, (nTrees + 2) / 2) THEN treesQty END) AS normTrees
+		    FROM ranked GROUP BY personKey, unit, day),
+		spread AS (
+		  SELECT s.personKey, s.unit, s.day,
+		         abs(s.treesQty - m.normTrees) AS dTrees, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.treesQty - m.normTrees) DESC) AS rTrees
+		    FROM sample s JOIN med m USING (personKey, unit, day)),
+		norm AS (
+		  SELECT m.*, AVG(CASE WHEN s.rTrees IN ((m.nTrees + 1) / 2, (m.nTrees + 2) / 2) THEN s.dTrees END) AS madTrees
+		    FROM med m JOIN spread s USING (personKey, unit, day) GROUP BY m.personKey, m.unit, m.day)
+		SELECT l.*, n.normTrees, n.madTrees, n.nTrees,
+		       TRIM(CASE WHEN n.nTrees >= 5 AND n.madTrees > 0 AND abs(0.6745 * (l.treesQty - n.normTrees) / n.madTrees) > 3.5 THEN 'trees ' || rtrim(rtrim(printf('%.2f', l.treesQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normTrees), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
+		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day);
+CREATE VIEW boxFlagView AS SELECT * FROM (WITH line AS (SELECT v.boxKey, v.boxSizeQty, v.bundleSizeQty, v.editedByKey AS personKey, '' AS unit, date(x.createdAt) AS day
+	   FROM boxView v JOIN boxTable x USING (versionKey) WHERE v.boxSizeQty IS NOT NULL OR v.bundleSizeQty IS NOT NULL),
+		days AS (SELECT DISTINCT personKey, unit, day FROM line),
+		sample AS (
+		  SELECT d.personKey, d.unit, d.day, w.boxSizeQty AS boxSizeQty, w.bundleSizeQty AS bundleSizeQty
+		    FROM days d JOIN line w ON w.personKey = d.personKey AND w.unit = d.unit AND w.day BETWEEN date(d.day, '-30 days') AND d.day),
+		ranked AS (
+		  SELECT *, COUNT(boxSizeQty) OVER (PARTITION BY personKey, unit, day) AS nBoxSize, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY boxSizeQty DESC) AS rBoxSize, COUNT(bundleSizeQty) OVER (PARTITION BY personKey, unit, day) AS nBundleSize, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY bundleSizeQty DESC) AS rBundleSize
+		    FROM sample),
+		med AS (
+		  SELECT personKey, unit, day, MAX(nBoxSize) AS nBoxSize, AVG(CASE WHEN rBoxSize IN ((nBoxSize + 1) / 2, (nBoxSize + 2) / 2) THEN boxSizeQty END) AS normBoxSize, MAX(nBundleSize) AS nBundleSize, AVG(CASE WHEN rBundleSize IN ((nBundleSize + 1) / 2, (nBundleSize + 2) / 2) THEN bundleSizeQty END) AS normBundleSize
+		    FROM ranked GROUP BY personKey, unit, day),
+		spread AS (
+		  SELECT s.personKey, s.unit, s.day,
+		         abs(s.boxSizeQty - m.normBoxSize) AS dBoxSize, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.boxSizeQty - m.normBoxSize) DESC) AS rBoxSize, abs(s.bundleSizeQty - m.normBundleSize) AS dBundleSize, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.bundleSizeQty - m.normBundleSize) DESC) AS rBundleSize
+		    FROM sample s JOIN med m USING (personKey, unit, day)),
+		norm AS (
+		  SELECT m.*, AVG(CASE WHEN s.rBoxSize IN ((m.nBoxSize + 1) / 2, (m.nBoxSize + 2) / 2) THEN s.dBoxSize END) AS madBoxSize, AVG(CASE WHEN s.rBundleSize IN ((m.nBundleSize + 1) / 2, (m.nBundleSize + 2) / 2) THEN s.dBundleSize END) AS madBundleSize
+		    FROM med m JOIN spread s USING (personKey, unit, day) GROUP BY m.personKey, m.unit, m.day)
+		SELECT l.*, n.normBoxSize, n.madBoxSize, n.nBoxSize, n.normBundleSize, n.madBundleSize, n.nBundleSize,
+		       TRIM(CASE WHEN n.nBoxSize >= 5 AND n.madBoxSize > 0 AND abs(0.6745 * (l.boxSizeQty - n.normBoxSize) / n.madBoxSize) > 3.5 THEN 'box size ' || rtrim(rtrim(printf('%.2f', l.boxSizeQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normBoxSize), '0'), '.') || '; ' ELSE '' END || CASE WHEN n.nBundleSize >= 5 AND n.madBundleSize > 0 AND abs(0.6745 * (l.bundleSizeQty - n.normBundleSize) / n.madBundleSize) > 3.5 THEN 'bundle size ' || rtrim(rtrim(printf('%.2f', l.bundleSizeQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normBundleSize), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
+		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day);
+CREATE VIEW qaPlotFlagView AS SELECT * FROM (WITH line AS (SELECT v.qaPlotKey, v.plantedQty, v.editedByKey AS personKey, '' AS unit, date(x.createdAt) AS day
+	   FROM qaPlotView v JOIN qaPlotTable x USING (versionKey) WHERE v.plantedQty >= 0),
+		days AS (SELECT DISTINCT personKey, unit, day FROM line),
+		sample AS (
+		  SELECT d.personKey, d.unit, d.day, w.plantedQty AS plantedQty
+		    FROM days d JOIN line w ON w.personKey = d.personKey AND w.unit = d.unit AND w.day BETWEEN date(d.day, '-30 days') AND d.day),
+		ranked AS (
+		  SELECT *, COUNT(plantedQty) OVER (PARTITION BY personKey, unit, day) AS nPlanted, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY plantedQty DESC) AS rPlanted
+		    FROM sample),
+		med AS (
+		  SELECT personKey, unit, day, MAX(nPlanted) AS nPlanted, AVG(CASE WHEN rPlanted IN ((nPlanted + 1) / 2, (nPlanted + 2) / 2) THEN plantedQty END) AS normPlanted
+		    FROM ranked GROUP BY personKey, unit, day),
+		spread AS (
+		  SELECT s.personKey, s.unit, s.day,
+		         abs(s.plantedQty - m.normPlanted) AS dPlanted, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.plantedQty - m.normPlanted) DESC) AS rPlanted
+		    FROM sample s JOIN med m USING (personKey, unit, day)),
+		norm AS (
+		  SELECT m.*, AVG(CASE WHEN s.rPlanted IN ((m.nPlanted + 1) / 2, (m.nPlanted + 2) / 2) THEN s.dPlanted END) AS madPlanted
+		    FROM med m JOIN spread s USING (personKey, unit, day) GROUP BY m.personKey, m.unit, m.day)
+		SELECT l.*, n.normPlanted, n.madPlanted, n.nPlanted,
+		       TRIM(CASE WHEN n.nPlanted >= 5 AND n.madPlanted > 0 AND abs(0.6745 * (l.plantedQty - n.normPlanted) / n.madPlanted) > 3.5 THEN 'plot ' || rtrim(rtrim(printf('%.2f', l.plantedQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normPlanted), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
+		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day);
+CREATE VIEW blockFlagView AS SELECT * FROM (WITH line AS (SELECT v.blockKey, v.allocatedQty, v.editedByKey AS personKey, '' AS unit, date(x.createdAt) AS day
+	   FROM blockView v JOIN blockTable x USING (versionKey) WHERE v.allocatedQty IS NOT NULL),
+		days AS (SELECT DISTINCT personKey, unit, day FROM line),
+		sample AS (
+		  SELECT d.personKey, d.unit, d.day, w.allocatedQty AS allocatedQty
+		    FROM days d JOIN line w ON w.personKey = d.personKey AND w.unit = d.unit AND w.day BETWEEN date(d.day, '-30 days') AND d.day),
+		ranked AS (
+		  SELECT *, COUNT(allocatedQty) OVER (PARTITION BY personKey, unit, day) AS nAllocated, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY allocatedQty DESC) AS rAllocated
+		    FROM sample),
+		med AS (
+		  SELECT personKey, unit, day, MAX(nAllocated) AS nAllocated, AVG(CASE WHEN rAllocated IN ((nAllocated + 1) / 2, (nAllocated + 2) / 2) THEN allocatedQty END) AS normAllocated
+		    FROM ranked GROUP BY personKey, unit, day),
+		spread AS (
+		  SELECT s.personKey, s.unit, s.day,
+		         abs(s.allocatedQty - m.normAllocated) AS dAllocated, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.allocatedQty - m.normAllocated) DESC) AS rAllocated
+		    FROM sample s JOIN med m USING (personKey, unit, day)),
+		norm AS (
+		  SELECT m.*, AVG(CASE WHEN s.rAllocated IN ((m.nAllocated + 1) / 2, (m.nAllocated + 2) / 2) THEN s.dAllocated END) AS madAllocated
+		    FROM med m JOIN spread s USING (personKey, unit, day) GROUP BY m.personKey, m.unit, m.day)
+		SELECT l.*, n.normAllocated, n.madAllocated, n.nAllocated,
+		       TRIM(CASE WHEN n.nAllocated >= 5 AND n.madAllocated > 0 AND abs(0.6745 * (l.allocatedQty - n.normAllocated) / n.madAllocated) > 3.5 THEN 'allocated ' || rtrim(rtrim(printf('%.2f', l.allocatedQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normAllocated), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
+		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day);

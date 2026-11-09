@@ -1,7 +1,7 @@
 // Builds public/sample.sqlite: one planter's spring season on a real v57 schema, every row invented.
 // Seeded, so a rerun writes the same file. The schema's own FKs, CHECKs and triggers vet every insert.
 // Run: node scripts/makeSample.mjs
-import { mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 const OUT = new URL('../public/sample.sqlite', import.meta.url).pathname;
@@ -227,5 +227,11 @@ db.exec('COMMIT');
 const fkErrors = db.prepare('PRAGMA foreign_key_check').all();
 if (fkErrors.length) throw new Error(`foreign_key_check: ${JSON.stringify(fkErrors.slice(0, 3))}`);
 db.exec('VACUUM');
+// A report author's map of what the file holds: every table and view, with its columns.
+const shape = db
+	.prepare("SELECT name, type AS kind FROM sqlite_schema WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '\\_\\_%' ESCAPE '\\' ORDER BY type DESC, name")
+	.all()
+	.map(({ name, kind }) => ({ name, kind, columns: db.prepare('SELECT name, type FROM pragma_table_info(?)').all(name).map((c) => ({ ...c })) }));
+writeFileSync(new URL('../schema/v57.json', import.meta.url), `${JSON.stringify({ schema: SCHEMA_VERSION, tables: shape }, null, '\t')}\n`);
 db.close();
 console.log(`wrote ${OUT}`);

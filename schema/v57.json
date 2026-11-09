@@ -1,0 +1,2847 @@
+{
+	"schema": 57,
+	"tables": [
+		{
+			"name": "allocationView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "treesQty",
+					"type": "REAL"
+				},
+				{
+					"name": "sortOrder",
+					"type": "INTEGER"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "allocatedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "bagUpFlagView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "bagUpKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "personKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "unit",
+					"type": "TEXT"
+				},
+				{
+					"name": "day",
+					"type": "TEXT"
+				},
+				{
+					"name": "treesQty",
+					"type": ""
+				},
+				{
+					"name": "normTrees",
+					"type": ""
+				},
+				{
+					"name": "madTrees",
+					"type": ""
+				},
+				{
+					"name": "nTrees",
+					"type": ""
+				},
+				{
+					"name": "flag",
+					"type": ""
+				}
+			]
+		},
+		{
+			"name": "bagUpView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "bagUpKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedDt",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "bagView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "bagKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxQty",
+					"type": "REAL"
+				},
+				{
+					"name": "bundleQty",
+					"type": "REAL"
+				},
+				{
+					"name": "pricePerTree",
+					"type": "REAL"
+				},
+				{
+					"name": "currency",
+					"type": "TEXT"
+				},
+				{
+					"name": "isBox",
+					"type": "INTEGER"
+				},
+				{
+					"name": "isBagged",
+					"type": "INTEGER"
+				},
+				{
+					"name": "bundlesInBags",
+					"type": "INTEGER"
+				},
+				{
+					"name": "bundlesOnGround",
+					"type": "INTEGER"
+				},
+				{
+					"name": "halfBoxParity",
+					"type": "TEXT"
+				},
+				{
+					"name": "sortOrder",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "blockFlagView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "allocatedQty",
+					"type": "REAL"
+				},
+				{
+					"name": "personKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "unit",
+					"type": ""
+				},
+				{
+					"name": "day",
+					"type": ""
+				},
+				{
+					"name": "normAllocated",
+					"type": ""
+				},
+				{
+					"name": "madAllocated",
+					"type": ""
+				},
+				{
+					"name": "nAllocated",
+					"type": ""
+				},
+				{
+					"name": "flag",
+					"type": ""
+				}
+			]
+		},
+		{
+			"name": "blockView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockName",
+					"type": "TEXT"
+				},
+				{
+					"name": "allocatedQty",
+					"type": "REAL"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "boxFlagView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxSizeQty",
+					"type": "REAL"
+				},
+				{
+					"name": "bundleSizeQty",
+					"type": "REAL"
+				},
+				{
+					"name": "personKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "unit",
+					"type": ""
+				},
+				{
+					"name": "day",
+					"type": ""
+				},
+				{
+					"name": "normBoxSize",
+					"type": ""
+				},
+				{
+					"name": "madBoxSize",
+					"type": ""
+				},
+				{
+					"name": "nBoxSize",
+					"type": ""
+				},
+				{
+					"name": "normBundleSize",
+					"type": ""
+				},
+				{
+					"name": "madBundleSize",
+					"type": ""
+				},
+				{
+					"name": "nBundleSize",
+					"type": ""
+				},
+				{
+					"name": "flag",
+					"type": ""
+				}
+			]
+		},
+		{
+			"name": "boxView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxTag",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesCode",
+					"type": "TEXT"
+				},
+				{
+					"name": "seedlot",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxSizeQty",
+					"type": "REAL"
+				},
+				{
+					"name": "bundleSizeQty",
+					"type": "REAL"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "crewView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "memberKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				}
+			]
+		},
+		{
+			"name": "deliveryView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "lat",
+					"type": "REAL"
+				},
+				{
+					"name": "lng",
+					"type": "REAL"
+				},
+				{
+					"name": "accuracyM",
+					"type": "REAL"
+				},
+				{
+					"name": "distanceM",
+					"type": "REAL"
+				},
+				{
+					"name": "closeReason",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "deliveredByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "mapFeatureView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "featureName",
+					"type": "TEXT"
+				},
+				{
+					"name": "featureType",
+					"type": "TEXT"
+				},
+				{
+					"name": "geometryJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "featureDesc",
+					"type": "TEXT"
+				},
+				{
+					"name": "featureDataJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "pinIcon",
+					"type": "TEXT"
+				},
+				{
+					"name": "fillOpacity",
+					"type": "REAL"
+				},
+				{
+					"name": "isTitleShown",
+					"type": "INTEGER"
+				},
+				{
+					"name": "overlayJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "featureOrigin",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "linkedBlockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mergedFromJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "editorName",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "mapView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapName",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "orgKindView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "orgKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				}
+			]
+		},
+		{
+			"name": "orgNameView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "orgKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "orgName",
+					"type": "TEXT"
+				},
+				{
+					"name": "color",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				}
+			]
+		},
+		{
+			"name": "orgTagView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "orgKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				}
+			]
+		},
+		{
+			"name": "packageView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "packageKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "fileName",
+					"type": "TEXT"
+				},
+				{
+					"name": "direction",
+					"type": "TEXT"
+				},
+				{
+					"name": "packageType",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedDt",
+					"type": "TEXT"
+				},
+				{
+					"name": "sentAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "receivedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "rawJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "byteSize",
+					"type": "INTEGER"
+				},
+				{
+					"name": "logLine",
+					"type": "TEXT"
+				},
+				{
+					"name": "countsJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "sentVersionKeysJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "senderHighWaterAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "shareLinkId",
+					"type": "TEXT"
+				},
+				{
+					"name": "shareDeleteToken",
+					"type": "TEXT"
+				},
+				{
+					"name": "shareAccess",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "personView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "personKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "username",
+					"type": "TEXT"
+				},
+				{
+					"name": "alias",
+					"type": "TEXT"
+				},
+				{
+					"name": "color",
+					"type": "TEXT"
+				},
+				{
+					"name": "colorPickedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "sameAsKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "hiddenAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				}
+			]
+		},
+		{
+			"name": "qaPlotFlagView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "qaPlotKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedQty",
+					"type": "REAL"
+				},
+				{
+					"name": "personKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "unit",
+					"type": ""
+				},
+				{
+					"name": "day",
+					"type": ""
+				},
+				{
+					"name": "normPlanted",
+					"type": ""
+				},
+				{
+					"name": "madPlanted",
+					"type": ""
+				},
+				{
+					"name": "nPlanted",
+					"type": ""
+				},
+				{
+					"name": "flag",
+					"type": ""
+				}
+			]
+		},
+		{
+			"name": "qaPlotView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "qaPlotKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedQty",
+					"type": "REAL"
+				},
+				{
+					"name": "plantableSpotsQty",
+					"type": "REAL"
+				},
+				{
+					"name": "plantableSpotsOverrideQty",
+					"type": "REAL"
+				},
+				{
+					"name": "faultsJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "splitPlantJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "plotDesc",
+					"type": "TEXT"
+				},
+				{
+					"name": "isOccupied",
+					"type": "INTEGER"
+				},
+				{
+					"name": "isAtUserLocation",
+					"type": "INTEGER"
+				},
+				{
+					"name": "openLocode",
+					"type": "TEXT"
+				},
+				{
+					"name": "qaSurveyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "qaSurveyView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "qaSurveyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "surveyName",
+					"type": "TEXT"
+				},
+				{
+					"name": "areaHa",
+					"type": "REAL"
+				},
+				{
+					"name": "treesPerHa",
+					"type": "REAL"
+				},
+				{
+					"name": "pricePerTree",
+					"type": "REAL"
+				},
+				{
+					"name": "currency",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesChoicesJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "stockView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxQty",
+					"type": "REAL"
+				},
+				{
+					"name": "treesQty",
+					"type": "REAL"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "countedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "tallyFlagView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "tallyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxTag",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesCode",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedQty",
+					"type": "REAL"
+				},
+				{
+					"name": "pricePerTree",
+					"type": "REAL"
+				},
+				{
+					"name": "currency",
+					"type": "TEXT"
+				},
+				{
+					"name": "bagUpKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "bagKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedDt",
+					"type": "TEXT"
+				},
+				{
+					"name": "personKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "unit",
+					"type": ""
+				},
+				{
+					"name": "day",
+					"type": "TEXT"
+				},
+				{
+					"name": "total",
+					"type": ""
+				},
+				{
+					"name": "dayTotal",
+					"type": ""
+				},
+				{
+					"name": "fromLast",
+					"type": ""
+				},
+				{
+					"name": "normPrice",
+					"type": ""
+				},
+				{
+					"name": "madPrice",
+					"type": ""
+				},
+				{
+					"name": "nPrice",
+					"type": ""
+				},
+				{
+					"name": "normTrees",
+					"type": ""
+				},
+				{
+					"name": "madTrees",
+					"type": ""
+				},
+				{
+					"name": "nTrees",
+					"type": ""
+				},
+				{
+					"name": "normTotal",
+					"type": ""
+				},
+				{
+					"name": "madTotal",
+					"type": ""
+				},
+				{
+					"name": "nTotal",
+					"type": ""
+				},
+				{
+					"name": "flag",
+					"type": ""
+				}
+			]
+		},
+		{
+			"name": "tallyView",
+			"kind": "view",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "tallyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxTag",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesCode",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedQty",
+					"type": "REAL"
+				},
+				{
+					"name": "pricePerTree",
+					"type": "REAL"
+				},
+				{
+					"name": "currency",
+					"type": "TEXT"
+				},
+				{
+					"name": "bagUpKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "bagKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "allocationTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "treesQty",
+					"type": "REAL"
+				},
+				{
+					"name": "sortOrder",
+					"type": "INTEGER"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "allocatedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "appState",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "appStateId",
+					"type": "TEXT"
+				},
+				{
+					"name": "gridMode",
+					"type": "TEXT"
+				},
+				{
+					"name": "isGridFine",
+					"type": "INTEGER"
+				},
+				{
+					"name": "lastBlockConfirmAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "lastParityResetAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "qaSurveyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "selfKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "bagEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "bagKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "bagTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "bagKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxQty",
+					"type": "REAL"
+				},
+				{
+					"name": "bundleQty",
+					"type": "REAL"
+				},
+				{
+					"name": "pricePerTree",
+					"type": "REAL"
+				},
+				{
+					"name": "currency",
+					"type": "TEXT"
+				},
+				{
+					"name": "isBox",
+					"type": "INTEGER"
+				},
+				{
+					"name": "isBagged",
+					"type": "INTEGER"
+				},
+				{
+					"name": "bundlesInBags",
+					"type": "INTEGER"
+				},
+				{
+					"name": "bundlesOnGround",
+					"type": "INTEGER"
+				},
+				{
+					"name": "halfBoxParity",
+					"type": "TEXT"
+				},
+				{
+					"name": "sortOrder",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "bagUpEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "bagUpKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "bagUpTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "bagUpKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedDt",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "blockEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "blockTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockName",
+					"type": "TEXT"
+				},
+				{
+					"name": "allocatedQty",
+					"type": "REAL"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "boxEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "boxTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxTag",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesCode",
+					"type": "TEXT"
+				},
+				{
+					"name": "seedlot",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxSizeQty",
+					"type": "REAL"
+				},
+				{
+					"name": "bundleSizeQty",
+					"type": "REAL"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "crewTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "memberKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				}
+			]
+		},
+		{
+			"name": "deliveryTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "lat",
+					"type": "REAL"
+				},
+				{
+					"name": "lng",
+					"type": "REAL"
+				},
+				{
+					"name": "accuracyM",
+					"type": "REAL"
+				},
+				{
+					"name": "distanceM",
+					"type": "REAL"
+				},
+				{
+					"name": "closeReason",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "deliveredByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "editNoteTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "noteKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "tableName",
+					"type": "TEXT"
+				},
+				{
+					"name": "rowKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "reason",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "mapEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "mapKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "mapFeatureEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "mapFeatureTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "featureName",
+					"type": "TEXT"
+				},
+				{
+					"name": "featureType",
+					"type": "TEXT"
+				},
+				{
+					"name": "geometryJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "featureDesc",
+					"type": "TEXT"
+				},
+				{
+					"name": "featureDataJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "pinIcon",
+					"type": "TEXT"
+				},
+				{
+					"name": "fillOpacity",
+					"type": "REAL"
+				},
+				{
+					"name": "isTitleShown",
+					"type": "INTEGER"
+				},
+				{
+					"name": "overlayJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "featureOrigin",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "linkedBlockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mergedFromJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "editorName",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "mapTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapName",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "orgKindTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "orgKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				}
+			]
+		},
+		{
+			"name": "orgNameTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "orgKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "orgName",
+					"type": "TEXT"
+				},
+				{
+					"name": "color",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				}
+			]
+		},
+		{
+			"name": "orgTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "orgKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "orgName",
+					"type": "TEXT"
+				},
+				{
+					"name": "color",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "orgTagTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "orgKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				}
+			]
+		},
+		{
+			"name": "packageEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "packageKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "packageTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "packageKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "fileName",
+					"type": "TEXT"
+				},
+				{
+					"name": "direction",
+					"type": "TEXT"
+				},
+				{
+					"name": "packageType",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedDt",
+					"type": "TEXT"
+				},
+				{
+					"name": "sentAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "receivedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "rawJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "byteSize",
+					"type": "INTEGER"
+				},
+				{
+					"name": "logLine",
+					"type": "TEXT"
+				},
+				{
+					"name": "countsJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "sentVersionKeysJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "senderHighWaterAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "shareLinkId",
+					"type": "TEXT"
+				},
+				{
+					"name": "shareDeleteToken",
+					"type": "TEXT"
+				},
+				{
+					"name": "shareAccess",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "personEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "personKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "personIdTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "personId",
+					"type": "TEXT"
+				},
+				{
+					"name": "personKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "personTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "personKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "username",
+					"type": "TEXT"
+				},
+				{
+					"name": "alias",
+					"type": "TEXT"
+				},
+				{
+					"name": "color",
+					"type": "TEXT"
+				},
+				{
+					"name": "colorPickedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "sameAsKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "hiddenAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				}
+			]
+		},
+		{
+			"name": "purgatoryTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "reviewKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "heldKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "tableName",
+					"type": "TEXT"
+				},
+				{
+					"name": "isLate",
+					"type": "INTEGER"
+				},
+				{
+					"name": "isEdit",
+					"type": "INTEGER"
+				},
+				{
+					"name": "isClockBehind",
+					"type": "INTEGER"
+				},
+				{
+					"name": "decision",
+					"type": "TEXT"
+				},
+				{
+					"name": "packageKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "decidedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "decidedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "qaPlotEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "qaPlotKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "plotNo",
+					"type": "INTEGER"
+				},
+				{
+					"name": "plotNoSent",
+					"type": "INTEGER"
+				},
+				{
+					"name": "qaSurveyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "qaPlotTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "qaPlotKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedQty",
+					"type": "REAL"
+				},
+				{
+					"name": "plantableSpotsQty",
+					"type": "REAL"
+				},
+				{
+					"name": "plantableSpotsOverrideQty",
+					"type": "REAL"
+				},
+				{
+					"name": "faultsJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "splitPlantJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "plotDesc",
+					"type": "TEXT"
+				},
+				{
+					"name": "isOccupied",
+					"type": "INTEGER"
+				},
+				{
+					"name": "isAtUserLocation",
+					"type": "INTEGER"
+				},
+				{
+					"name": "openLocode",
+					"type": "TEXT"
+				},
+				{
+					"name": "qaSurveyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "qaSurveyEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "qaSurveyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "qaSurveyTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "qaSurveyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "surveyName",
+					"type": "TEXT"
+				},
+				{
+					"name": "areaHa",
+					"type": "REAL"
+				},
+				{
+					"name": "treesPerHa",
+					"type": "REAL"
+				},
+				{
+					"name": "pricePerTree",
+					"type": "REAL"
+				},
+				{
+					"name": "currency",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesChoicesJson",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "blockKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "settingTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "settingKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
+					"type": "TEXT"
+				},
+				{
+					"name": "value",
+					"type": "TEXT"
+				},
+				{
+					"name": "updatedAt",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "stackDirty",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "n",
+					"type": "INTEGER"
+				},
+				{
+					"name": "scopeKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "stockTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxQty",
+					"type": "REAL"
+				},
+				{
+					"name": "treesQty",
+					"type": "REAL"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "countedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "tallyEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "tallyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "tallyTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "tallyKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxTag",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesCode",
+					"type": "TEXT"
+				},
+				{
+					"name": "plantedQty",
+					"type": "REAL"
+				},
+				{
+					"name": "pricePerTree",
+					"type": "REAL"
+				},
+				{
+					"name": "currency",
+					"type": "TEXT"
+				},
+				{
+					"name": "bagUpKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "bagKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isDeleted",
+					"type": "INTEGER"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "touchTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "entityKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "lastTouchedAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "sortAt",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "userProfile",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "userProfileId",
+					"type": "TEXT"
+				},
+				{
+					"name": "displayName",
+					"type": "TEXT"
+				},
+				{
+					"name": "email",
+					"type": "TEXT"
+				},
+				{
+					"name": "orgKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "authId",
+					"type": "TEXT"
+				},
+				{
+					"name": "personId",
+					"type": "TEXT"
+				}
+			]
+		}
+	]
+}

@@ -39,3 +39,10 @@ if (existsSync(`${rapper}/.git`)) {
 		writeFileSync(to, bytes);
 	}
 }
+
+// schema/v57.sql likewise from getCache's last commit: its tables, read through the phone's own live rule.
+const getCache = '../fetch/getCache';
+if (existsSync(`${getCache}/.git`)) {
+	const ddl = execFileSync('git', ['-C', getCache, 'show', 'HEAD:src/routes/(getcache)/db/sql/generatedV2/_opsDdl.sql'], { maxBuffer: 1 << 26 });
+	if (!readFileSync('schema/v57.sql').equals(ddl)) writeFileSync('schema/v57.sql', ddl);
+}

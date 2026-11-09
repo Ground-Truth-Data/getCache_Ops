@@ -23,7 +23,15 @@ When the user presses Export, Ops posts `{ export: true }`; answer with
 with your report in it.
 
 Query the `…View` tables (`tallyView`, `bagUpView`, `blockView`…): each holds
-only the live version of every row. Their columns only gain, never change.
+only the live version of every row, and nothing deleted. Their columns only
+gain, never change. `schema/v57.json` lists every table and view with its
+columns; both it and `schema/v57.sql` are generated from Get Cache's own schema.
+
+## Changes
+
+- **9 Nov 2026:** the views read Get Cache's own live rule, so a thing deleted
+  on the phone is gone instead of showing its last version. Every table gains
+  `isDeleted`, and the version tables gain `replacesKey`.
 
 Every tree count Ops shows carries the white pine, as Get Cache's does; draw it
 beside yours.
