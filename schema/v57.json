@@ -1202,6 +1202,10 @@
 					"type": "TEXT"
 				},
 				{
+					"name": "actKey",
+					"type": "TEXT"
+				},
+				{
 					"name": "createdAt",
 					"type": "TEXT"
 				},
