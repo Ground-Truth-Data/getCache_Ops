@@ -42,7 +42,8 @@
   },
   "knip": {
     "ignore": [
-      "_rapper/**"
+      "_rapper/**",
+      "schema/**"
     ]
   }
 }
