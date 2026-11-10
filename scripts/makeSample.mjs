@@ -80,7 +80,7 @@ const seedlots = [
 	const bagKey = key();
 	// The fir is a cross-border lot paid in US dollars, so CAD and USD sit side by side.
 	const [price, currency] = speciesCode === 'FDI' ? [0.15, 'USD'] : [PRICE, 'CAD'];
-	born('box', boxKey, SEASON_START, planter, { boxTag: seedlot, speciesCode, seedlot, boxSizeQty: 400, bundleSizeQty: 20 });
+	born('box', boxKey, SEASON_START, planter, { boxTag: seedlot, speciesCode, boxSizeQty: 400, bundleSizeQty: 20 });
 	born('bag', bagKey, SEASON_START, planter, {
 		boxKey, isBox: 0, pricePerTree: price, currency, sortOrder: `a${i}`,
 	});
@@ -196,8 +196,8 @@ for (const block of blocks.filter((b) => daysOn.has(b))) {
 	const surveyDay = new Date(Date.parse(lastDay) + 864e5).toISOString().slice(0, 10);
 	const qaSurveyKey = key('srv');
 	born('qaSurvey', qaSurveyKey, isoAt(surveyDay, 8 * 60), checker, {
-		surveyName: block.name, areaHa: +block.areaHa.toFixed(1), treesPerHa: 1600, pricePerTree: PRICE,
-		currency: 'CAD', speciesChoicesJson: JSON.stringify([...new Set(block.lots.map((l) => l.speciesCode))]),
+		surveyName: block.name, areaHa: +block.areaHa.toFixed(1), treesPerHa: 1600,
+		speciesChoicesJson: JSON.stringify([...new Set(block.lots.map((l) => l.speciesCode))]),
 		mapKey, blockKey: block.blockKey,
 	});
 	const xs = block.ring.map(([x]) => x), ys = block.ring.map(([, y]) => y);

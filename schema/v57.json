@@ -396,10 +396,6 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "seedlot",
-					"type": "TEXT"
-				},
-				{
 					"name": "boxSizeQty",
 					"type": "REAL"
 				},
@@ -502,10 +498,6 @@
 				{
 					"name": "distanceM",
 					"type": "REAL"
-				},
-				{
-					"name": "closeReason",
-					"type": "TEXT"
 				},
 				{
 					"name": "createdAt",
@@ -1010,10 +1002,6 @@
 					"type": "INTEGER"
 				},
 				{
-					"name": "isAtUserLocation",
-					"type": "INTEGER"
-				},
-				{
 					"name": "openLocode",
 					"type": "TEXT"
 				},
@@ -1074,14 +1062,6 @@
 				{
 					"name": "treesPerHa",
 					"type": "REAL"
-				},
-				{
-					"name": "pricePerTree",
-					"type": "REAL"
-				},
-				{
-					"name": "currency",
-					"type": "TEXT"
 				},
 				{
 					"name": "speciesChoicesJson",
@@ -1734,10 +1714,6 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "seedlot",
-					"type": "TEXT"
-				},
-				{
 					"name": "boxSizeQty",
 					"type": "REAL"
 				},
@@ -1836,10 +1812,6 @@
 				{
 					"name": "distanceM",
 					"type": "REAL"
-				},
-				{
-					"name": "closeReason",
-					"type": "TEXT"
 				},
 				{
 					"name": "createdAt",
@@ -2135,14 +2107,6 @@
 			"columns": [
 				{
 					"name": "orgKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "orgName",
-					"type": "TEXT"
-				},
-				{
-					"name": "color",
 					"type": "TEXT"
 				},
 				{
@@ -2508,10 +2472,6 @@
 					"type": "INTEGER"
 				},
 				{
-					"name": "isAtUserLocation",
-					"type": "INTEGER"
-				},
-				{
 					"name": "openLocode",
 					"type": "TEXT"
 				},
@@ -2586,14 +2546,6 @@
 				{
 					"name": "treesPerHa",
 					"type": "REAL"
-				},
-				{
-					"name": "pricePerTree",
-					"type": "REAL"
-				},
-				{
-					"name": "currency",
-					"type": "TEXT"
 				},
 				{
 					"name": "speciesChoicesJson",

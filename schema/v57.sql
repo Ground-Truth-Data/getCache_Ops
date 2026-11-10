@@ -145,7 +145,6 @@ CREATE TABLE `boxTable` (
 	`boxKey` text NOT NULL,
 	`boxTag` text DEFAULT '' NOT NULL,
 	`speciesCode` text DEFAULT '' NOT NULL,
-	`seedlot` text DEFAULT '' NOT NULL,
 	`boxSizeQty` real,
 	`bundleSizeQty` real,
 	`createdAt` text DEFAULT '' NOT NULL,
@@ -184,7 +183,6 @@ CREATE TABLE `deliveryTable` (
 	`lng` real,
 	`accuracyM` real,
 	`distanceM` real,
-	`closeReason` text DEFAULT '' NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
@@ -307,8 +305,6 @@ CREATE INDEX `orgNameTable_live_idx` ON `orgNameTable` (`orgKey`,`replacedAt`);-
 CREATE INDEX `orgNameTable_replaces_idx` ON `orgNameTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `orgTable` (
 	`orgKey` text PRIMARY KEY NOT NULL,
-	`orgName` text DEFAULT '' NOT NULL,
-	`color` text DEFAULT '' NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL
 );
 --> statement-breakpoint
@@ -447,7 +443,6 @@ CREATE TABLE `qaPlotTable` (
 	`splitPlantJson` text DEFAULT '' NOT NULL,
 	`plotDesc` text DEFAULT '' NOT NULL,
 	`isOccupied` integer DEFAULT 0 NOT NULL,
-	`isAtUserLocation` integer DEFAULT 0 NOT NULL,
 	`openLocode` text DEFAULT '' NOT NULL,
 	`qaSurveyKey` text NOT NULL,
 	`mapFeatureKey` text,
@@ -477,8 +472,6 @@ CREATE TABLE `qaSurveyTable` (
 	`surveyName` text DEFAULT '' NOT NULL,
 	`areaHa` real,
 	`treesPerHa` real,
-	`pricePerTree` real,
-	`currency` text NOT NULL,
 	`speciesChoicesJson` text DEFAULT '' NOT NULL,
 	`mapKey` text NOT NULL,
 	`blockKey` text,
@@ -491,8 +484,7 @@ CREATE TABLE `qaSurveyTable` (
 	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
-	CONSTRAINT "qaSurveyTable_species_not_empty_list" CHECK("qaSurveyTable"."speciesChoicesJson" <> '[]'),
-	CONSTRAINT "qaSurveyTable_currency" CHECK("qaSurveyTable"."currency" GLOB '[A-Z][A-Z][A-Z]')
+	CONSTRAINT "qaSurveyTable_species_not_empty_list" CHECK("qaSurveyTable"."speciesChoicesJson" <> '[]')
 );
 --> statement-breakpoint
 CREATE INDEX `qaSurveyTable_live_idx` ON `qaSurveyTable` (`qaSurveyKey`,`replacedAt`);--> statement-breakpoint
@@ -600,7 +592,7 @@ CREATE VIEW mapFeatureView AS SELECT v.versionKey, v.mapFeatureKey, v.featureNam
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM mapFeatureTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW qaSurveyView AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.areaHa, v.treesPerHa, v.pricePerTree, v.currency, v.speciesChoicesJson, v.mapKey, v.blockKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaSurveyTable v JOIN qaSurveyEntity e USING (qaSurveyKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE VIEW qaSurveyView AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.areaHa, v.treesPerHa, v.speciesChoicesJson, v.mapKey, v.blockKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaSurveyTable v JOIN qaSurveyEntity e USING (qaSurveyKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM qaSurveyTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM qaSurveyTable w WHERE w.qaSurveyKey = v.qaSurveyKey
@@ -608,7 +600,7 @@ CREATE VIEW qaSurveyView AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM qaSurveyTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW qaPlotView AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plantableSpotsQty, v.plantableSpotsOverrideQty, v.faultsJson, v.splitPlantJson, v.plotDesc, v.isOccupied, v.isAtUserLocation, v.openLocode, v.qaSurveyKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaPlotTable v JOIN qaPlotEntity e USING (qaPlotKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE VIEW qaPlotView AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plantableSpotsQty, v.plantableSpotsOverrideQty, v.faultsJson, v.splitPlantJson, v.plotDesc, v.isOccupied, v.openLocode, v.qaSurveyKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaPlotTable v JOIN qaPlotEntity e USING (qaPlotKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM qaPlotTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM qaPlotTable w WHERE w.qaPlotKey = v.qaPlotKey
@@ -624,7 +616,7 @@ CREATE VIEW blockView AS SELECT v.versionKey, v.blockKey, v.blockName, v.allocat
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM blockTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW boxView AS SELECT v.versionKey, v.boxKey, v.boxTag, v.speciesCode, v.seedlot, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM boxTable v JOIN boxEntity e USING (boxKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE VIEW boxView AS SELECT v.versionKey, v.boxKey, v.boxTag, v.speciesCode, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM boxTable v JOIN boxEntity e USING (boxKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM boxTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM boxTable w WHERE w.boxKey = v.boxKey
