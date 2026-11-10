@@ -202,6 +202,7 @@ CREATE TABLE `editNoteTable` (
 	`tableName` text NOT NULL,
 	`rowKey` text NOT NULL,
 	`reason` text NOT NULL,
+	`actKey` text NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
