@@ -56,7 +56,7 @@ export async function retirePlugin(id: string): Promise<void> {
 export const companyPlugins = (orgKey: string) => central(`orgKey=eq.${orgKey}&order=publishedAt.desc`);
 
 /** What a phone opens to add the plugin: the same link is in its QR code. */
-export const addLink = (id: string) => `${new URL(appHome).origin}/app/plugin?add=${id}`;
+export const addLink = (id: string) => `${new URL(appHome).origin}/app/inbox/plugin?add=${id}`;
 
 /** The builder's store for one plugin; `meta` is the logo the page is showing and the company it publishes as. */
 export function pluginStore(id: string, meta: () => { logo: string | null; orgKey?: string | null }, loaded: (row: PluginRow | undefined) => void): Store {

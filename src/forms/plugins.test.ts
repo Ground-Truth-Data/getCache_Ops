@@ -77,5 +77,5 @@ test("a copy is a new open plugin of your own, crediting the one it came from", 
 });
 
 test('the add link a QR code carries opens Get Cache on the plugin', () => {
-	expect(addLink('p1')).toBe(`${new URL(appHome).origin}/app/plugin?add=p1`);
+	expect(addLink('p1')).toBe(`${new URL(appHome).origin}/app/inbox/plugin?add=p1`);
 });

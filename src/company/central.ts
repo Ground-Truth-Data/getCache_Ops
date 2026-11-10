@@ -59,7 +59,7 @@ export const remove = (orgKey: string, authId: string) => call(`orgMember?orgKey
 /** The company's public suite link: every form it publishes, read-only, no sign-in. */
 export const suiteLink = async (orgKey: string) => {
 	const key = (await mineOf(orgKey))?.suiteKey;
-	return key ? `${new URL(appHome).origin}/app/plugin?suite=${key}` : undefined;
+	return key ? `${new URL(appHome).origin}/app/inbox/plugin?suite=${key}` : undefined;
 };
 /** A dropped form greys on phones; nothing is deleted, and it can come back. */
 export const dropFromSuite = (form: string, dropped: boolean) => call('rpc/drop_from_suite', 'POST', { form, dropped });

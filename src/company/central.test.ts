@@ -79,7 +79,7 @@ test("a logo is read from Central's public bucket, and no logo has no address", 
 
 test("a company's suite link and invite token come from your own row for it", async () => {
 	answer([company('o0', 'nope', 'nope'), company('o1', 's1', 'i1'), company('o2', null, null)]);
-	expect(await central.suiteLink('o1')).toBe(`${new URL(central.appHome).origin}/app/plugin?suite=s1`);
+	expect(await central.suiteLink('o1')).toBe(`${new URL(central.appHome).origin}/app/inbox/plugin?suite=s1`);
 	expect(await central.inviteToken('o1')).toBe('i1');
 	expect(await central.suiteLink('o2')).toBeUndefined();
 	expect(await central.inviteToken('o2')).toBeUndefined();
