@@ -1,4 +1,5 @@
 import sqlite3InitModule, { type Database } from '@sqlite.org/sqlite-wasm';
+import { rebuildDerived } from '../../schema/derive';
 
 export type Column = { name: string; type: string; notNull: boolean; primaryKey: boolean };
 
@@ -34,7 +35,26 @@ export async function openDatabase(data: ArrayBuffer | Uint8Array): Promise<void
 			capi.SQLITE_DESERIALIZE_FREEONCLOSE | capi.SQLITE_DESERIALIZE_RESIZEABLE,
 		),
 	);
+	await derive(db);
 	db.exec('PRAGMA query_only = 1');
+}
+
+/** Every `*View` table refilled from the log by the phone's own rule, so a fork shows its merged row. */
+async function derive(d: Database): Promise<void> {
+	const rows = (sql: string) => d.exec({ sql, rowMode: 'object', returnValue: 'resultRows' });
+	const live = await rebuildDerived((t) => rows(`SELECT * FROM "${t}" ORDER BY ${t === 'purgatoryTable' ? 'decidedAt, rowid' : 'rowid'}`));
+	d.transaction(() => {
+		for (const [table, got] of Object.entries(live)) {
+			const cols = rows(`SELECT name FROM pragma_table_info('${table}')`).map((r) => r.name as string);
+			d.exec(`DELETE FROM "${table}"`);
+			const put = d.prepare(`INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(',')}) VALUES (${cols.map(() => '?').join(',')})`);
+			try {
+				for (const r of got) put.bind(cols.map((c) => (r[c] ?? null) as never)).stepReset();
+			} finally {
+				put.finalize();
+			}
+		}
+	});
 }
 
 export const isOpen = () => !!db;

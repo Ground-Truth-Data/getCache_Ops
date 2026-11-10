@@ -1,11 +1,16 @@
+import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { expect, test, vi } from 'vitest';
 import { fresh } from './auth';
 import { build, follow, signedIn } from './cloud';
 import { openDatabase, query } from './db';
 
-const sample = new DatabaseSync(new URL('../../public/sample.sqlite', import.meta.url).pathname, { readOnly: true });
+const file = new URL('../../public/sample.sqlite', import.meta.url).pathname;
+const sample = new DatabaseSync(file, { readOnly: true });
 const perDay = 'SELECT b.plantedDt, sum(t.plantedQty) AS trees FROM bagUpView b JOIN tallyView t USING (bagUpKey) GROUP BY 1 ORDER BY 1';
+// The sample's live tables are filled on open, as a phone's file is.
+await openDatabase(readFileSync(file));
+const perDayInSample = query(perDay);
 
 /** PostgREST over the sample season, `select` and `range` honoured. */
 async function central(path: string, range = '0-999'): Promise<Response> {
@@ -78,7 +83,7 @@ test('a table Central lacks comes back empty, and the rest still loads', async (
 	const lacking = (path: string, range?: string) => (path.startsWith('editNoteTable?') ? Promise.resolve(new Response('', { status: 404 })) : central(path, range));
 	await openDatabase(await build(lacking));
 	expect(query('SELECT count(*) AS n FROM editNoteTable')).toEqual([{ n: 0 }]);
-	expect(query(perDay)).toEqual(sample.prepare(perDay).all().map((r) => ({ ...r })));
+	expect(query(perDay)).toEqual(perDayInSample);
 });
 
 test('a company deleted on the phone is gone from the reports, a renamed one shows its new name', async () => {
@@ -93,11 +98,25 @@ test('a company deleted on the phone is gone from the reports, a renamed one sho
 	expect(query('SELECT orgKey, orgName FROM orgNameView')).toEqual([{ orgKey: 'acme', orgName: 'Acme Ltd' }]);
 });
 
+test('a block two phones edited apart shows both edits, merged', async () => {
+	const v = { blockKey: 'k', mapFeatureKey: null, replacedAt: '', isDeleted: 0, editedByKey: 'p' };
+	const rows: Record<string, unknown[]> = {
+		blockEntity: [{ blockKey: 'k', createdAt: '2026-11-01', createdByKey: 'p' }],
+		blockTable: [
+			{ ...v, versionKey: 'b0', blockName: 'North', allocatedQty: 100, createdAt: '2026-11-01', replacesKey: '' },
+			{ ...v, versionKey: 'b1', blockName: 'North Ridge', allocatedQty: 100, createdAt: '2026-11-02', replacesKey: 'b0' },
+			{ ...v, versionKey: 'b2', blockName: 'North', allocatedQty: 200, createdAt: '2026-11-03', replacesKey: 'b0' },
+		],
+	};
+	await openDatabase(await build(async (path: string) => Response.json(rows[path.split('?')[0]] ?? [])));
+	expect(query('SELECT blockName, allocatedQty FROM blockView')).toEqual([{ blockName: 'North Ridge', allocatedQty: 200 }]);
+});
+
 test("builds the Phone schema from Central's rows, and the reports read it", async () => {
 	// Pages of 100 against 926 tallies: the last short page ends each table.
 	await openDatabase(await build(central, 100));
 	expect(query('PRAGMA user_version')).toEqual([{ user_version: 57 }]);
-	expect(query(perDay)).toEqual(sample.prepare(perDay).all().map((r) => ({ ...r })));
+	expect(query(perDay)).toEqual(perDayInSample);
 	expect(query('SELECT count(*) AS n FROM tallyTable')).toEqual([sample.prepare('SELECT count(*) AS n FROM tallyTable').get()].map((r) => ({ ...r })));
 });
 

@@ -576,7 +576,7 @@ CREATE TABLE `userProfile` (
 	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE set null
 );
 
-CREATE VIEW mapView AS SELECT v.versionKey, v.mapKey, v.mapName, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM mapTable v JOIN mapEntity e USING (mapKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE TABLE IF NOT EXISTS mapView AS SELECT v.versionKey, v.mapKey, v.mapName, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM mapTable v JOIN mapEntity e USING (mapKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM mapTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM mapTable w WHERE w.mapKey = v.mapKey
@@ -584,7 +584,8 @@ CREATE VIEW mapView AS SELECT v.versionKey, v.mapKey, v.mapName, e.createdAt, v.
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM mapTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW mapFeatureView AS SELECT v.versionKey, v.mapFeatureKey, v.featureName, v.featureType, v.geometryJson, v.featureDesc, v.featureDataJson, v.pinIcon, v.fillOpacity, v.isTitleShown, v.overlayJson, v.featureOrigin, v.mapKey, v.linkedBlockKey, v.mergedFromJson, v.editorName, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM mapFeatureTable v JOIN mapFeatureEntity e USING (mapFeatureKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX mapView_thing_idx ON mapView (mapKey);
+CREATE TABLE IF NOT EXISTS mapFeatureView AS SELECT v.versionKey, v.mapFeatureKey, v.featureName, v.featureType, v.geometryJson, v.featureDesc, v.featureDataJson, v.pinIcon, v.fillOpacity, v.isTitleShown, v.overlayJson, v.featureOrigin, v.mapKey, v.linkedBlockKey, v.mergedFromJson, v.editorName, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM mapFeatureTable v JOIN mapFeatureEntity e USING (mapFeatureKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM mapFeatureTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM mapFeatureTable w WHERE w.mapFeatureKey = v.mapFeatureKey
@@ -592,7 +593,8 @@ CREATE VIEW mapFeatureView AS SELECT v.versionKey, v.mapFeatureKey, v.featureNam
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM mapFeatureTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW qaSurveyView AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.areaHa, v.treesPerHa, v.speciesChoicesJson, v.mapKey, v.blockKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaSurveyTable v JOIN qaSurveyEntity e USING (qaSurveyKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX mapFeatureView_thing_idx ON mapFeatureView (mapFeatureKey);
+CREATE TABLE IF NOT EXISTS qaSurveyView AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.areaHa, v.treesPerHa, v.speciesChoicesJson, v.mapKey, v.blockKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaSurveyTable v JOIN qaSurveyEntity e USING (qaSurveyKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM qaSurveyTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM qaSurveyTable w WHERE w.qaSurveyKey = v.qaSurveyKey
@@ -600,7 +602,8 @@ CREATE VIEW qaSurveyView AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM qaSurveyTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW qaPlotView AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plantableSpotsQty, v.plantableSpotsOverrideQty, v.faultsJson, v.splitPlantJson, v.plotDesc, v.isOccupied, v.openLocode, v.qaSurveyKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaPlotTable v JOIN qaPlotEntity e USING (qaPlotKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX qaSurveyView_thing_idx ON qaSurveyView (qaSurveyKey);
+CREATE TABLE IF NOT EXISTS qaPlotView AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plantableSpotsQty, v.plantableSpotsOverrideQty, v.faultsJson, v.splitPlantJson, v.plotDesc, v.isOccupied, v.openLocode, v.qaSurveyKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaPlotTable v JOIN qaPlotEntity e USING (qaPlotKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM qaPlotTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM qaPlotTable w WHERE w.qaPlotKey = v.qaPlotKey
@@ -608,7 +611,8 @@ CREATE VIEW qaPlotView AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plan
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM qaPlotTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW blockView AS SELECT v.versionKey, v.blockKey, v.blockName, v.allocatedQty, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM blockTable v JOIN blockEntity e USING (blockKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX qaPlotView_thing_idx ON qaPlotView (qaPlotKey);
+CREATE TABLE IF NOT EXISTS blockView AS SELECT v.versionKey, v.blockKey, v.blockName, v.allocatedQty, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM blockTable v JOIN blockEntity e USING (blockKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM blockTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM blockTable w WHERE w.blockKey = v.blockKey
@@ -616,7 +620,8 @@ CREATE VIEW blockView AS SELECT v.versionKey, v.blockKey, v.blockName, v.allocat
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM blockTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW boxView AS SELECT v.versionKey, v.boxKey, v.boxTag, v.speciesCode, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM boxTable v JOIN boxEntity e USING (boxKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX blockView_thing_idx ON blockView (blockKey);
+CREATE TABLE IF NOT EXISTS boxView AS SELECT v.versionKey, v.boxKey, v.boxTag, v.speciesCode, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM boxTable v JOIN boxEntity e USING (boxKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM boxTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM boxTable w WHERE w.boxKey = v.boxKey
@@ -624,7 +629,8 @@ CREATE VIEW boxView AS SELECT v.versionKey, v.boxKey, v.boxTag, v.speciesCode, v
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM boxTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW bagView AS SELECT v.versionKey, v.bagKey, v.boxQty, v.bundleQty, v.pricePerTree, v.currency, v.isBox, v.isBagged, v.bundlesInBags, v.bundlesOnGround, v.halfBoxParity, v.sortOrder, v.boxKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM bagTable v JOIN bagEntity e USING (bagKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX boxView_thing_idx ON boxView (boxKey);
+CREATE TABLE IF NOT EXISTS bagView AS SELECT v.versionKey, v.bagKey, v.boxQty, v.bundleQty, v.pricePerTree, v.currency, v.isBox, v.isBagged, v.bundlesInBags, v.bundlesOnGround, v.halfBoxParity, v.sortOrder, v.boxKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM bagTable v JOIN bagEntity e USING (bagKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM bagTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM bagTable w WHERE w.bagKey = v.bagKey
@@ -632,7 +638,8 @@ CREATE VIEW bagView AS SELECT v.versionKey, v.bagKey, v.boxQty, v.bundleQty, v.p
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM bagTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW bagUpView AS SELECT v.versionKey, v.bagUpKey, v.plantedDt, v.workMode, v.blockKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM bagUpTable v JOIN bagUpEntity e USING (bagUpKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX bagView_thing_idx ON bagView (bagKey);
+CREATE TABLE IF NOT EXISTS bagUpView AS SELECT v.versionKey, v.bagUpKey, v.plantedDt, v.workMode, v.blockKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM bagUpTable v JOIN bagUpEntity e USING (bagUpKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM bagUpTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM bagUpTable w WHERE w.bagUpKey = v.bagUpKey
@@ -640,7 +647,8 @@ CREATE VIEW bagUpView AS SELECT v.versionKey, v.bagUpKey, v.plantedDt, v.workMod
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM bagUpTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW tallyView AS SELECT v.versionKey, v.tallyKey, v.boxTag, v.speciesCode, v.plantedQty, v.pricePerTree, v.currency, v.bagUpKey, v.bagKey, v.boxKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM tallyTable v JOIN tallyEntity e USING (tallyKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX bagUpView_thing_idx ON bagUpView (bagUpKey);
+CREATE TABLE IF NOT EXISTS tallyView AS SELECT v.versionKey, v.tallyKey, v.boxTag, v.speciesCode, v.plantedQty, v.pricePerTree, v.currency, v.bagUpKey, v.bagKey, v.boxKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM tallyTable v JOIN tallyEntity e USING (tallyKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM tallyTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM tallyTable w WHERE w.tallyKey = v.tallyKey
@@ -648,7 +656,8 @@ CREATE VIEW tallyView AS SELECT v.versionKey, v.tallyKey, v.boxTag, v.speciesCod
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM tallyTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW packageView AS SELECT v.versionKey, v.packageKey, v.fileName, v.direction, v.packageType, v.plantedDt, v.sentAt, v.receivedAt, v.rawJson, v.byteSize, v.logLine, v.countsJson, v.sentVersionKeysJson, v.senderHighWaterAt, v.shareLinkId, v.shareDeleteToken, v.shareAccess, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM packageTable v JOIN packageEntity e USING (packageKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX tallyView_thing_idx ON tallyView (tallyKey);
+CREATE TABLE IF NOT EXISTS packageView AS SELECT v.versionKey, v.packageKey, v.fileName, v.direction, v.packageType, v.plantedDt, v.sentAt, v.receivedAt, v.rawJson, v.byteSize, v.logLine, v.countsJson, v.sentVersionKeysJson, v.senderHighWaterAt, v.shareLinkId, v.shareDeleteToken, v.shareAccess, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM packageTable v JOIN packageEntity e USING (packageKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM packageTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM packageTable w WHERE w.packageKey = v.packageKey
@@ -656,7 +665,8 @@ CREATE VIEW packageView AS SELECT v.versionKey, v.packageKey, v.fileName, v.dire
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM packageTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW personView AS SELECT v.versionKey, v.personKey, v.username, v.alias, v.color, v.colorPickedAt, v.sameAsKey, v.hiddenAt, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted FROM personTable v JOIN personEntity e USING (personKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX packageView_thing_idx ON packageView (packageKey);
+CREATE TABLE IF NOT EXISTS personView AS SELECT v.versionKey, v.personKey, v.username, v.alias, v.color, v.colorPickedAt, v.sameAsKey, v.hiddenAt, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted FROM personTable v JOIN personEntity e USING (personKey) WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM personTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM personTable w WHERE w.personKey = v.personKey
@@ -664,19 +674,23 @@ CREATE VIEW personView AS SELECT v.versionKey, v.personKey, v.username, v.alias,
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM personTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW crewView AS SELECT * FROM crewTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX personView_thing_idx ON personView (personKey);
+CREATE TABLE IF NOT EXISTS crewView AS SELECT * FROM crewTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM crewTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW orgKindView AS SELECT * FROM orgKindTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX crewView_thing_idx ON crewView (versionKey);
+CREATE TABLE IF NOT EXISTS orgKindView AS SELECT * FROM orgKindTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM orgKindTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW orgTagView AS SELECT * FROM orgTagTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX orgKindView_thing_idx ON orgKindView (versionKey);
+CREATE TABLE IF NOT EXISTS orgTagView AS SELECT * FROM orgTagTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM orgTagTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW orgNameView AS SELECT * FROM orgNameTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX orgTagView_thing_idx ON orgTagView (versionKey);
+CREATE TABLE IF NOT EXISTS orgNameView AS SELECT * FROM orgNameTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM orgNameTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM orgNameTable w WHERE w.orgKey = v.orgKey
@@ -684,7 +698,8 @@ CREATE VIEW orgNameView AS SELECT * FROM orgNameTable v WHERE v.replacedAt = '' 
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM orgNameTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW stockView AS SELECT * FROM stockTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX orgNameView_thing_idx ON orgNameView (orgKey);
+CREATE TABLE IF NOT EXISTS stockView AS SELECT * FROM stockTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM stockTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM stockTable w WHERE w.mapFeatureKey = v.mapFeatureKey AND w.boxKey = v.boxKey
@@ -692,7 +707,8 @@ CREATE VIEW stockView AS SELECT * FROM stockTable v WHERE v.replacedAt = '' AND 
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM stockTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW deliveryView AS SELECT * FROM deliveryTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX stockView_thing_idx ON stockView (mapFeatureKey, boxKey);
+CREATE TABLE IF NOT EXISTS deliveryView AS SELECT * FROM deliveryTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM deliveryTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM deliveryTable w WHERE w.mapFeatureKey = v.mapFeatureKey AND w.boxKey = v.boxKey
@@ -700,7 +716,8 @@ CREATE VIEW deliveryView AS SELECT * FROM deliveryTable v WHERE v.replacedAt = '
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM deliveryTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND (w.createdAt > v.createdAt OR (w.createdAt = v.createdAt AND w.versionKey > v.versionKey))) AND v.isDeleted = 0;
-CREATE VIEW allocationView AS SELECT * FROM allocationTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
+CREATE INDEX deliveryView_thing_idx ON deliveryView (mapFeatureKey, boxKey);
+CREATE TABLE IF NOT EXISTS allocationView AS SELECT * FROM allocationTable v WHERE v.replacedAt = '' AND v.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM allocationTable n WHERE n.replacesKey = v.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND NOT EXISTS (SELECT 1 FROM allocationTable w WHERE w.blockKey = v.blockKey
@@ -708,6 +725,7 @@ CREATE VIEW allocationView AS SELECT * FROM allocationTable v WHERE v.replacedAt
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))
 	 AND NOT EXISTS (SELECT 1 FROM allocationTable n WHERE n.replacesKey = w.versionKey AND n.versionKey NOT IN (SELECT r.versionKey FROM purgatoryTable r WHERE r.decision <> 'accepted'
 	   AND r.rowid = (SELECT MAX(rowid) FROM purgatoryTable WHERE versionKey = r.versionKey))) AND w.createdAt > v.createdAt) AND v.isDeleted = 0;
+CREATE INDEX allocationView_thing_idx ON allocationView (blockKey);
 CREATE VIEW tallyFlagView AS SELECT * FROM (WITH line AS (SELECT t.*, b.plantedDt, b.createdByKey AS personKey, COALESCE(t.currency, '') || '/' || t.speciesCode AS unit, b.plantedDt AS day,
 	        t.plantedQty * t.pricePerTree AS total,
 	        SUM(t.plantedQty * t.pricePerTree) OVER (PARTITION BY b.createdByKey, b.plantedDt, t.currency) AS dayTotal,

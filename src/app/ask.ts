@@ -19,7 +19,7 @@ const DOMAIN = `How tree planting works in this file:
 export function prompt(query: Query, request: string) {
 	const views = query(
 		`SELECT m.name, group_concat(p.name, ', ') AS cols FROM sqlite_schema m JOIN pragma_table_info(m.name) p
-		 WHERE m.type = 'view' AND m.name LIKE '%View' GROUP BY m.name ORDER BY m.name`,
+		 WHERE m.name LIKE '%View' GROUP BY m.name ORDER BY m.name`,
 	);
 	return [
 		'You write one SQLite SELECT for Get Cache Ops. Read only the …View views below. Use readable column aliases in the app’s words. Return only the SQL, and start it with two comment lines: "-- Name: <a 2–4 word report name, like Big days>" and "-- Shows: <one sentence on what the result shows>".',

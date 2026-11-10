@@ -40,9 +40,11 @@ if (existsSync(`${rapper}/.git`)) {
 	}
 }
 
-// schema/v57.sql likewise from getCache's last commit: its tables, read through the phone's own live rule.
+// schema/ likewise from getCache's last commit: its tables, and derive.ts, the phone's live rule that fills their *View tables.
 const getCache = '../fetch/getCache';
 if (existsSync(`${getCache}/.git`)) {
-	const ddl = execFileSync('git', ['-C', getCache, 'show', 'HEAD:src/routes/(getcache)/db/sql/generatedV2/_opsDdl.sql'], { maxBuffer: 1 << 26 });
-	if (!readFileSync('schema/v57.sql').equals(ddl)) writeFileSync('schema/v57.sql', ddl);
+	for (const [from, to] of [['src/routes/(getcache)/db/sql/generatedV2/_opsDdl.sql', 'schema/v57.sql'], ['supabase/functions/_shared/derive.ts', 'schema/derive.ts']]) {
+		const bytes = execFileSync('git', ['-C', getCache, 'show', `HEAD:${from}`], { maxBuffer: 1 << 26 });
+		if (!existsSync(to) || !readFileSync(to).equals(bytes)) writeFileSync(to, bytes);
+	}
 }

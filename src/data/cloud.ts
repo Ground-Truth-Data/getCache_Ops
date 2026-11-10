@@ -3,6 +3,7 @@
 // signs out or writes. Contract: getCache/src/lib/docs/OPS_READ.md.
 
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
+import { LIVE_TABLES } from '../../schema/derive';
 import ddl from '../../schema/v57.sql?raw';
 import { fresh, session } from './auth';
 
@@ -46,7 +47,10 @@ export async function build(read = rest, page = 1000): Promise<Uint8Array> {
 		// The schema the DDL file is, as a phone stamps its own file: the reports check it.
 		db.exec('PRAGMA user_version = 57');
 		db.exec('PRAGMA foreign_keys = OFF');
-		const tables = db.exec({ sql: "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'", rowMode: 'array', returnValue: 'resultRows' }).map((r) => String(r[0]));
+		const tables = db
+			.exec({ sql: "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'", rowMode: 'array', returnValue: 'resultRows' })
+			.map((r) => String(r[0]))
+			.filter((t) => !LIVE_TABLES.includes(t));
 		for (const table of tables) {
 			const cols = db.exec({ sql: 'SELECT name FROM pragma_table_info(?)', bind: [table], rowMode: 'array', returnValue: 'resultRows' }).map((r) => String(r[0]));
 			const insert = db.prepare(`INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(',')}) VALUES (${cols.map(() => '?').join(',')})`);
@@ -79,8 +83,12 @@ type Copy = { cursor: string; bytes: Uint8Array };
 // Ops' own cache, never Get Cache's database. Get Cache's sign-out wipe deletes it with the rest.
 const idb = <T>(run: (s: IDBObjectStore) => IDBRequest<T>, mode: IDBTransactionMode = 'readonly') =>
 	new Promise<T>((done, fail) => {
-		const open = indexedDB.open('getcache-ops', 1);
-		open.onupgradeneeded = () => open.result.createObjectStore('copy');
+		// Version 2: a copy cached by version 1 holds its live rows as views, which derive cannot refill.
+		const open = indexedDB.open('getcache-ops', 2);
+		open.onupgradeneeded = () => {
+			if (open.result.objectStoreNames.contains('copy')) open.result.deleteObjectStore('copy');
+			open.result.createObjectStore('copy');
+		};
 		open.onerror = () => fail(open.error);
 		open.onsuccess = () => {
 			const req = run(open.result.transaction('copy', mode).objectStore('copy'));
