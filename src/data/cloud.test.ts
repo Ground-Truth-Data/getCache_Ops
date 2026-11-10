@@ -88,10 +88,10 @@ test('a table Central lacks comes back empty, and the rest still loads', async (
 
 test('a company deleted on the phone is gone from the reports, a renamed one shows its new name', async () => {
 	const names = [
-		{ versionKey: 'a1', orgKey: 'acme', orgName: 'Acme', color: '', createdAt: '2026-11-01', replacedAt: '', replacesKey: '', isDeleted: 0 },
-		{ versionKey: 'a2', orgKey: 'acme', orgName: 'Acme Ltd', color: '', createdAt: '2026-11-02', replacedAt: '', replacesKey: 'a1', isDeleted: 0 },
-		{ versionKey: 'b1', orgKey: 'gone', orgName: 'Gone Co', color: '', createdAt: '2026-11-01', replacedAt: '', replacesKey: '', isDeleted: 0 },
-		{ versionKey: 'b2', orgKey: 'gone', orgName: 'Gone Co', color: '', createdAt: '2026-11-02', replacedAt: '', replacesKey: 'b1', isDeleted: 1 },
+		{ versionKey: 'a1', orgKey: 'acme', orgName: 'Acme', color: '', createdAt: '2026-11-01', replacesKey: '', kind: 'edit', actKey: 'act' },
+		{ versionKey: 'a2', orgKey: 'acme', orgName: 'Acme Ltd', color: '', createdAt: '2026-11-02', replacesKey: 'a1', kind: 'edit', actKey: 'act' },
+		{ versionKey: 'b1', orgKey: 'gone', orgName: 'Gone Co', color: '', createdAt: '2026-11-01', replacesKey: '', kind: 'edit', actKey: 'act' },
+		{ versionKey: 'b2', orgKey: 'gone', orgName: 'Gone Co', color: '', createdAt: '2026-11-02', replacesKey: 'b1', kind: 'end', actKey: 'act' },
 	];
 	const only = async (path: string) => Response.json(path.startsWith('orgNameTable?') ? names : []);
 	await openDatabase(await build(only));
@@ -99,7 +99,7 @@ test('a company deleted on the phone is gone from the reports, a renamed one sho
 });
 
 test('a block two phones edited apart shows both edits, merged', async () => {
-	const v = { blockKey: 'k', mapFeatureKey: null, replacedAt: '', isDeleted: 0, editedByKey: 'p' };
+	const v = { blockKey: 'k', mapFeatureKey: null, kind: 'edit', actKey: 'act', editedByKey: 'p' };
 	const rows: Record<string, unknown[]> = {
 		blockEntity: [{ blockKey: 'k', createdAt: '2026-11-01', createdByKey: 'p' }],
 		blockTable: [

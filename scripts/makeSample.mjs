@@ -40,7 +40,9 @@ const db = new DatabaseSync(OUT);
 db.exec(readFileSync(SCHEMA, 'utf8'));
 db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}; PRAGMA foreign_keys = ON; BEGIN`);
 
+// Every version in the sample is a birth, each its own act.
 function insert(table, row) {
+	if (row.versionKey) row = { kind: 'edit', actKey: row.versionKey, ...row };
 	const cols = Object.keys(row);
 	db.prepare(`INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(',')}) VALUES (${cols.map(() => '?').join(',')})`).run(
 		...Object.values(row),
@@ -185,7 +187,7 @@ for (const block of blocks.filter((b) => daysOn.has(b))) {
 	for (const [i, lot] of block.lots.entries()) {
 		const row = { mapFeatureKey: block.cacheKey, boxKey: lot.boxKey };
 		insert('allocationTable', { versionKey: key('op'), blockKey: block.blockKey, boxKey: lot.boxKey, treesQty: Math.round((block.areaHa * 1600) / block.lots.length), sortOrder: i, createdAt: SEASON_START, allocatedByKey: checker });
-		insert('deliveryTable', { ...row, versionKey: key('op'), kind: 'delivered', lat, lng, accuracyM: int(3, 12), distanceM: int(0, 25), createdAt: isoAt(first, 6 * 60 + i), deliveredByKey: checker });
+		insert('deliveryTable', { ...row, versionKey: key('op'), deliveryKind: 'delivered', lat, lng, accuracyM: int(3, 12), distanceM: int(0, 25), createdAt: isoAt(first, 6 * 60 + i), deliveredByKey: checker });
 		insert('stockTable', { ...row, versionKey: key('op'), boxQty: int(0, 4), createdAt: isoAt(last, 17 * 60 + i), countedByKey: planter });
 	}
 }

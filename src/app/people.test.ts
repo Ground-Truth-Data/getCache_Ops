@@ -15,7 +15,7 @@ function samsPhone(): Uint8Array {
 	const db = new DatabaseSync(file);
 	db.exec(`INSERT INTO appState (appStateId, selfKey) VALUES ('singleton', '${SAM}')`);
 	db.exec(`INSERT INTO personEntity VALUES ('lee', '2026-05-05T00:00:00.000Z')`);
-	db.exec(`INSERT INTO personTable (versionKey, personKey, username, alias, color, colorPickedAt) VALUES ('op-lee', 'lee', 'Lee Foreman', 'Boss', '#123456', '2026-05-06T00:00:00.000Z')`);
+	db.exec(`INSERT INTO personTable (versionKey, personKey, username, alias, color, colorPickedAt, kind, actKey) VALUES ('op-lee', 'lee', 'Lee Foreman', 'Boss', '#123456', '2026-05-06T00:00:00.000Z', 'edit', 'act')`);
 	db.close();
 	return readFileSync(file);
 }

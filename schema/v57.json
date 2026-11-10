@@ -234,16 +234,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -352,16 +352,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "allocatedByKey",
@@ -398,16 +398,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "allocatedByKey",
@@ -540,16 +540,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -608,16 +608,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -658,16 +658,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -740,16 +740,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -808,16 +808,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -854,16 +854,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -926,16 +926,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -976,16 +976,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -1018,16 +1018,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				}
 			]
 		},
@@ -1052,16 +1052,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				}
 			]
 		},
@@ -1082,7 +1082,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "kind",
+					"name": "deliveryKind",
 					"type": "TEXT"
 				},
 				{
@@ -1106,16 +1106,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "deliveredByKey",
@@ -1140,7 +1140,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "kind",
+					"name": "deliveryKind",
 					"type": "TEXT"
 				},
 				{
@@ -1164,16 +1164,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "deliveredByKey",
@@ -1320,16 +1320,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -1410,16 +1410,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -1452,16 +1452,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -1490,16 +1490,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -1524,7 +1524,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "kind",
+					"name": "orgKind",
 					"type": "TEXT"
 				},
 				{
@@ -1532,16 +1532,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				}
 			]
 		},
@@ -1558,7 +1558,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "kind",
+					"name": "orgKind",
 					"type": "TEXT"
 				},
 				{
@@ -1566,16 +1566,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				}
 			]
 		},
@@ -1604,16 +1604,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				}
 			]
 		},
@@ -1642,16 +1642,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				}
 			]
 		},
@@ -1694,16 +1694,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				}
 			]
 		},
@@ -1732,16 +1732,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				}
 			]
 		},
@@ -1840,16 +1840,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -1934,16 +1934,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -2028,16 +2028,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				}
 			]
 		},
@@ -2082,16 +2082,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				}
 			]
 		},
@@ -2232,16 +2232,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -2306,16 +2306,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -2386,16 +2386,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -2444,16 +2444,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -2488,20 +2488,6 @@
 			]
 		},
 		{
-			"name": "stackDirty",
-			"kind": "table",
-			"columns": [
-				{
-					"name": "n",
-					"type": "INTEGER"
-				},
-				{
-					"name": "scopeKey",
-					"type": "TEXT"
-				}
-			]
-		},
-		{
 			"name": "stockTable",
 			"kind": "table",
 			"columns": [
@@ -2530,16 +2516,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "countedByKey",
@@ -2576,16 +2562,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "countedByKey",
@@ -2660,16 +2646,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INTEGER"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",
@@ -2726,16 +2712,16 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "replacedAt",
-					"type": "TEXT"
-				},
-				{
 					"name": "replacesKey",
 					"type": "TEXT"
 				},
 				{
-					"name": "isDeleted",
-					"type": "INT"
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
 				},
 				{
 					"name": "editedByKey",

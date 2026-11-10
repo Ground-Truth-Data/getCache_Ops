@@ -35,13 +35,9 @@ const THING: Partial<Record<string, readonly string[]>> = {
 export const WHOLE_SAVES = new Set(["allocationTable"]);
 export const thingOf = (table: string): readonly string[] => THING[table] ?? [];
 
-export const STAMPS = new Set(["versionKey", "createdAt", "replacedAt", "replacesKey"]);
+export const STAMPS = new Set(["versionKey", "createdAt", "replacesKey", "kind", "actKey"]);
 // Who made a version, not a cell of it: a different editor with nothing changed writes nothing.
 export const NOT_A_CHANGE = new Set(["editedByKey"]);
-/** A stored merge of concurrent heads: only an accept is stored; any other merge is computed on read. */
-export const MERGE_PREFIX = "merge-";
-/** An accept: the merge a person decided, stored so it travels, since review rows do not. */
-export const ACCEPT_PREFIX = `${MERGE_PREFIX}accept-`;
 
 const byTime = (a: Row, b: Row) => (String(a.createdAt) < String(b.createdAt) || (a.createdAt === b.createdAt && String(a.versionKey) < String(b.versionKey)) ? -1 : 1);
 
@@ -75,19 +71,21 @@ export function mergeOf(heads: readonly Row[], versions: ReadonlyMap<string, Row
 // On Central two accounts can share keys, so a version is named with its owner; the phone has none.
 const own = (r: Row, key: unknown) => JSON.stringify([r.ownerId ?? null, String(key)]);
 
-/** Held versions whose newest review does not accept them: they stand for nothing. */
+/** Held versions whose newest review does not accept them: they stand for nothing. Newest by decidedAt, then
+ *  reviewKey: a refill or restore inserts reviews in any order. */
 export function unstanding(reviews: readonly Row[]): Set<string> {
 	const last = new Map<string, unknown>();
-	for (const r of reviews) last.set(own(r, r.versionKey), r.decision);
+	const at = (r: Row) => `${r.decidedAt ?? ""}\u0000${r.reviewKey}`;
+	for (const r of [...reviews].sort((a, b) => (at(a) < at(b) ? -1 : at(a) > at(b) ? 1 : 0))) last.set(own(r, r.versionKey), r.decision);
 	return new Set([...last].flatMap(([k, d]) => (d === "accepted" ? [] : [k])));
 }
 
-/** One table's live rows: per thing, its newest head, merged with the other heads, unless it ends the thing. */
+/** One table's live rows: per thing, its newest head, merged with the other heads, unless any head ends it. */
 export function liveOf(table: string, rows: readonly Row[], held: ReadonlySet<string>): Row[] {
 	const replaced = new Set(rows.flatMap((r) => (held.has(own(r, r.versionKey)) ? [] : [own(r, r.replacesKey)])));
-	const heads = rows.filter((r) => r.replacedAt === "" && !held.has(own(r, r.versionKey)) && !replaced.has(own(r, r.versionKey)));
+	const heads = rows.filter((r) => !held.has(own(r, r.versionKey)) && !replaced.has(own(r, r.versionKey)));
 	const thing = thingOf(table);
-	if (!thing.length) return heads.filter((h) => !h.isDeleted);
+	if (!thing.length) return heads.filter((h) => h.kind !== "end");
 	const of = (r: Row) => JSON.stringify([r.ownerId ?? null, ...thing.map((c) => r[c] ?? null)]);
 	const things = new Map<string, Row[]>();
 	for (const h of heads) things.set(of(h), [...(things.get(of(h)) ?? []), h]);
@@ -95,15 +93,15 @@ export function liveOf(table: string, rows: readonly Row[], held: ReadonlySet<st
 	if (WHOLE_SAVES.has(table)) {
 		for (const hs of things.values()) {
 			const newest = hs.reduce((a, b) => (String(b.createdAt) > String(a.createdAt) ? b : a)).createdAt;
-			out.push(...hs.filter((h) => h.createdAt === newest && !h.isDeleted));
+			out.push(...hs.filter((h) => h.createdAt === newest && h.kind !== "end"));
 		}
 		return out;
 	}
 	const versions = table in VERSION_KEYS ? new Map(rows.map((r) => [String(r.versionKey), r])) : null;
 	for (const hs of things.values()) {
 		const newest = hs.reduce((a, b) => (byTime(a, b) < 0 ? b : a));
-		const live = (versions && mergeOf(hs, versions)) || newest;
-		if (!live.isDeleted) out.push(live);
+		// An end wins over a concurrent edit it never saw.
+		if (!hs.some((h) => h.kind === "end")) out.push((versions && mergeOf(hs, versions)) || newest);
 	}
 	return out;
 }

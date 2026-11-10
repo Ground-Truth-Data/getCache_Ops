@@ -31,8 +31,12 @@ columns; both it and `schema/v57.sql` are generated from Get Cache's own schema.
 ## Changes
 
 - **9 Nov 2026:** the views read Get Cache's own live rule, so a thing deleted
-  on the phone is gone instead of showing its last version. Every table gains
-  `isDeleted`, and the version tables gain `replacesKey`.
+  on the phone is gone instead of showing its last version. The version tables
+  gain `replacesKey`.
+- **10 Nov 2026:** every version row says what it is: `kind` (`edit`, `accept`,
+  or `end`, a delete) and `actKey`, the act that wrote it. The old ended stamp
+  and delete flag are gone. `orgKindTable`'s own kind is `orgKind`, and
+  `deliveryTable`'s is `deliveryKind`.
 
 Every tree count Ops shows carries the white pine, as Get Cache's does; draw it
 beside yours.

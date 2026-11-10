@@ -5,9 +5,9 @@ CREATE TABLE `allocationTable` (
 	`sortOrder` integer DEFAULT 0 NOT NULL,
 	`boxKey` text,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`allocatedByKey` text NOT NULL,
 	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
@@ -15,7 +15,7 @@ CREATE TABLE `allocationTable` (
 	CONSTRAINT "allocationTable_treesQty" CHECK("allocationTable"."treesQty" >= 0)
 );
 --> statement-breakpoint
-CREATE INDEX `allocationTable_live_idx` ON `allocationTable` (`blockKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `allocationTable_key_idx` ON `allocationTable` (`blockKey`);--> statement-breakpoint
 CREATE INDEX `allocationTable_replaces_idx` ON `allocationTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `appState` (
 	`appStateId` text PRIMARY KEY NOT NULL,
@@ -57,9 +57,9 @@ CREATE TABLE `bagTable` (
 	`sortOrder` text DEFAULT '' NOT NULL,
 	`boxKey` text NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`editedByKey` text NOT NULL,
 	FOREIGN KEY (`bagKey`) REFERENCES `bagEntity`(`bagKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
@@ -77,7 +77,7 @@ CREATE TABLE `bagTable` (
 			            ELSE "bagTable"."bundlesInBags" + "bagTable"."bundlesOnGround" > 0 END))
 );
 --> statement-breakpoint
-CREATE INDEX `bagTable_live_idx` ON `bagTable` (`bagKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `bagTable_key_idx` ON `bagTable` (`bagKey`);--> statement-breakpoint
 CREATE INDEX `bagTable_replaces_idx` ON `bagTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `bagUpEntity` (
 	`bagUpKey` text PRIMARY KEY NOT NULL,
@@ -94,9 +94,9 @@ CREATE TABLE `bagUpTable` (
 	`blockKey` text,
 	`mapFeatureKey` text,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`editedByKey` text NOT NULL,
 	FOREIGN KEY (`bagUpKey`) REFERENCES `bagUpEntity`(`bagUpKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE restrict,
@@ -106,7 +106,7 @@ CREATE TABLE `bagUpTable` (
 	CONSTRAINT "bagUpTable_plantedDt" CHECK("bagUpTable"."plantedDt" = '' OR "bagUpTable"."plantedDt" GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')
 );
 --> statement-breakpoint
-CREATE INDEX `bagUpTable_live_idx` ON `bagUpTable` (`bagUpKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `bagUpTable_key_idx` ON `bagUpTable` (`bagUpKey`);--> statement-breakpoint
 CREATE INDEX `bagUpTable_parent_idx` ON `bagUpTable` (`replacesKey`,`bagUpKey`);--> statement-breakpoint
 CREATE TABLE `blockEntity` (
 	`blockKey` text PRIMARY KEY NOT NULL,
@@ -122,16 +122,16 @@ CREATE TABLE `blockTable` (
 	`allocatedQty` real,
 	`mapFeatureKey` text,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`editedByKey` text NOT NULL,
 	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
-CREATE INDEX `blockTable_live_idx` ON `blockTable` (`blockKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `blockTable_key_idx` ON `blockTable` (`blockKey`);--> statement-breakpoint
 CREATE INDEX `blockTable_parent_idx` ON `blockTable` (`replacesKey`,`blockKey`);--> statement-breakpoint
 CREATE TABLE `boxEntity` (
 	`boxKey` text PRIMARY KEY NOT NULL,
@@ -148,9 +148,9 @@ CREATE TABLE `boxTable` (
 	`boxSizeQty` real,
 	`bundleSizeQty` real,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`editedByKey` text NOT NULL,
 	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
@@ -158,44 +158,44 @@ CREATE TABLE `boxTable` (
 			  AND ("boxTable"."bundleSizeQty" IS NULL OR "boxTable"."bundleSizeQty" > 0))
 );
 --> statement-breakpoint
-CREATE INDEX `boxTable_live_idx` ON `boxTable` (`boxKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `boxTable_key_idx` ON `boxTable` (`boxKey`);--> statement-breakpoint
 CREATE INDEX `boxTable_parent_idx` ON `boxTable` (`replacesKey`,`boxKey`);--> statement-breakpoint
 CREATE TABLE `crewTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapFeatureKey` text NOT NULL,
 	`memberKey` text NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`memberKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
-CREATE INDEX `crewTable_live_idx` ON `crewTable` (`mapFeatureKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `crewTable_key_idx` ON `crewTable` (`mapFeatureKey`);--> statement-breakpoint
 CREATE INDEX `crewTable_replaces_idx` ON `crewTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `deliveryTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapFeatureKey` text NOT NULL,
 	`boxKey` text NOT NULL,
-	`kind` text NOT NULL,
+	`deliveryKind` text NOT NULL,
 	`lat` real,
 	`lng` real,
 	`accuracyM` real,
 	`distanceM` real,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`deliveredByKey` text NOT NULL,
 	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`deliveredByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
-	CONSTRAINT "deliveryTable_kind" CHECK("deliveryTable"."kind" IN ('delivered', 'closed')),
-	CONSTRAINT "deliveryTable_delivered_has_a_fix" CHECK("deliveryTable"."kind" = 'closed' OR ("deliveryTable"."lat" IS NOT NULL AND "deliveryTable"."lng" IS NOT NULL AND "deliveryTable"."distanceM" IS NOT NULL))
+	CONSTRAINT "deliveryTable_deliveryKind" CHECK("deliveryTable"."deliveryKind" IN ('delivered', 'closed')),
+	CONSTRAINT "deliveryTable_delivered_has_a_fix" CHECK("deliveryTable"."deliveryKind" = 'closed' OR ("deliveryTable"."lat" IS NOT NULL AND "deliveryTable"."lng" IS NOT NULL AND "deliveryTable"."distanceM" IS NOT NULL))
 );
 --> statement-breakpoint
-CREATE INDEX `deliveryTable_live_idx` ON `deliveryTable` (`mapFeatureKey`,`boxKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `deliveryTable_key_idx` ON `deliveryTable` (`mapFeatureKey`,`boxKey`);--> statement-breakpoint
 CREATE INDEX `deliveryTable_replaces_idx` ON `deliveryTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `editNoteTable` (
 	`noteKey` text PRIMARY KEY NOT NULL,
@@ -242,9 +242,9 @@ CREATE TABLE `mapFeatureTable` (
 	`mergedFromJson` text DEFAULT '' NOT NULL,
 	`editorName` text DEFAULT '' NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`editedByKey` text NOT NULL,
 	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE no action,
@@ -258,36 +258,36 @@ CREATE TABLE `mapFeatureTable` (
 	CONSTRAINT "mapFeatureTable_fillOpacity" CHECK("mapFeatureTable"."fillOpacity" IS NULL OR ("mapFeatureTable"."fillOpacity" >= 0 AND "mapFeatureTable"."fillOpacity" <= 1))
 );
 --> statement-breakpoint
-CREATE INDEX `mapFeatureTable_live_idx` ON `mapFeatureTable` (`mapFeatureKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `mapFeatureTable_key_idx` ON `mapFeatureTable` (`mapFeatureKey`);--> statement-breakpoint
 CREATE INDEX `mapFeatureTable_parent_idx` ON `mapFeatureTable` (`replacesKey`,`mapFeatureKey`);--> statement-breakpoint
 CREATE TABLE `mapTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapKey` text NOT NULL,
 	`mapName` text DEFAULT '' NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`editedByKey` text NOT NULL,
 	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
-CREATE INDEX `mapTable_live_idx` ON `mapTable` (`mapKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `mapTable_key_idx` ON `mapTable` (`mapKey`);--> statement-breakpoint
 CREATE INDEX `mapTable_parent_idx` ON `mapTable` (`replacesKey`,`mapKey`);--> statement-breakpoint
 CREATE TABLE `orgKindTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`orgKey` text NOT NULL,
-	`kind` text NOT NULL,
+	`orgKind` text NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "orgKindTable_kind" CHECK("orgKindTable"."kind" IN ('plantingCompany', 'consultant', 'mill', 'nursery', 'government', 'ngo', 'contractor'))
+	CONSTRAINT "orgKindTable_orgKind" CHECK("orgKindTable"."orgKind" IN ('plantingCompany', 'consultant', 'mill', 'nursery', 'government', 'ngo', 'contractor'))
 );
 --> statement-breakpoint
-CREATE INDEX `orgKindTable_live_idx` ON `orgKindTable` (`orgKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `orgKindTable_key_idx` ON `orgKindTable` (`orgKey`);--> statement-breakpoint
 CREATE INDEX `orgKindTable_replaces_idx` ON `orgKindTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `orgNameTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
@@ -295,13 +295,13 @@ CREATE TABLE `orgNameTable` (
 	`orgName` text DEFAULT '' NOT NULL,
 	`color` text DEFAULT '' NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE INDEX `orgNameTable_live_idx` ON `orgNameTable` (`orgKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `orgNameTable_key_idx` ON `orgNameTable` (`orgKey`);--> statement-breakpoint
 CREATE INDEX `orgNameTable_replaces_idx` ON `orgNameTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `orgTable` (
 	`orgKey` text PRIMARY KEY NOT NULL,
@@ -314,18 +314,18 @@ CREATE TABLE `orgTagTable` (
 	`mapKey` text,
 	`blockKey` text,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`blockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "orgTagTable_oneOwner" CHECK(("orgTagTable"."mapKey" IS NULL) <> ("orgTagTable"."blockKey" IS NULL))
 );
 --> statement-breakpoint
-CREATE INDEX `orgTagTable_map_idx` ON `orgTagTable` (`mapKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `orgTagTable_map_idx` ON `orgTagTable` (`mapKey`);--> statement-breakpoint
 CREATE INDEX `orgTagTable_replaces_idx` ON `orgTagTable` (`replacesKey`);--> statement-breakpoint
-CREATE INDEX `orgTagTable_block_idx` ON `orgTagTable` (`blockKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `orgTagTable_block_idx` ON `orgTagTable` (`blockKey`);--> statement-breakpoint
 CREATE TABLE `packageEntity` (
 	`packageKey` text PRIMARY KEY NOT NULL,
 	`createdAt` text NOT NULL,
@@ -352,9 +352,9 @@ CREATE TABLE `packageTable` (
 	`shareDeleteToken` text DEFAULT '' NOT NULL,
 	`shareAccess` text DEFAULT '' NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`editedByKey` text NOT NULL,
 	FOREIGN KEY (`packageKey`) REFERENCES `packageEntity`(`packageKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
@@ -365,7 +365,7 @@ CREATE TABLE `packageTable` (
 	CONSTRAINT "packageTable_shareAccess" CHECK("packageTable"."shareAccess" IN ('', 'follow', 'join'))
 );
 --> statement-breakpoint
-CREATE INDEX `packageTable_live_idx` ON `packageTable` (`packageKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `packageTable_key_idx` ON `packageTable` (`packageKey`);--> statement-breakpoint
 CREATE INDEX `packageTable_replaces_idx` ON `packageTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `personEntity` (
 	`personKey` text PRIMARY KEY NOT NULL,
@@ -390,15 +390,15 @@ CREATE TABLE `personTable` (
 	`sameAsKey` text,
 	`hiddenAt` text,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	FOREIGN KEY (`personKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`sameAsKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "personTable_alias" CHECK("personTable"."alias" = '' OR "personTable"."alias" <> "personTable"."username")
 );
 --> statement-breakpoint
-CREATE INDEX `personTable_live_idx` ON `personTable` (`personKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `personTable_key_idx` ON `personTable` (`personKey`);--> statement-breakpoint
 CREATE INDEX `personTable_replaces_idx` ON `personTable` (`replacesKey`);--> statement-breakpoint
 CREATE INDEX `personTable_sameAs_idx` ON `personTable` (`sameAsKey`);--> statement-breakpoint
 CREATE TABLE `purgatoryTable` (
@@ -417,7 +417,7 @@ CREATE TABLE `purgatoryTable` (
 	FOREIGN KEY (`decidedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "purgatoryTable_tableName" CHECK("purgatoryTable"."tableName" IN ('tallyTable', 'bagUpTable', 'qaPlotTable', 'mapFeatureTable')),
 	CONSTRAINT "purgatoryTable_decision" CHECK("purgatoryTable"."decision" IN ('', 'accepted', 'rejected')),
-	CONSTRAINT "purgatoryTable_decided" CHECK(("purgatoryTable"."decision" = '') = ("purgatoryTable"."decidedAt" = ''))
+	CONSTRAINT "purgatoryTable_decided" CHECK("purgatoryTable"."decision" = '' OR "purgatoryTable"."decidedAt" <> '')
 );
 --> statement-breakpoint
 CREATE INDEX `purgatoryTable_version_idx` ON `purgatoryTable` (`versionKey`,`decidedAt`);--> statement-breakpoint
@@ -447,9 +447,9 @@ CREATE TABLE `qaPlotTable` (
 	`qaSurveyKey` text NOT NULL,
 	`mapFeatureKey` text,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`editedByKey` text NOT NULL,
 	FOREIGN KEY (`qaPlotKey`) REFERENCES `qaPlotEntity`(`qaPlotKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`qaSurveyKey`) REFERENCES `qaSurveyEntity`(`qaSurveyKey`) ON UPDATE no action ON DELETE no action,
@@ -457,7 +457,7 @@ CREATE TABLE `qaPlotTable` (
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
-CREATE INDEX `qaPlotTable_live_idx` ON `qaPlotTable` (`qaPlotKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `qaPlotTable_key_idx` ON `qaPlotTable` (`qaPlotKey`);--> statement-breakpoint
 CREATE INDEX `qaPlotTable_parent_idx` ON `qaPlotTable` (`replacesKey`,`qaPlotKey`);--> statement-breakpoint
 CREATE TABLE `qaSurveyEntity` (
 	`qaSurveyKey` text PRIMARY KEY NOT NULL,
@@ -476,9 +476,9 @@ CREATE TABLE `qaSurveyTable` (
 	`mapKey` text NOT NULL,
 	`blockKey` text,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`editedByKey` text NOT NULL,
 	FOREIGN KEY (`qaSurveyKey`) REFERENCES `qaSurveyEntity`(`qaSurveyKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE no action,
@@ -487,7 +487,7 @@ CREATE TABLE `qaSurveyTable` (
 	CONSTRAINT "qaSurveyTable_species_not_empty_list" CHECK("qaSurveyTable"."speciesChoicesJson" <> '[]')
 );
 --> statement-breakpoint
-CREATE INDEX `qaSurveyTable_live_idx` ON `qaSurveyTable` (`qaSurveyKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `qaSurveyTable_key_idx` ON `qaSurveyTable` (`qaSurveyKey`);--> statement-breakpoint
 CREATE INDEX `qaSurveyTable_parent_idx` ON `qaSurveyTable` (`replacesKey`,`qaSurveyKey`);--> statement-breakpoint
 CREATE TABLE `settingTable` (
 	`settingKey` text NOT NULL,
@@ -500,11 +500,6 @@ CREATE TABLE `settingTable` (
 	CONSTRAINT "settingTable_mode_global" CHECK("settingTable"."settingKey" <> 'mode' OR "settingTable"."workMode" = '')
 );
 --> statement-breakpoint
-CREATE TABLE `stackDirty` (
-	`n` integer PRIMARY KEY NOT NULL,
-	`scopeKey` text NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `stockTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapFeatureKey` text NOT NULL,
@@ -512,9 +507,9 @@ CREATE TABLE `stockTable` (
 	`boxQty` real,
 	`treesQty` real,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`countedByKey` text NOT NULL,
 	FOREIGN KEY (`mapFeatureKey`) REFERENCES `mapFeatureEntity`(`mapFeatureKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`boxKey`) REFERENCES `boxEntity`(`boxKey`) ON UPDATE no action ON DELETE no action,
@@ -524,7 +519,7 @@ CREATE TABLE `stockTable` (
 	CONSTRAINT "stockTable_treesQty" CHECK("stockTable"."treesQty" >= 0)
 );
 --> statement-breakpoint
-CREATE INDEX `stockTable_live_idx` ON `stockTable` (`mapFeatureKey`,`boxKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `stockTable_key_idx` ON `stockTable` (`mapFeatureKey`,`boxKey`);--> statement-breakpoint
 CREATE INDEX `stockTable_replaces_idx` ON `stockTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `tallyEntity` (
 	`tallyKey` text PRIMARY KEY NOT NULL,
@@ -545,9 +540,9 @@ CREATE TABLE `tallyTable` (
 	`bagKey` text NOT NULL,
 	`boxKey` text NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
-	`replacedAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
-	`isDeleted` integer DEFAULT 0 NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
 	`editedByKey` text NOT NULL,
 	FOREIGN KEY (`tallyKey`) REFERENCES `tallyEntity`(`tallyKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`bagUpKey`) REFERENCES `bagUpEntity`(`bagUpKey`) ON UPDATE no action ON DELETE no action,
@@ -558,7 +553,7 @@ CREATE TABLE `tallyTable` (
 	CONSTRAINT "tallyTable_currency" CHECK(("tallyTable"."currency" IS NOT NULL AND "tallyTable"."currency" GLOB '[A-Z][A-Z][A-Z]') OR ("tallyTable"."currency" IS NULL AND "tallyTable"."pricePerTree" IS NULL))
 );
 --> statement-breakpoint
-CREATE INDEX `tallyTable_live_idx` ON `tallyTable` (`tallyKey`,`replacedAt`);--> statement-breakpoint
+CREATE INDEX `tallyTable_key_idx` ON `tallyTable` (`tallyKey`);--> statement-breakpoint
 CREATE INDEX `tallyTable_parent_idx` ON `tallyTable` (`replacesKey`,`tallyKey`);--> statement-breakpoint
 CREATE TABLE `touchTable` (
 	`entityKey` text PRIMARY KEY NOT NULL,
@@ -576,27 +571,27 @@ CREATE TABLE `userProfile` (
 	FOREIGN KEY (`orgKey`) REFERENCES `orgTable`(`orgKey`) ON UPDATE no action ON DELETE set null
 );
 
-CREATE TABLE IF NOT EXISTS mapView AS SELECT v.versionKey, v.mapKey, v.mapName, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM mapTable v JOIN mapEntity e USING (mapKey) WHERE false;
+CREATE TABLE IF NOT EXISTS mapView AS SELECT v.versionKey, v.mapKey, v.mapName, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM mapTable v JOIN mapEntity e USING (mapKey) WHERE false;
 CREATE INDEX mapView_thing_idx ON mapView (mapKey);
-CREATE TABLE IF NOT EXISTS mapFeatureView AS SELECT v.versionKey, v.mapFeatureKey, v.featureName, v.featureType, v.geometryJson, v.featureDesc, v.featureDataJson, v.pinIcon, v.fillOpacity, v.isTitleShown, v.overlayJson, v.featureOrigin, v.mapKey, v.linkedBlockKey, v.mergedFromJson, v.editorName, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM mapFeatureTable v JOIN mapFeatureEntity e USING (mapFeatureKey) WHERE false;
+CREATE TABLE IF NOT EXISTS mapFeatureView AS SELECT v.versionKey, v.mapFeatureKey, v.featureName, v.featureType, v.geometryJson, v.featureDesc, v.featureDataJson, v.pinIcon, v.fillOpacity, v.isTitleShown, v.overlayJson, v.featureOrigin, v.mapKey, v.linkedBlockKey, v.mergedFromJson, v.editorName, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM mapFeatureTable v JOIN mapFeatureEntity e USING (mapFeatureKey) WHERE false;
 CREATE INDEX mapFeatureView_thing_idx ON mapFeatureView (mapFeatureKey);
-CREATE TABLE IF NOT EXISTS qaSurveyView AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.areaHa, v.treesPerHa, v.speciesChoicesJson, v.mapKey, v.blockKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaSurveyTable v JOIN qaSurveyEntity e USING (qaSurveyKey) WHERE false;
+CREATE TABLE IF NOT EXISTS qaSurveyView AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.areaHa, v.treesPerHa, v.speciesChoicesJson, v.mapKey, v.blockKey, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM qaSurveyTable v JOIN qaSurveyEntity e USING (qaSurveyKey) WHERE false;
 CREATE INDEX qaSurveyView_thing_idx ON qaSurveyView (qaSurveyKey);
-CREATE TABLE IF NOT EXISTS qaPlotView AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plantableSpotsQty, v.plantableSpotsOverrideQty, v.faultsJson, v.splitPlantJson, v.plotDesc, v.isOccupied, v.openLocode, v.qaSurveyKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM qaPlotTable v JOIN qaPlotEntity e USING (qaPlotKey) WHERE false;
+CREATE TABLE IF NOT EXISTS qaPlotView AS SELECT v.versionKey, v.qaPlotKey, v.plantedQty, v.plantableSpotsQty, v.plantableSpotsOverrideQty, v.faultsJson, v.splitPlantJson, v.plotDesc, v.isOccupied, v.openLocode, v.qaSurveyKey, v.mapFeatureKey, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM qaPlotTable v JOIN qaPlotEntity e USING (qaPlotKey) WHERE false;
 CREATE INDEX qaPlotView_thing_idx ON qaPlotView (qaPlotKey);
-CREATE TABLE IF NOT EXISTS blockView AS SELECT v.versionKey, v.blockKey, v.blockName, v.allocatedQty, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM blockTable v JOIN blockEntity e USING (blockKey) WHERE false;
+CREATE TABLE IF NOT EXISTS blockView AS SELECT v.versionKey, v.blockKey, v.blockName, v.allocatedQty, v.mapFeatureKey, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM blockTable v JOIN blockEntity e USING (blockKey) WHERE false;
 CREATE INDEX blockView_thing_idx ON blockView (blockKey);
-CREATE TABLE IF NOT EXISTS boxView AS SELECT v.versionKey, v.boxKey, v.boxTag, v.speciesCode, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM boxTable v JOIN boxEntity e USING (boxKey) WHERE false;
+CREATE TABLE IF NOT EXISTS boxView AS SELECT v.versionKey, v.boxKey, v.boxTag, v.speciesCode, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM boxTable v JOIN boxEntity e USING (boxKey) WHERE false;
 CREATE INDEX boxView_thing_idx ON boxView (boxKey);
-CREATE TABLE IF NOT EXISTS bagView AS SELECT v.versionKey, v.bagKey, v.boxQty, v.bundleQty, v.pricePerTree, v.currency, v.isBox, v.isBagged, v.bundlesInBags, v.bundlesOnGround, v.halfBoxParity, v.sortOrder, v.boxKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM bagTable v JOIN bagEntity e USING (bagKey) WHERE false;
+CREATE TABLE IF NOT EXISTS bagView AS SELECT v.versionKey, v.bagKey, v.boxQty, v.bundleQty, v.pricePerTree, v.currency, v.isBox, v.isBagged, v.bundlesInBags, v.bundlesOnGround, v.halfBoxParity, v.sortOrder, v.boxKey, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM bagTable v JOIN bagEntity e USING (bagKey) WHERE false;
 CREATE INDEX bagView_thing_idx ON bagView (bagKey);
-CREATE TABLE IF NOT EXISTS bagUpView AS SELECT v.versionKey, v.bagUpKey, v.plantedDt, v.workMode, v.blockKey, v.mapFeatureKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM bagUpTable v JOIN bagUpEntity e USING (bagUpKey) WHERE false;
+CREATE TABLE IF NOT EXISTS bagUpView AS SELECT v.versionKey, v.bagUpKey, v.plantedDt, v.workMode, v.blockKey, v.mapFeatureKey, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM bagUpTable v JOIN bagUpEntity e USING (bagUpKey) WHERE false;
 CREATE INDEX bagUpView_thing_idx ON bagUpView (bagUpKey);
-CREATE TABLE IF NOT EXISTS tallyView AS SELECT v.versionKey, v.tallyKey, v.boxTag, v.speciesCode, v.plantedQty, v.pricePerTree, v.currency, v.bagUpKey, v.bagKey, v.boxKey, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM tallyTable v JOIN tallyEntity e USING (tallyKey) WHERE false;
+CREATE TABLE IF NOT EXISTS tallyView AS SELECT v.versionKey, v.tallyKey, v.boxTag, v.speciesCode, v.plantedQty, v.pricePerTree, v.currency, v.bagUpKey, v.bagKey, v.boxKey, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM tallyTable v JOIN tallyEntity e USING (tallyKey) WHERE false;
 CREATE INDEX tallyView_thing_idx ON tallyView (tallyKey);
-CREATE TABLE IF NOT EXISTS packageView AS SELECT v.versionKey, v.packageKey, v.fileName, v.direction, v.packageType, v.plantedDt, v.sentAt, v.receivedAt, v.rawJson, v.byteSize, v.logLine, v.countsJson, v.sentVersionKeysJson, v.senderHighWaterAt, v.shareLinkId, v.shareDeleteToken, v.shareAccess, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted, v.editedByKey, e.createdByKey FROM packageTable v JOIN packageEntity e USING (packageKey) WHERE false;
+CREATE TABLE IF NOT EXISTS packageView AS SELECT v.versionKey, v.packageKey, v.fileName, v.direction, v.packageType, v.plantedDt, v.sentAt, v.receivedAt, v.rawJson, v.byteSize, v.logLine, v.countsJson, v.sentVersionKeysJson, v.senderHighWaterAt, v.shareLinkId, v.shareDeleteToken, v.shareAccess, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM packageTable v JOIN packageEntity e USING (packageKey) WHERE false;
 CREATE INDEX packageView_thing_idx ON packageView (packageKey);
-CREATE TABLE IF NOT EXISTS personView AS SELECT v.versionKey, v.personKey, v.username, v.alias, v.color, v.colorPickedAt, v.sameAsKey, v.hiddenAt, e.createdAt, v.replacedAt, v.replacesKey, v.isDeleted FROM personTable v JOIN personEntity e USING (personKey) WHERE false;
+CREATE TABLE IF NOT EXISTS personView AS SELECT v.versionKey, v.personKey, v.username, v.alias, v.color, v.colorPickedAt, v.sameAsKey, v.hiddenAt, e.createdAt, v.replacesKey, v.kind, v.actKey FROM personTable v JOIN personEntity e USING (personKey) WHERE false;
 CREATE INDEX personView_thing_idx ON personView (personKey);
 CREATE TABLE IF NOT EXISTS crewView AS SELECT * FROM crewTable WHERE false;
 CREATE INDEX crewView_thing_idx ON crewView (versionKey);
