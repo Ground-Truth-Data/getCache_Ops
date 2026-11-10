@@ -38,10 +38,9 @@ export const thingOf = (table: string): readonly string[] => THING[table] ?? [];
 export const STAMPS = new Set(["versionKey", "createdAt", "replacedAt", "replacesKey"]);
 // Who made a version, not a cell of it: a different editor with nothing changed writes nothing.
 export const NOT_A_CHANGE = new Set(["editedByKey"]);
-/** A version that merged concurrent heads: the heads it carried lost nothing. */
+/** A stored merge of concurrent heads: only an accept is stored; any other merge is computed on read. */
 export const MERGE_PREFIX = "merge-";
-/** A merge that is a decision: an accept, made by a person at that moment. Its own key, so it never shares one
- *  with a pure merge of the same heads, and it weighs as an edit. */
+/** An accept: the merge a person decided, stored so it travels, since review rows do not. */
 export const ACCEPT_PREFIX = `${MERGE_PREFIX}accept-`;
 
 const byTime = (a: Row, b: Row) => (String(a.createdAt) < String(b.createdAt) || (a.createdAt === b.createdAt && String(a.versionKey) < String(b.versionKey)) ? -1 : 1);
@@ -53,26 +52,17 @@ const byTime = (a: Row, b: Row) => (String(a.createdAt) < String(b.createdAt) ||
 export function mergeOf(heads: readonly Row[], versions: ReadonlyMap<string, Row>, accepted?: string): Row | null {
 	const sorted = [...heads].sort(byTime);
 	if (sorted.length < 2) return null;
-	const ordered = [...sorted.filter((h) => h.versionKey !== accepted), ...sorted.filter((h) => h.versionKey === accepted)];
+	const edits = [...sorted.filter((h) => h.versionKey !== accepted), ...sorted.filter((h) => h.versionKey === accepted)];
 	const line = (v: string) => {
 		const out: string[] = [];
 		for (let at: string | null | undefined = v; at && !out.includes(at); at = versions.get(at)?.replacesKey as string | null) out.push(at);
 		return out;
 	};
-	// A pure merge is weighed as the edit it replaced: its stamp is when it was merged, not when its cells were
-	// written. An accept is a decision made then, and weighs as itself.
-	const editUnder = (v: string): string => {
-		const parent = versions.get(String(versions.get(v)?.replacesKey));
-		return parent && v.startsWith(MERGE_PREFIX) && !v.startsWith(ACCEPT_PREFIX) ? editUnder(String(parent.versionKey)) : v;
-	};
-	const edits = [...new Set(ordered.map((h) => editUnder(String(h.versionKey))))]
-		.map((v) => versions.get(v)!)
-		.sort((a, b) => Number(a.versionKey === accepted) - Number(b.versionKey === accepted) || byTime(a, b));
 	const [first, ...rest] = edits.map((h) => line(String(h.versionKey)));
 	const base = first!.find((v) => rest.every((l) => l.includes(v)));
 	if (!base) return null;
 	const ancestor = versions.get(base)!;
-	const newest = ordered.at(-1)!;
+	const newest = edits.at(-1)!;
 	const merged: Row = { ...newest };
 	for (const c of Object.keys(newest)) {
 		if (STAMPS.has(c) || NOT_A_CHANGE.has(c)) continue;
@@ -82,20 +72,23 @@ export function mergeOf(heads: readonly Row[], versions: ReadonlyMap<string, Row
 	return newest === sorted.at(-1) && Object.keys(merged).every((c) => merged[c] === newest[c]) ? null : merged;
 }
 
+// On Central two accounts can share keys, so a version is named with its owner; the phone has none.
+const own = (r: Row, key: unknown) => JSON.stringify([r.ownerId ?? null, String(key)]);
+
 /** Held versions whose newest review does not accept them: they stand for nothing. */
 export function unstanding(reviews: readonly Row[]): Set<string> {
 	const last = new Map<string, unknown>();
-	for (const r of reviews) last.set(String(r.versionKey), r.decision);
+	for (const r of reviews) last.set(own(r, r.versionKey), r.decision);
 	return new Set([...last].flatMap(([k, d]) => (d === "accepted" ? [] : [k])));
 }
 
 /** One table's live rows: per thing, its newest head, merged with the other heads, unless it ends the thing. */
 export function liveOf(table: string, rows: readonly Row[], held: ReadonlySet<string>): Row[] {
-	const replaced = new Set(rows.flatMap((r) => (held.has(String(r.versionKey)) ? [] : [String(r.replacesKey)])));
-	const heads = rows.filter((r) => r.replacedAt === "" && !held.has(String(r.versionKey)) && !replaced.has(String(r.versionKey)));
+	const replaced = new Set(rows.flatMap((r) => (held.has(own(r, r.versionKey)) ? [] : [own(r, r.replacesKey)])));
+	const heads = rows.filter((r) => r.replacedAt === "" && !held.has(own(r, r.versionKey)) && !replaced.has(own(r, r.versionKey)));
 	const thing = thingOf(table);
 	if (!thing.length) return heads.filter((h) => !h.isDeleted);
-	const of = (r: Row) => JSON.stringify(thing.map((c) => r[c] ?? null));
+	const of = (r: Row) => JSON.stringify([r.ownerId ?? null, ...thing.map((c) => r[c] ?? null)]);
 	const things = new Map<string, Row[]>();
 	for (const h of heads) things.set(of(h), [...(things.get(of(h)) ?? []), h]);
 	const out: Row[] = [];
@@ -115,22 +108,28 @@ export function liveOf(table: string, rows: readonly Row[], held: ReadonlySet<st
 	return out;
 }
 
-const viewOf = (table: string) => table.replace(/Table$/, "View");
+export const viewOf = (table: string) => table.replace(/Table$/, "View");
 export const LIVE_TABLES = [...Object.keys(VERSION_KEYS), ...ROWS_LIVE].map(viewOf);
+export const entityOf = (table: string) => table.replace(/Table$/, "Entity");
 
-/** Every `*View` table's rows, from the log. An entity's view row carries its birth: the entity's `createdAt`
- *  and, but for a person, its `createdByKey`. A version whose entity is missing is not live. */
+/** One table's `*View` rows: its live rows, and for a version table each carries its birth from `born` (its
+ *  entity rows): the entity's `createdAt` and, but for a person, its `createdByKey`. No entity, not live. */
+export function viewRows(table: string, rows: readonly Row[], held: ReadonlySet<string>, born: readonly Row[] = []): Row[] {
+	const live = liveOf(table, rows, held);
+	const key = VERSION_KEYS[table as keyof typeof VERSION_KEYS];
+	if (!key) return live;
+	const of = new Map(born.map((e) => [e[key], e]));
+	return live.flatMap((r) => {
+		const e = of.get(r[key]);
+		if (!e) return [];
+		return [table === "personTable" ? { ...r, createdAt: e.createdAt } : { ...r, createdAt: e.createdAt, createdByKey: e.createdByKey }];
+	});
+}
+
+/** Every `*View` table's rows, from the log. */
 export async function rebuildDerived(read: ReadTable): Promise<Record<string, Row[]>> {
 	const held = unstanding(await read("purgatoryTable"));
 	const out: Record<string, Row[]> = {};
-	for (const [table, key] of Object.entries(VERSION_KEYS)) {
-		const born = new Map((await read(table.replace(/Table$/, "Entity"))).map((e) => [e[key], e]));
-		out[viewOf(table)] = liveOf(table, await read(table), held).flatMap((r) => {
-			const e = born.get(r[key]);
-			if (!e) return [];
-			return [table === "personTable" ? { ...r, createdAt: e.createdAt } : { ...r, createdAt: e.createdAt, createdByKey: e.createdByKey }];
-		});
-	}
-	for (const table of ROWS_LIVE) out[viewOf(table)] = liveOf(table, await read(table), held);
+	for (const t of [...Object.keys(VERSION_KEYS), ...ROWS_LIVE]) out[viewOf(t)] = viewRows(t, await read(t), held, t in VERSION_KEYS ? await read(entityOf(t)) : []);
 	return out;
 }
