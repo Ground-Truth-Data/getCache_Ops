@@ -566,6 +566,10 @@
 					"type": "TEXT"
 				},
 				{
+					"name": "bagNo",
+					"type": "INTEGER"
+				},
+				{
 					"name": "createdAt",
 					"type": "TEXT"
 				},
@@ -2145,6 +2149,10 @@
 				},
 				{
 					"name": "decidedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "followsKey",
 					"type": "TEXT"
 				}
 			]

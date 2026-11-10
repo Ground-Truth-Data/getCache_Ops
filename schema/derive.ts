@@ -2,7 +2,7 @@
 // and Ops run the same rule; the phone's src imports it, the edge function cannot import src.
 
 export type Row = Record<string, unknown>;
-/** Every row of one log table. `purgatoryTable` must come in the order its reviews were made. */
+/** Every row of one log table, in any order. */
 export type ReadTable = (table: string) => Row[] | Promise<Row[]>;
 
 export const VERSION_KEYS = {
@@ -71,13 +71,10 @@ export function mergeOf(heads: readonly Row[], versions: ReadonlyMap<string, Row
 // On Central two accounts can share keys, so a version is named with its owner; the phone has none.
 const own = (r: Row, key: unknown) => JSON.stringify([r.ownerId ?? null, String(key)]);
 
-/** Held versions whose newest review does not accept them: they stand for nothing. Newest by decidedAt, then
- *  reviewKey: a refill or restore inserts reviews in any order. */
+/** Held versions whose newest review, the one no other follows, does not accept them: they stand for nothing. */
 export function unstanding(reviews: readonly Row[]): Set<string> {
-	const last = new Map<string, unknown>();
-	const at = (r: Row) => `${r.decidedAt ?? ""}\u0000${r.reviewKey}`;
-	for (const r of [...reviews].sort((a, b) => (at(a) < at(b) ? -1 : at(a) > at(b) ? 1 : 0))) last.set(own(r, r.versionKey), r.decision);
-	return new Set([...last].flatMap(([k, d]) => (d === "accepted" ? [] : [k])));
+	const followed = new Set(reviews.map((r) => own(r, r.followsKey)));
+	return new Set(reviews.filter((r) => !followed.has(own(r, r.reviewKey)) && r.decision !== "accepted").map((r) => own(r, r.versionKey)));
 }
 
 /** One table's live rows: per thing, its newest head, merged with the other heads, unless any head ends it. */

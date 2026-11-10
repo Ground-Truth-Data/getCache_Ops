@@ -42,7 +42,7 @@ export async function openDatabase(data: ArrayBuffer | Uint8Array): Promise<void
 /** Every `*View` table refilled from the log by the phone's own rule, so a fork shows its merged row. */
 async function derive(d: Database): Promise<void> {
 	const rows = (sql: string) => d.exec({ sql, rowMode: 'object', returnValue: 'resultRows' });
-	const live = await rebuildDerived((t) => rows(`SELECT * FROM "${t}" ORDER BY ${t === 'purgatoryTable' ? 'decidedAt, rowid' : 'rowid'}`));
+	const live = await rebuildDerived((t) => rows(`SELECT * FROM "${t}" ORDER BY rowid`));
 	d.transaction(() => {
 		for (const [table, got] of Object.entries(live)) {
 			const cols = rows(`SELECT name FROM pragma_table_info('${table}')`).map((r) => r.name as string);

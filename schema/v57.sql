@@ -81,6 +81,7 @@ CREATE INDEX `bagTable_key_idx` ON `bagTable` (`bagKey`);--> statement-breakpoin
 CREATE INDEX `bagTable_replaces_idx` ON `bagTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `bagUpEntity` (
 	`bagUpKey` text PRIMARY KEY NOT NULL,
+	`bagNo` integer DEFAULT 0 NOT NULL,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
 	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
@@ -414,6 +415,7 @@ CREATE TABLE `purgatoryTable` (
 	`packageKey` text NOT NULL,
 	`decidedAt` text DEFAULT '' NOT NULL,
 	`decidedByKey` text,
+	`followsKey` text DEFAULT '' NOT NULL,
 	FOREIGN KEY (`packageKey`) REFERENCES `packageEntity`(`packageKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`decidedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "purgatoryTable_tableName" CHECK("purgatoryTable"."tableName" IN ('tallyTable', 'bagUpTable', 'qaPlotTable', 'mapFeatureTable')),
@@ -421,7 +423,8 @@ CREATE TABLE `purgatoryTable` (
 	CONSTRAINT "purgatoryTable_decided" CHECK("purgatoryTable"."decision" = '' OR "purgatoryTable"."decidedAt" <> '')
 );
 --> statement-breakpoint
-CREATE INDEX `purgatoryTable_version_idx` ON `purgatoryTable` (`versionKey`,`decidedAt`);--> statement-breakpoint
+CREATE INDEX `purgatoryTable_version_idx` ON `purgatoryTable` (`versionKey`);--> statement-breakpoint
+CREATE UNIQUE INDEX `purgatoryTable_follows_uq` ON `purgatoryTable` (`followsKey`) WHERE "purgatoryTable"."followsKey" <> '';--> statement-breakpoint
 CREATE TABLE `qaPlotEntity` (
 	`qaPlotKey` text PRIMARY KEY NOT NULL,
 	`plotNo` integer DEFAULT 0 NOT NULL,
