@@ -13,7 +13,7 @@ import JsonPeek from "../../_rapper/rt/admin/JsonPeek.svelte";
 import TableToolbar from "../../_rapper/rt/admin/TableToolbar.svelte";
 import { hiddenFromParams, hiddenToParams, visibleColumns } from "../../_rapper/rt/admin/columnPrefs";
 import { type SortState, sortRows } from "../../_rapper/rt/admin/sortRows";
-import { MONEY_NAME, RATE_NAME, amount, byCurrency, columnTotals, mark } from "./money";
+import { MONEY_NAME, RATE_NAME, amount, columnTotals, currencies, mark } from "./money";
 import { TREE, TREE_NAME } from "./trees";
 import IdentityPill from "../../_rapper/gc/IdentityPill.svelte";
 import { PERSON_NAME, people } from "./people";
@@ -22,12 +22,15 @@ import type { Snippet } from "svelte";
 
 type Row = Record<string, unknown>;
 
-// A unit is said once, in the header; cells are plain numbers. `money` columns split the rows by currency, one
-// table each, so `currency` leaves the screen. `noSum` columns are rates: a Σ of per-tree prices means nothing.
+// A unit is said once, in the header; cells are plain numbers. One table whatever the currencies: while every row
+// shares one, the header carries its mark and `currency` leaves the screen; mixed, the column stays and money is
+// never summed. `noSum` columns are rates: a Σ of per-tree prices means nothing.
 let { rows, columns, name, money = [], noSum = [], toggle, panel }: { rows: Row[]; columns: string[]; name: string; money?: string[]; noSum?: string[]; toggle?: Snippet; panel?: Snippet } = $props();
-const onScreen = $derived(money.length ? columns.filter((c) => c !== "currency") : columns);
 const cur = $derived(columns.find((c) => c.toLowerCase() === "currency") ?? "currency");
 const cash = $derived(money.length ? money : columns.some((c) => c === cur) ? columns.filter((c) => c !== cur && MONEY_NAME.test(c)) : []);
+const codes = $derived(cash.length ? currencies(rows, cur) : []);
+const one = $derived(codes.length === 1 ? codes[0] : "");
+const onScreen = $derived(one ? columns.filter((c) => c !== cur) : columns);
 
 const path = $derived(route.path.split("?")[0] || ".");
 const all = $derived([...new URLSearchParams(route.path.split("?")[1] ?? "")]);
@@ -50,8 +53,6 @@ let sort = $state<SortState>({ col: "", asc: true });
 
 const hidden = $derived(hiddenFromParams(params, onScreen));
 const cols = $derived(visibleColumns(onScreen, hidden));
-const codes = $derived(cash.length ? byCurrency(rows, cur).map(([c]) => c) : []);
-const exportCols = $derived(codes.length > 1 ? [...cols, cur] : cols);
 
 const matched = $derived.by(() => {
 	const q = filter.trim().toLowerCase();
@@ -61,7 +62,7 @@ const matched = $derived.by(() => {
 	return sortRows(hit, sort);
 });
 
-const pageSize = $derived(Math.max(1, Number(params.get("size")) || 200));
+const pageSize = 50;
 const pageIndex = $derived(Math.max(0, Number(params.get("page")) || 0));
 const rowOffset = $derived(pageIndex * pageSize);
 const shown = $derived(matched.slice(rowOffset, rowOffset + pageSize));
@@ -76,14 +77,12 @@ function onFilter(v: string) {
 	if (pageIndex) setParams((p) => p.delete("page"));
 }
 
-const groups = $derived(cash.length ? byCurrency(shown, cur) : [["", shown] as [string, Row[]]]);
-const inGroup = (code: string) => (cash.length ? matched.filter((r) => String(r[cur] ?? "") === code) : matched);
-const totals = (these: Row[]) => columnTotals(these, cols, cash, noSum);
+const totals = $derived(columnTotals(matched, cols, cash, codes.length > 1 ? [...noSum, ...cash] : noSum));
 const isTrees = (c: string) => TREE_NAME.test(c) && rows.some((r) => typeof r[c] === "number");
-const label = (code: string) => (c: string) => (cash.includes(c) && code ? `${c} (${mark(code)})` : isTrees(c) ? `${c} ${TREE}` : c);
-// The pine is Ops' font, so a sheet says "trees"; a currency stays in the header only while there is one.
-const exportLabel = (c: string) => (cash.includes(c) && codes.length === 1 ? `${c} (${mark(codes[0])})` : c);
-const exported = (rs: Row[]) => rs.map((r) => Object.fromEntries(exportCols.map((c) => [exportLabel(c), r[c]])));
+// The pine is Ops' font, so a sheet says "trees".
+const exportLabel = (c: string) => (cash.includes(c) && one ? `${c} (${mark(one)})` : c);
+const label = (c: string) => (isTrees(c) ? `${c} ${TREE}` : exportLabel(c));
+const exported = (rs: Row[]) => rs.map((r) => Object.fromEntries(cols.map((c) => [exportLabel(c), r[c]])));
 const cellText = (c: string, r: Row) => (cash.includes(c) ? amount(r[c], RATE_NAME.test(c)) : fmt(r[c]));
 
 const who = people();
@@ -148,20 +147,19 @@ function tickAll() {
 	</div>
 	{@render panel?.()}
 
-	<TableToolbar columns={exportCols.map(exportLabel)} filteredRows={exported(matched)} selectedRows={exported(tickedRows)} tableName={name} />
+	<TableToolbar columns={cols.map(exportLabel)} filteredRows={exported(matched)} selectedRows={exported(tickedRows)} tableName={name} />
 
-	{#each groups as [code, these] (code)}
 	<AdminDataTable
 		columns={cols}
-		label={label(code)}
-		rows={these}
+		{label}
+		rows={shown}
 		{rowKey}
 		{sort}
 		onSort={(next) => (sort = next)}
 		frozen={1}
-		rowNumberOffset={groups.length === 1 ? rowOffset : undefined}
-		totals={totals(inGroup(code))}
-		totalLabel={inGroup(code).length.toLocaleString()}
+		rowNumberOffset={rowOffset}
+		{totals}
+		totalLabel={matched.length.toLocaleString()}
 		pinSum
 		onPeek={peekCell}
 		render={cellText}
@@ -186,7 +184,6 @@ function tickAll() {
 			{/if}
 		{/snippet}
 	</AdminDataTable>
-	{/each}
 
 	<AdminPager
 		page={pageIndex}
@@ -195,7 +192,6 @@ function tickAll() {
 		total={matched.length}
 		hasMore={rowOffset + shown.length < matched.length}
 		href={pageHref}
-		onPageSize={(size) => setParams((p) => (p.set("size", String(size)), p.delete("page")))}
 	/>
 </section>
 
@@ -207,4 +203,9 @@ function tickAll() {
 .dt-search { flex: 1; min-width: 0; padding: 0.3rem 0.6rem; border: 1px solid #3a3a3a; border-radius: 6px; background: var(--color-field); color: inherit; }
 .dt-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
 .dt-meta { color: #8f8a76; font-size: 0.8rem; white-space: nowrap; }
+/* The frozen band's floor (law in TreePS/KANBAN.md). Its rows land on fractional pixels under its scroll-driven
+   translate and open a 1px seam between them; a <thead> background cannot fill it, as a table paints a row group's
+   per cell. So the Σ row reaches 2px up under the header row. Belongs in rapper's adminTable.css; Ops carries it
+   until it lands there. */
+.dt :global(.admin-table.pin-sum tr.subtotal th) { --at-sum-edge: var(--at-sum-rules), 0 -2px var(--at-panel-2); }
 </style>

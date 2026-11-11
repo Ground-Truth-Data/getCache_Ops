@@ -114,9 +114,10 @@
 
 <svelte:window ondragover={(e) => e.preventDefault()} ondrop={drop} onfocus={focused} onmessage={received} />
 
-<!-- --site-head: where a table's frozen header row docks, flush under this header whatever its wrapped height. -->
+<!-- --site-head: where a table's frozen header row docks, flush under this header whatever its wrapped height. The
+     header's 2px floor, in the band's colour, covers the seam the band's fractional edge opens under it. -->
 <div class="font-sans" style:--accent={brand.accent} style:--rt-yellow={brand.accent} style:--site-head="{headHeight}px">
-	<header class="sticky top-0 z-10 print:hidden border-b border-rule bg-surface" bind:offsetHeight={headHeight}>
+	<header class="sticky top-0 z-10 print:hidden border-b border-rule bg-surface shadow-[0_2px_var(--at-inset)]" bind:offsetHeight={headHeight}>
 		<nav class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
 			{#if space}
 				<a href="." class="mr-2 flex sm:mr-4 items-center gap-2 font-display text-2xl text-(--accent)">
