@@ -3,7 +3,7 @@ const sign = (code: string, display: string) =>
 	new Intl.NumberFormat('en-CA', { style: 'currency', currency: code, currencyDisplay: display }).formatToParts(0).find((p) => p.type === 'currency')?.value ?? code;
 
 /** A currency's mark for a header: every dollar is plain $ (TreePS/KANBAN.md), the rest their own sign. */
-export const mark = (code: string) => sign(code, 'narrowSymbol');
+export const mark = (code: string) => (sign(code, 'narrowSymbol').includes('$') ? '$' : sign(code, 'narrowSymbol'));
 
 /** Money in a cell: two decimals; a rate (a price per tree) keeps up to four, or 18.5¢ would read as 19¢. */
 export const amount = (v: unknown, rate = false, lang?: string) =>

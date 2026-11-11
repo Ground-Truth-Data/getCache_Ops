@@ -1,13 +1,16 @@
 #!/bin/sh
-# Checks each commit being pushed, never the working tree, which agents edit live. A red is printed, never
-# refused (pushes are never gated, fetch/CLAUDE.md); unit tests run by hand, since under load they time out.
+# Checks each commit being pushed, never the working tree, which agents edit live. Type and dead-code reds are
+# printed, never refused; unit tests run by hand, since under load they time out. One refusal: the money law
+# (TreePS/KANBAN.md), a single fast file, fails the push on any US$, CA$ or AU$ (Chris, 10 Nov 2026).
 repo=$(pwd)
+refuse=0
 while read -r _ sha _ _; do
 	[ "$sha" = 0000000000000000000000000000000000000000 ] && continue
 	dir=$(mktemp -d)
 	git archive "$sha" | tar -x -C "$dir"
 	ln -s "$repo/node_modules" "$dir/node_modules"
 	(cd "$dir" && npm run check && npx knip) || echo "pre-push: ${sha%"${sha#???????}"} is red above; pushing anyway"
+	(cd "$dir" && npx vitest run src/app/plainDollar.test.ts) || { echo "pre-push: a prefixed dollar (US\$, CA\$, AU\$) is in the UI; push refused"; refuse=1; }
 	rm -rf "$dir"
 done
-exit 0
+exit $refuse

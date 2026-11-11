@@ -20,6 +20,8 @@ test('Home is one tally table with one header and a currency column, 50 rows a p
 	await table.getByRole('link', { name: /next/i }).click();
 	await expect(table.locator('tbody tr')).toHaveCount(50);
 	await expect(table.locator('tbody td').first()).toBeVisible();
+	// The money law: CAD and USD in one table still never print a prefixed dollar.
+	expect(await page.locator('body').innerText()).not.toMatch(/(?<![\p{L}\p{N}_])\p{Lu}{1,3}\$/u);
 });
 
 /** Rows of pixels in the strip from the nav's bottom to the frozen band's bottom that change when the body rows are hidden. */
