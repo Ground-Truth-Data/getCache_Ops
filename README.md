@@ -36,10 +36,10 @@ Your name, logo and colour go in `custom/brand.ts` and your reports in
 
 Every table says its unit once, in the column header: tree counts carry the
 pine, money reads `value ($)` or `per tree ($)`, and each cell is a plain,
-right-aligned number. Canadian dollars are `$`, never `CA$`; another dollar
-says whose (`US$`). Rows in more than one currency split into one table per
-currency, each with its own header and its own sums, because dollars and
-pounds never add up. Exports follow the same headers. A query only has to
+right-aligned number. Every dollar is `$`, never `CA$` or `US$`; a currency
+with a sign of its own keeps it (`£`, `€`). Rows in more than one currency stay
+one table: the `currency` column stays on screen and money is never summed,
+because dollars and pounds never add up. Exports follow the same headers. A query only has to
 name its columns (`trees`, `value`, `per tree`) and return a `currency`
 column; `src/app/DataTable.svelte` does the rest.
 

@@ -1,9 +1,10 @@
 import { expect, test } from 'vitest';
 import { amount, columnTotals, currencies, mark } from './money';
 
-test('Canadian dollars are plain $; another dollar says whose', () => {
+test('every dollar is plain $; a currency with a sign of its own keeps it', () => {
 	expect(mark('CAD')).toBe('$');
-	expect(mark('USD')).toBe('US$');
+	expect(mark('USD')).toBe('$');
+	expect(mark('AUD')).toBe('$');
 	expect(mark('GBP')).toBe('£');
 	expect(mark('EUR')).toBe('€');
 });

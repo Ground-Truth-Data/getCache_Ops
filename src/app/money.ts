@@ -2,8 +2,8 @@
 const sign = (code: string, display: string) =>
 	new Intl.NumberFormat('en-CA', { style: 'currency', currency: code, currencyDisplay: display }).formatToParts(0).find((p) => p.type === 'currency')?.value ?? code;
 
-/** A currency's mark for a header: Canadian dollars are plain $, any other dollar says whose (US$), the rest their own sign. */
-export const mark = (code: string) => (code === 'CAD' ? '$' : sign(code, 'narrowSymbol') === '$' ? sign(code, 'symbol') : sign(code, 'narrowSymbol'));
+/** A currency's mark for a header: every dollar is plain $ (TreePS/KANBAN.md), the rest their own sign. */
+export const mark = (code: string) => sign(code, 'narrowSymbol');
 
 /** Money in a cell: two decimals; a rate (a price per tree) keeps up to four, or 18.5¢ would read as 19¢. */
 export const amount = (v: unknown, rate = false, lang?: string) =>
