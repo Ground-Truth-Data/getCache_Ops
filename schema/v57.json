@@ -52,7 +52,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "allocatedQty",
+					"name": "treesPerHa",
 					"type": "REAL"
 				},
 				{
@@ -68,15 +68,15 @@
 					"type": ""
 				},
 				{
-					"name": "normAllocated",
+					"name": "normRate",
 					"type": ""
 				},
 				{
-					"name": "madAllocated",
+					"name": "madRate",
 					"type": ""
 				},
 				{
-					"name": "nAllocated",
+					"name": "nRate",
 					"type": ""
 				},
 				{
@@ -90,7 +90,7 @@
 			"kind": "view",
 			"columns": [
 				{
-					"name": "boxKey",
+					"name": "cropKey",
 					"type": "TEXT"
 				},
 				{
@@ -226,7 +226,11 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -252,6 +256,10 @@
 				{
 					"name": "createdByKey",
 					"type": "TEXT"
+				},
+				{
+					"name": "actAt",
+					"type": ""
 				},
 				{
 					"name": "plantedDt",
@@ -344,7 +352,11 @@
 					"type": "INTEGER"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -390,7 +402,11 @@
 					"type": "INT"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -470,6 +486,10 @@
 					"type": "TEXT"
 				},
 				{
+					"name": "workMode",
+					"type": "TEXT"
+				},
+				{
 					"name": "createdAt",
 					"type": "TEXT"
 				},
@@ -532,7 +552,11 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -568,6 +592,10 @@
 				{
 					"name": "bagNo",
 					"type": "INTEGER"
+				},
+				{
+					"name": "workMode",
+					"type": "TEXT"
 				},
 				{
 					"name": "createdAt",
@@ -736,7 +764,11 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -800,7 +832,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "allocatedQty",
+					"name": "treesPerHa",
 					"type": "REAL"
 				},
 				{
@@ -846,134 +878,12 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "allocatedQty",
+					"name": "treesPerHa",
 					"type": "REAL"
 				},
 				{
 					"name": "mapFeatureKey",
 					"type": "TEXT"
-				},
-				{
-					"name": "createdAt",
-					"type": "TEXT"
-				},
-				{
-					"name": "replacesKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "kind",
-					"type": "TEXT"
-				},
-				{
-					"name": "actKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "editedByKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "createdByKey",
-					"type": "TEXT"
-				}
-			]
-		},
-		{
-			"name": "boxEntity",
-			"kind": "table",
-			"columns": [
-				{
-					"name": "boxKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "createdAt",
-					"type": "TEXT"
-				},
-				{
-					"name": "createdByKey",
-					"type": "TEXT"
-				}
-			]
-		},
-		{
-			"name": "boxTable",
-			"kind": "table",
-			"columns": [
-				{
-					"name": "versionKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "boxKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "boxTag",
-					"type": "TEXT"
-				},
-				{
-					"name": "speciesCode",
-					"type": "TEXT"
-				},
-				{
-					"name": "boxSizeQty",
-					"type": "REAL"
-				},
-				{
-					"name": "bundleSizeQty",
-					"type": "REAL"
-				},
-				{
-					"name": "createdAt",
-					"type": "TEXT"
-				},
-				{
-					"name": "replacesKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "kind",
-					"type": "TEXT"
-				},
-				{
-					"name": "actKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "editedByKey",
-					"type": "TEXT"
-				}
-			]
-		},
-		{
-			"name": "boxView",
-			"kind": "table",
-			"columns": [
-				{
-					"name": "versionKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "boxKey",
-					"type": "TEXT"
-				},
-				{
-					"name": "boxTag",
-					"type": "TEXT"
-				},
-				{
-					"name": "speciesCode",
-					"type": "TEXT"
-				},
-				{
-					"name": "boxSizeQty",
-					"type": "REAL"
-				},
-				{
-					"name": "bundleSizeQty",
-					"type": "REAL"
 				},
 				{
 					"name": "createdAt",
@@ -1070,6 +980,140 @@
 			]
 		},
 		{
+			"name": "cropEntity",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "cropTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxTag",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesCode",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxSizeQty",
+					"type": "REAL"
+				},
+				{
+					"name": "bundleSizeQty",
+					"type": "REAL"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "cropView",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxTag",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesCode",
+					"type": "TEXT"
+				},
+				{
+					"name": "boxSizeQty",
+					"type": "REAL"
+				},
+				{
+					"name": "bundleSizeQty",
+					"type": "REAL"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "editedByKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdByKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
 			"name": "deliveryTable",
 			"kind": "table",
 			"columns": [
@@ -1082,7 +1126,11 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -1140,7 +1188,11 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -2512,7 +2564,11 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -2558,7 +2614,11 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -2650,7 +2710,11 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -2716,7 +2780,11 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "boxKey",
+					"name": "cropKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{

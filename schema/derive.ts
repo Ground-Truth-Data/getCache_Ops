@@ -11,7 +11,7 @@ export const VERSION_KEYS = {
 	qaSurveyTable: "qaSurveyKey",
 	qaPlotTable: "qaPlotKey",
 	blockTable: "blockKey",
-	boxTable: "boxKey",
+	cropTable: "cropKey",
 	bagTable: "bagKey",
 	bagUpTable: "bagUpKey",
 	tallyTable: "tallyKey",
@@ -27,8 +27,8 @@ const THING: Partial<Record<string, readonly string[]>> = {
 	...Object.fromEntries(Object.entries(VERSION_KEYS).map(([t, k]) => [t, [k]])),
 	orgNameTable: ["orgKey"],
 	// After an import two phones' counts can both be live: the newest said wins.
-	stockTable: ["mapFeatureKey", "boxKey"],
-	deliveryTable: ["mapFeatureKey", "boxKey"],
+	stockTable: ["mapFeatureKey", "cropKey"],
+	deliveryTable: ["mapFeatureKey", "cropKey"],
 	// A plan is saved whole, every line stamped alike: the newest save per block wins.
 	allocationTable: ["blockKey"],
 };

@@ -103,13 +103,13 @@ test('a block two phones edited apart shows both edits, merged', async () => {
 	const rows: Record<string, unknown[]> = {
 		blockEntity: [{ blockKey: 'k', createdAt: '2026-11-01', createdByKey: 'p' }],
 		blockTable: [
-			{ ...v, versionKey: 'b0', blockName: 'North', allocatedQty: 100, createdAt: '2026-11-01', replacesKey: '' },
-			{ ...v, versionKey: 'b1', blockName: 'North Ridge', allocatedQty: 100, createdAt: '2026-11-02', replacesKey: 'b0' },
-			{ ...v, versionKey: 'b2', blockName: 'North', allocatedQty: 200, createdAt: '2026-11-03', replacesKey: 'b0' },
+			{ ...v, versionKey: 'b0', blockName: 'North', treesPerHa: 100, createdAt: '2026-11-01', replacesKey: '' },
+			{ ...v, versionKey: 'b1', blockName: 'North Ridge', treesPerHa: 100, createdAt: '2026-11-02', replacesKey: 'b0' },
+			{ ...v, versionKey: 'b2', blockName: 'North', treesPerHa: 200, createdAt: '2026-11-03', replacesKey: 'b0' },
 		],
 	};
 	await openDatabase(await build(async (path: string) => Response.json(rows[path.split('?')[0]] ?? [])));
-	expect(query('SELECT blockName, allocatedQty FROM blockView')).toEqual([{ blockName: 'North Ridge', allocatedQty: 200 }]);
+	expect(query('SELECT blockName, treesPerHa FROM blockView')).toEqual([{ blockName: 'North Ridge', treesPerHa: 200 }]);
 });
 
 test("builds the Phone schema from Central's rows, and the reports read it", async () => {

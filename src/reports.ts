@@ -30,7 +30,7 @@ export const reports = [
 		sql: `SELECT ${lot('t')} AS "lot", CAST(max(x.boxSizeQty) AS INTEGER) AS "trees/box", CAST(max(x.bundleSizeQty) AS INTEGER) AS "trees/bundle",
 				max(t.pricePerTree) AS "per tree", CAST(sum(t.plantedQty) AS INTEGER) AS "trees", round(sum(t.plantedQty * t.pricePerTree), 2) AS "value",
 				t.currency AS "currency", count(DISTINCT b.plantedDt) AS "days", count(DISTINCT b.blockKey) AS "blocks"
-			FROM tallyView t JOIN bagUpView b USING (bagUpKey) LEFT JOIN boxView x USING (boxKey)
+			FROM tallyView t JOIN bagUpView b USING (bagUpKey) LEFT JOIN cropView x USING (cropKey)
 			GROUP BY 1, t.currency ORDER BY "trees" DESC`,
 		money: ['per tree', 'value'],
 		noSum: ['trees/box', 'trees/bundle', 'per tree'],
@@ -39,16 +39,16 @@ export const reports = [
 		slug: 'caches',
 		title: 'Caches',
 		description: 'Each box at each cache: the last count, and the last delivery or close-out.',
-		sql: `WITH d AS (SELECT *, row_number() OVER (PARTITION BY mapFeatureKey, boxKey ORDER BY createdAt DESC) AS n FROM deliveryView),
-				pair AS (SELECT mapFeatureKey, boxKey FROM stockView UNION SELECT mapFeatureKey, boxKey FROM deliveryView)
+		sql: `WITH d AS (SELECT *, row_number() OVER (PARTITION BY mapFeatureKey, cropKey ORDER BY createdAt DESC) AS n FROM deliveryView),
+				pair AS (SELECT mapFeatureKey, cropKey FROM stockView UNION SELECT mapFeatureKey, cropKey FROM deliveryView)
 			SELECT f.featureName AS "cache", k.blockName AS "block", ${lot('x')} AS "lot",
 				round(coalesce(s.boxQty, s.treesQty / x.boxSizeQty), 2) AS "boxes", CAST(x.boxSizeQty AS INTEGER) AS "trees/box",
 				CAST(${counted('s', 'x')} AS INTEGER) AS "total", date(s.createdAt) AS "counted", ${person('sp')} AS "counted by",
 				d.kind AS "delivery", date(d.createdAt) AS "delivered", ${person('dp')} AS "delivered by"
 			FROM pair JOIN mapFeatureView f ON f.mapFeatureKey = pair.mapFeatureKey LEFT JOIN blockView k ON k.blockKey = f.linkedBlockKey
-				LEFT JOIN boxView x ON x.boxKey = pair.boxKey
-				LEFT JOIN stockView s ON s.mapFeatureKey = pair.mapFeatureKey AND s.boxKey = pair.boxKey
-				LEFT JOIN d ON d.mapFeatureKey = pair.mapFeatureKey AND d.boxKey = pair.boxKey AND d.n = 1
+				LEFT JOIN cropView x ON x.cropKey = pair.cropKey
+				LEFT JOIN stockView s ON s.mapFeatureKey = pair.mapFeatureKey AND s.cropKey = pair.cropKey
+				LEFT JOIN d ON d.mapFeatureKey = pair.mapFeatureKey AND d.cropKey = pair.cropKey AND d.n = 1
 				LEFT JOIN personView sp ON sp.personKey = s.countedByKey LEFT JOIN personView dp ON dp.personKey = d.deliveredByKey
 			ORDER BY f.featureName, "lot"`,
 		noSum: ['trees/box'],
@@ -57,14 +57,13 @@ export const reports = [
 		slug: 'blocks',
 		title: 'Blocks',
 		description: 'Each block: allocated, delivered, planted, as the blocks tab shows it.',
-		sql: `SELECT "block", "allocated", "calculated", "in caches" + "planted" AS "delivered", "planted", "in caches",
-				coalesce("allocated", "calculated") - "planted" AS "left to plant"
+		sql: `SELECT "block", "allocated", "in caches" + "planted" AS "delivered", "planted", "in caches",
+				"allocated" - "planted" AS "left to plant"
 			FROM (SELECT k.blockName AS "block",
 				(SELECT CAST(sum(a.treesQty) AS INTEGER) FROM allocationView a WHERE a.blockKey = k.blockKey) AS "allocated",
-				CASE WHEN NOT EXISTS (SELECT 1 FROM allocationView a WHERE a.blockKey = k.blockKey) THEN CAST(k.allocatedQty AS INTEGER) END AS "calculated",
 				(SELECT CAST(coalesce(sum(t.plantedQty), 0) AS INTEGER) FROM bagUpView b JOIN tallyView t USING (bagUpKey) WHERE b.blockKey = k.blockKey) AS "planted",
 				(SELECT CAST(coalesce(sum(${counted('s', 'x')}), 0) AS INTEGER) FROM stockView s JOIN mapFeatureView f USING (mapFeatureKey)
-					LEFT JOIN boxView x ON x.boxKey = s.boxKey WHERE f.linkedBlockKey = k.blockKey) AS "in caches"
+					LEFT JOIN cropView x ON x.cropKey = s.cropKey WHERE f.linkedBlockKey = k.blockKey) AS "in caches"
 				FROM blockView k)
 			ORDER BY "block"`,
 	},
@@ -166,7 +165,7 @@ export const seasonReports = [
 		slug: 'block-totals',
 		title: 'trees/block',
 		description: 'Trees planted against the allocation, block by block.',
-		sql: `SELECT k.blockName AS "block", CAST(k.allocatedQty AS INTEGER) AS "allocated", CAST(coalesce(sum(t.plantedQty), 0) AS INTEGER) AS "trees",
+		sql: `SELECT k.blockName AS "block", (SELECT CAST(sum(a.treesQty) AS INTEGER) FROM allocationView a WHERE a.blockKey = k.blockKey) AS "allocated", CAST(coalesce(sum(t.plantedQty), 0) AS INTEGER) AS "trees",
 				count(DISTINCT b.plantedDt) AS "days"
 			FROM blockView k LEFT JOIN bagUpView b ON b.blockKey = k.blockKey AND b.plantedDt >= ?1 LEFT JOIN tallyView t USING (bagUpKey)
 			GROUP BY k.blockKey ORDER BY k.blockName`,
@@ -187,12 +186,12 @@ export const seasonReports = [
 		sql: `SELECT "seedlot", "species", "in caches" + "planted" AS "delivered", "planted", "in caches", "days"
 			FROM (SELECT x.boxTag AS "seedlot", x.speciesCode AS "species",
 				(SELECT CAST(coalesce(sum(t.plantedQty), 0) AS INTEGER) FROM tallyView t JOIN bagUpView b USING (bagUpKey)
-					WHERE t.boxKey IN (SELECT boxKey FROM boxView y WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AND b.plantedDt >= ?1) AS "planted",
-				(SELECT CAST(coalesce(sum(${counted('s', 'y')}), 0) AS INTEGER) FROM stockView s JOIN boxView y USING (boxKey)
+					WHERE t.cropKey IN (SELECT cropKey FROM cropView y WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AND b.plantedDt >= ?1) AS "planted",
+				(SELECT CAST(coalesce(sum(${counted('s', 'y')}), 0) AS INTEGER) FROM stockView s JOIN cropView y USING (cropKey)
 					WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AS "in caches",
 				(SELECT count(DISTINCT b.plantedDt) FROM tallyView t JOIN bagUpView b USING (bagUpKey)
-					WHERE t.boxKey IN (SELECT boxKey FROM boxView y WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AND b.plantedDt >= ?1) AS "days"
-				FROM boxView x GROUP BY x.boxTag, x.speciesCode)
+					WHERE t.cropKey IN (SELECT cropKey FROM cropView y WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AND b.plantedDt >= ?1) AS "days"
+				FROM cropView x GROUP BY x.boxTag, x.speciesCode)
 			WHERE "delivered" > 0 ORDER BY "delivered" DESC`,
 		noSum: ['days'],
 	},

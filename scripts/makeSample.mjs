@@ -43,6 +43,8 @@ db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}; PRAGMA foreign_keys = ON; BEGI
 // Every version in the sample is a birth, each its own act.
 function insert(table, row) {
 	if (row.versionKey) row = { kind: 'edit', actKey: row.versionKey, ...row };
+	// The sample is one tree-planting season.
+	if (db.prepare(`SELECT 1 FROM pragma_table_info(?) WHERE name = 'workMode'`).get(table)) row = { workMode: 'planting', ...row };
 	const cols = Object.keys(row);
 	db.prepare(`INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(',')}) VALUES (${cols.map(() => '?').join(',')})`).run(
 		...Object.values(row),
@@ -78,15 +80,15 @@ const seedlots = [
 	['PLI', '63412'], ['PLI', '63418'], ['PLI', '62087'], ['PLI', '64001'],
 	['SX', '61210'], ['SX', '61377'], ['SX', '60954'], ['FDI', '42230'],
 ].map(([speciesCode, seedlot], i) => {
-	const boxKey = key('box');
+	const cropKey = key('crop');
 	const bagKey = key();
 	// The fir is a cross-border lot paid in US dollars, so CAD and USD sit side by side.
 	const [price, currency] = speciesCode === 'FDI' ? [0.15, 'USD'] : [PRICE, 'CAD'];
-	born('box', boxKey, SEASON_START, planter, { boxTag: seedlot, speciesCode, boxSizeQty: 400, bundleSizeQty: 20 });
+	born('crop', cropKey, SEASON_START, planter, { boxTag: seedlot, speciesCode, boxSizeQty: 400, bundleSizeQty: 20 });
 	born('bag', bagKey, SEASON_START, planter, {
-		boxKey, isBox: 0, pricePerTree: price, currency, sortOrder: `a${i}`,
+		cropKey, isBox: 0, pricePerTree: price, currency, sortOrder: `a${i}`,
 	});
-	return { boxKey, bagKey, speciesCode, seedlot, price, currency };
+	return { cropKey, bagKey, speciesCode, seedlot, price, currency };
 });
 
 // Blocks: ~30 ha irregular polygons near Vanderhoof, BC, strung along a haul road.
@@ -127,7 +129,7 @@ const blocks = Array.from({ length: 8 }, (_, i) => {
 		geometryJson: JSON.stringify({ type: 'Polygon', coordinates: [[...ring, ring[0]].map((p) => toLngLat(p, center))] }),
 	});
 	born('block', blockKey, SEASON_START, planter, {
-		blockName: name, allocatedQty: Math.round(areaHa * 1600), mapFeatureKey: polygonKey,
+		blockName: name, treesPerHa: 1600, mapFeatureKey: polygonKey,
 	});
 	const cacheKey = key('pin');
 	born('mapFeature', cacheKey, SEASON_START, planter, {
@@ -173,7 +175,7 @@ for (const [n, day] of days.entries()) {
 		for (const lot of lots) {
 			const bundles = lots.length === 1 ? int(10, 14) : int(5, 7);
 			born('tally', key('tly'), at, planter, {
-				bagUpKey, bagKey: lot.bagKey, boxKey: lot.boxKey, boxTag: lot.seedlot, speciesCode: lot.speciesCode,
+				bagUpKey, bagKey: lot.bagKey, cropKey: lot.cropKey, boxTag: lot.seedlot, speciesCode: lot.speciesCode,
 				plantedQty: bundles * 20, pricePerTree: lot.price, currency: lot.currency,
 			});
 		}
@@ -185,8 +187,8 @@ for (const block of blocks.filter((b) => daysOn.has(b))) {
 	const [first, last] = [daysOn.get(block)[0], daysOn.get(block).at(-1)];
 	const [lng, lat] = toLngLat([0, 0], block.center);
 	for (const [i, lot] of block.lots.entries()) {
-		const row = { mapFeatureKey: block.cacheKey, boxKey: lot.boxKey };
-		insert('allocationTable', { versionKey: key('op'), blockKey: block.blockKey, boxKey: lot.boxKey, treesQty: Math.round((block.areaHa * 1600) / block.lots.length), sortOrder: i, createdAt: SEASON_START, allocatedByKey: checker });
+		const row = { mapFeatureKey: block.cacheKey, cropKey: lot.cropKey };
+		insert('allocationTable', { versionKey: key('op'), blockKey: block.blockKey, cropKey: lot.cropKey, treesQty: Math.round((block.areaHa * 1600) / block.lots.length), sortOrder: i, createdAt: SEASON_START, allocatedByKey: checker });
 		insert('deliveryTable', { ...row, versionKey: key('op'), deliveryKind: 'delivered', lat, lng, accuracyM: int(3, 12), distanceM: int(0, 25), createdAt: isoAt(first, 6 * 60 + i), deliveredByKey: checker });
 		insert('stockTable', { ...row, versionKey: key('op'), boxQty: int(0, 4), createdAt: isoAt(last, 17 * 60 + i), countedByKey: planter });
 	}

@@ -26,7 +26,7 @@ test.each([
 	['days', ['date', 'trees', 'bag-ups']],
 	['block-totals', ['block', 'allocated', 'trees', 'days']],
 	['seedlots', ['seedlot', 'species', 'delivered', 'planted', 'in caches', 'days']],
-	['blocks', ['block', 'allocated', 'calculated', 'delivered', 'planted', 'in caches', 'left to plant']],
+	['blocks', ['block', 'allocated', 'delivered', 'planted', 'in caches', 'left to plant']],
 	['surveys', ['survey', 'block', 'date', 'stems/ha', 'total ha', 'plots', 'occupied', 'trees planted', 'faults', 'missed', 'excess', 'Density', 'Quality', 'Payment']],
 	['quality', ['plot no.', 'plot ID', 'survey', 'block', 'trees planted', 'plantable spots', 'excess', 'credit', 'unsatisfactory', 'comments', 'faults', 'time', 'Open LoCode', 'surveyor', 'occupied']],
 	['bag-ups', ['date', 'time', 'planter', 'work', 'block', 'place', 'tallies', 'trees']],
