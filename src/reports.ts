@@ -1,4 +1,4 @@
-const lot = (a: string) => `trim(coalesce(${a}.speciesCode, '') || '/' || coalesce(${a}.boxTag, ''), '/')`;
+const lot = (a: string) => `trim(coalesce(${a}.speciesKey, '') || '/' || coalesce(${a}.boxTag, ''), '/')`;
 const person = (a: string) => `coalesce(nullif(${a}.alias, ''), ${a}.username)`;
 const counted = (s: string, x: string) => `coalesce(${s}.treesQty, round(${s}.boxQty * ${x}.boxSizeQty))`;
 // A 3.99 m quality plot: 50.01 m², so 199.94 plots to the hectare.
@@ -184,14 +184,14 @@ export const seasonReports = [
 		description: 'Each seedlot (box tag): delivered, planted, and still in the caches.',
 		// Delivered = in caches + planted, as Blocks counts it; the caches hold what is there now, whatever the season.
 		sql: `SELECT "seedlot", "species", "in caches" + "planted" AS "delivered", "planted", "in caches", "days"
-			FROM (SELECT x.boxTag AS "seedlot", x.speciesCode AS "species",
+			FROM (SELECT x.boxTag AS "seedlot", x.speciesKey AS "species",
 				(SELECT CAST(coalesce(sum(t.plantedQty), 0) AS INTEGER) FROM tallyView t JOIN bagUpView b USING (bagUpKey)
-					WHERE t.cropKey IN (SELECT cropKey FROM cropView y WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AND b.plantedDt >= ?1) AS "planted",
+					WHERE t.cropKey IN (SELECT cropKey FROM cropView y WHERE y.boxTag = x.boxTag AND y.speciesKey IS x.speciesKey) AND b.plantedDt >= ?1) AS "planted",
 				(SELECT CAST(coalesce(sum(${counted('s', 'y')}), 0) AS INTEGER) FROM stockView s JOIN cropView y USING (cropKey)
-					WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AS "in caches",
+					WHERE y.boxTag = x.boxTag AND y.speciesKey IS x.speciesKey) AS "in caches",
 				(SELECT count(DISTINCT b.plantedDt) FROM tallyView t JOIN bagUpView b USING (bagUpKey)
-					WHERE t.cropKey IN (SELECT cropKey FROM cropView y WHERE y.boxTag = x.boxTag AND y.speciesCode IS x.speciesCode) AND b.plantedDt >= ?1) AS "days"
-				FROM cropView x GROUP BY x.boxTag, x.speciesCode)
+					WHERE t.cropKey IN (SELECT cropKey FROM cropView y WHERE y.boxTag = x.boxTag AND y.speciesKey IS x.speciesKey) AND b.plantedDt >= ?1) AS "days"
+				FROM cropView x GROUP BY x.boxTag, x.speciesKey)
 			WHERE "delivered" > 0 ORDER BY "delivered" DESC`,
 		noSum: ['days'],
 	},

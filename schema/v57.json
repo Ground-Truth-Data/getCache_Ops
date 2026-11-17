@@ -202,7 +202,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "speciesCode",
+					"name": "speciesKey",
 					"type": "TEXT"
 				},
 				{
@@ -1022,7 +1022,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "speciesCode",
+					"name": "speciesKey",
 					"type": "TEXT"
 				},
 				{
@@ -1076,7 +1076,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "speciesCode",
+					"name": "speciesKey",
 					"type": "TEXT"
 				},
 				{
@@ -2552,6 +2552,166 @@
 			]
 		},
 		{
+			"name": "speciesMarkTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isStarred",
+					"type": "INTEGER"
+				},
+				{
+					"name": "alias",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "speciesMarkView",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "isStarred",
+					"type": "INT"
+				},
+				{
+					"name": "alias",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "speciesTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "commonName",
+					"type": "TEXT"
+				},
+				{
+					"name": "scientificName",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesGroup",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
+			"name": "speciesView",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "versionKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "commonName",
+					"type": "TEXT"
+				},
+				{
+					"name": "scientificName",
+					"type": "TEXT"
+				},
+				{
+					"name": "speciesGroup",
+					"type": "TEXT"
+				},
+				{
+					"name": "createdAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "replacesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "kind",
+					"type": "TEXT"
+				},
+				{
+					"name": "actKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
 			"name": "stockTable",
 			"kind": "table",
 			"columns": [
@@ -2686,7 +2846,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "speciesCode",
+					"name": "speciesKey",
 					"type": "TEXT"
 				},
 				{
@@ -2756,7 +2916,7 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "speciesCode",
+					"name": "speciesKey",
 					"type": "TEXT"
 				},
 				{

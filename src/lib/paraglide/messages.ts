@@ -1,6 +1,7 @@
-// The strings rapper/gc reaches for through $parent. Ops is English only.
-export const m = {
-	gc_edit_replaced: () => 'Your edit was replaced',
-	gc_edited_by: ({ name }: { name: string }) => `edited by ${name}`,
-	gc_edited_since_made: () => 'Edited since it was made',
-};
+import en from '../../../_rapper/gc/messages/en.json';
+
+// The strings rapper/gc reaches for through $parent: rapper's own English, so a new one never goes missing here.
+type Message = (params?: Record<string, unknown>) => string;
+export const m: Record<string, Message> = Object.fromEntries(
+	Object.entries(en).map(([key, text]): [string, Message] => [key, (params = {}) => text.replace(/\{(\w+)\}/g, (_, name) => String(params[name]))]),
+);

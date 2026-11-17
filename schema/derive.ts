@@ -19,7 +19,7 @@ export const VERSION_KEYS = {
 	personTable: "personKey",
 } as const;
 
-export const ROWS_LIVE = ["crewTable", "orgKindTable", "orgTagTable", "orgNameTable", "stockTable", "deliveryTable", "allocationTable"] as const;
+export const ROWS_LIVE = ["crewTable", "orgKindTable", "orgTagTable", "orgNameTable", "stockTable", "deliveryTable", "allocationTable", "speciesTable", "speciesMarkTable"] as const;
 
 /** The columns naming one thing, whose newest head is its only live row. A
  *  table missing here keeps every head live: each row is its own thing. */
@@ -31,6 +31,8 @@ const THING: Partial<Record<string, readonly string[]>> = {
 	deliveryTable: ["mapFeatureKey", "cropKey"],
 	// A plan is saved whole, every line stamped alike: the newest save per block wins.
 	allocationTable: ["blockKey"],
+	speciesTable: ["speciesKey"],
+	speciesMarkTable: ["speciesKey"],
 };
 export const WHOLE_SAVES = new Set(["allocationTable"]);
 export const thingOf = (table: string): readonly string[] => THING[table] ?? [];

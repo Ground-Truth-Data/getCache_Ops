@@ -173,7 +173,7 @@ CREATE TABLE `cropTable` (
 	`cropKey` text NOT NULL,
 	`workMode` text NOT NULL,
 	`boxTag` text DEFAULT '' NOT NULL,
-	`speciesCode` text DEFAULT '' NOT NULL,
+	`speciesKey` text DEFAULT '' NOT NULL,
 	`boxSizeQty` real,
 	`bundleSizeQty` real,
 	`createdAt` text DEFAULT '' NOT NULL,
@@ -521,6 +521,36 @@ CREATE TABLE `settingTable` (
 	CONSTRAINT "settingTable_mode_global" CHECK("settingTable"."settingKey" <> 'mode' OR "settingTable"."workMode" = '')
 );
 --> statement-breakpoint
+CREATE TABLE `speciesMarkTable` (
+	`versionKey` text PRIMARY KEY NOT NULL,
+	`speciesKey` text NOT NULL,
+	`isStarred` integer,
+	`alias` text DEFAULT '' NOT NULL,
+	`createdAt` text DEFAULT '' NOT NULL,
+	`replacesKey` text DEFAULT '' NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
+	CONSTRAINT "speciesMarkTable_isStarred" CHECK("speciesMarkTable"."isStarred" IS NULL OR "speciesMarkTable"."isStarred" IN (0, 1))
+);
+--> statement-breakpoint
+CREATE INDEX `speciesMarkTable_key_idx` ON `speciesMarkTable` (`speciesKey`);--> statement-breakpoint
+CREATE INDEX `speciesMarkTable_replaces_idx` ON `speciesMarkTable` (`replacesKey`);--> statement-breakpoint
+CREATE TABLE `speciesTable` (
+	`versionKey` text PRIMARY KEY NOT NULL,
+	`speciesKey` text NOT NULL,
+	`commonName` text NOT NULL,
+	`scientificName` text DEFAULT '' NOT NULL,
+	`speciesGroup` text NOT NULL,
+	`createdAt` text DEFAULT '' NOT NULL,
+	`replacesKey` text DEFAULT '' NOT NULL,
+	`kind` text NOT NULL,
+	`actKey` text NOT NULL,
+	CONSTRAINT "speciesTable_speciesGroup" CHECK("speciesTable"."speciesGroup" IN ('tree', 'mushroom', 'fruit')),
+	CONSTRAINT "speciesTable_commonName" CHECK(trim("speciesTable"."commonName") <> '')
+);
+--> statement-breakpoint
+CREATE INDEX `speciesTable_key_idx` ON `speciesTable` (`speciesKey`);--> statement-breakpoint
+CREATE INDEX `speciesTable_replaces_idx` ON `speciesTable` (`replacesKey`);--> statement-breakpoint
 CREATE TABLE `stockTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`mapFeatureKey` text NOT NULL,
@@ -555,7 +585,7 @@ CREATE TABLE `tallyTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`tallyKey` text NOT NULL,
 	`boxTag` text DEFAULT '' NOT NULL,
-	`speciesCode` text DEFAULT '' NOT NULL,
+	`speciesKey` text DEFAULT '' NOT NULL,
 	`plantedQty` real NOT NULL,
 	`pricePerTree` real,
 	`currency` text,
@@ -606,13 +636,13 @@ CREATE TABLE IF NOT EXISTS qaPlotView AS SELECT v.versionKey, v.qaPlotKey, v.pla
 CREATE INDEX qaPlotView_thing_idx ON qaPlotView (qaPlotKey);
 CREATE TABLE IF NOT EXISTS blockView AS SELECT v.versionKey, v.blockKey, v.blockName, v.treesPerHa, v.mapFeatureKey, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM blockTable v JOIN blockEntity e USING (blockKey) WHERE false;
 CREATE INDEX blockView_thing_idx ON blockView (blockKey);
-CREATE TABLE IF NOT EXISTS cropView AS SELECT v.versionKey, v.cropKey, v.workMode, v.boxTag, v.speciesCode, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM cropTable v JOIN cropEntity e USING (cropKey) WHERE false;
+CREATE TABLE IF NOT EXISTS cropView AS SELECT v.versionKey, v.cropKey, v.workMode, v.boxTag, v.speciesKey, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM cropTable v JOIN cropEntity e USING (cropKey) WHERE false;
 CREATE INDEX cropView_thing_idx ON cropView (cropKey);
 CREATE TABLE IF NOT EXISTS bagView AS SELECT v.versionKey, v.bagKey, v.boxQty, v.bundleQty, v.pricePerTree, v.currency, v.isBox, v.isBagged, v.bundlesInBags, v.bundlesOnGround, v.halfBoxParity, v.sortOrder, v.cropKey, v.workMode, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM bagTable v JOIN bagEntity e USING (bagKey) WHERE false;
 CREATE INDEX bagView_thing_idx ON bagView (bagKey);
 CREATE TABLE IF NOT EXISTS bagUpView AS SELECT v.versionKey, v.bagUpKey, v.plantedDt, v.workMode, v.blockKey, v.mapFeatureKey, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM bagUpTable v JOIN bagUpEntity e USING (bagUpKey) WHERE false;
 CREATE INDEX bagUpView_thing_idx ON bagUpView (bagUpKey);
-CREATE TABLE IF NOT EXISTS tallyView AS SELECT v.versionKey, v.tallyKey, v.boxTag, v.speciesCode, v.plantedQty, v.pricePerTree, v.currency, v.bagUpKey, v.bagKey, v.cropKey, v.workMode, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM tallyTable v JOIN tallyEntity e USING (tallyKey) WHERE false;
+CREATE TABLE IF NOT EXISTS tallyView AS SELECT v.versionKey, v.tallyKey, v.boxTag, v.speciesKey, v.plantedQty, v.pricePerTree, v.currency, v.bagUpKey, v.bagKey, v.cropKey, v.workMode, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM tallyTable v JOIN tallyEntity e USING (tallyKey) WHERE false;
 CREATE INDEX tallyView_thing_idx ON tallyView (tallyKey);
 CREATE TABLE IF NOT EXISTS packageView AS SELECT v.versionKey, v.packageKey, v.fileName, v.direction, v.packageType, v.plantedDt, v.sentAt, v.receivedAt, v.rawJson, v.byteSize, v.logLine, v.countsJson, v.sentVersionKeysJson, v.senderHighWaterAt, v.shareLinkId, v.shareDeleteToken, v.shareAccess, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM packageTable v JOIN packageEntity e USING (packageKey) WHERE false;
 CREATE INDEX packageView_thing_idx ON packageView (packageKey);
@@ -632,7 +662,11 @@ CREATE TABLE IF NOT EXISTS deliveryView AS SELECT * FROM deliveryTable WHERE fal
 CREATE INDEX deliveryView_thing_idx ON deliveryView (mapFeatureKey, cropKey);
 CREATE TABLE IF NOT EXISTS allocationView AS SELECT * FROM allocationTable WHERE false;
 CREATE INDEX allocationView_thing_idx ON allocationView (blockKey);
-CREATE VIEW tallyFlagView AS SELECT * FROM (WITH line AS (SELECT t.*, b.plantedDt, b.createdByKey AS personKey, COALESCE(t.currency, '') || '/' || t.speciesCode AS unit, b.plantedDt AS day,
+CREATE TABLE IF NOT EXISTS speciesView AS SELECT * FROM speciesTable WHERE false;
+CREATE INDEX speciesView_thing_idx ON speciesView (speciesKey);
+CREATE TABLE IF NOT EXISTS speciesMarkView AS SELECT * FROM speciesMarkTable WHERE false;
+CREATE INDEX speciesMarkView_thing_idx ON speciesMarkView (speciesKey);
+CREATE VIEW tallyFlagView AS SELECT * FROM (WITH line AS (SELECT t.*, b.plantedDt, b.createdByKey AS personKey, COALESCE(t.currency, '') || '/' || t.speciesKey AS unit, b.plantedDt AS day,
 	        t.plantedQty * t.pricePerTree AS total,
 	        SUM(t.plantedQty * t.pricePerTree) OVER (PARTITION BY b.createdByKey, b.plantedDt, t.currency) AS dayTotal,
 	        ROW_NUMBER() OVER (PARTITION BY b.createdByKey, b.plantedDt, t.currency ORDER BY t.actAt DESC, t.actKey DESC, t.versionKey DESC) AS fromLast

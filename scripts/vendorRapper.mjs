@@ -25,6 +25,8 @@ const files = [
 	// The one plugins list, the phone's too.
 	...['PluginCard.svelte', 'PluginList.svelte', 'ago.ts'].map((f) => `gc/${f}`),
 	'gc/iconPaths.ts',
+	// Every string the kit above asks $parent for: src/lib/paraglide/messages.ts serves them.
+	'gc/messages/en.json',
 	...['pen_edit_icon_white', 'note_icon_white'].map((f) => `gc/assets/${f}.webp`),
 	'rig/assets/arrowIconGold.webp',
 ];

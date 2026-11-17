@@ -79,16 +79,16 @@ const PRICE = 0.18;
 const seedlots = [
 	['PLI', '63412'], ['PLI', '63418'], ['PLI', '62087'], ['PLI', '64001'],
 	['SX', '61210'], ['SX', '61377'], ['SX', '60954'], ['FDI', '42230'],
-].map(([speciesCode, seedlot], i) => {
+].map(([speciesKey, seedlot], i) => {
 	const cropKey = key('crop');
 	const bagKey = key();
 	// The fir is a cross-border lot paid in US dollars, so CAD and USD sit side by side.
-	const [price, currency] = speciesCode === 'FDI' ? [0.15, 'USD'] : [PRICE, 'CAD'];
-	born('crop', cropKey, SEASON_START, planter, { boxTag: seedlot, speciesCode, boxSizeQty: 400, bundleSizeQty: 20 });
+	const [price, currency] = speciesKey === 'FDI' ? [0.15, 'USD'] : [PRICE, 'CAD'];
+	born('crop', cropKey, SEASON_START, planter, { boxTag: seedlot, speciesKey, boxSizeQty: 400, bundleSizeQty: 20 });
 	born('bag', bagKey, SEASON_START, planter, {
 		cropKey, isBox: 0, pricePerTree: price, currency, sortOrder: `a${i}`,
 	});
-	return { cropKey, bagKey, speciesCode, seedlot, price, currency };
+	return { cropKey, bagKey, speciesKey, seedlot, price, currency };
 });
 
 // Blocks: ~30 ha irregular polygons near Vanderhoof, BC, strung along a haul road.
@@ -175,7 +175,7 @@ for (const [n, day] of days.entries()) {
 		for (const lot of lots) {
 			const bundles = lots.length === 1 ? int(10, 14) : int(5, 7);
 			born('tally', key('tly'), at, planter, {
-				bagUpKey, bagKey: lot.bagKey, cropKey: lot.cropKey, boxTag: lot.seedlot, speciesCode: lot.speciesCode,
+				bagUpKey, bagKey: lot.bagKey, cropKey: lot.cropKey, boxTag: lot.seedlot, speciesKey: lot.speciesKey,
 				plantedQty: bundles * 20, pricePerTree: lot.price, currency: lot.currency,
 			});
 		}
@@ -201,7 +201,7 @@ for (const block of blocks.filter((b) => daysOn.has(b))) {
 	const qaSurveyKey = key('srv');
 	born('qaSurvey', qaSurveyKey, isoAt(surveyDay, 8 * 60), checker, {
 		surveyName: block.name, areaHa: +block.areaHa.toFixed(1), treesPerHa: 1600,
-		speciesChoicesJson: JSON.stringify([...new Set(block.lots.map((l) => l.speciesCode))]),
+		speciesChoicesJson: JSON.stringify([...new Set(block.lots.map((l) => l.speciesKey))]),
 		mapKey, blockKey: block.blockKey,
 	});
 	const xs = block.ring.map(([x]) => x), ys = block.ring.map(([, y]) => y);
