@@ -1,7 +1,7 @@
 CREATE TABLE `allocationTable` (
 	`versionKey` text PRIMARY KEY NOT NULL,
 	`blockKey` text NOT NULL,
-	`treesQty` real NOT NULL,
+	`treesQty` real,
 	`sortOrder` integer DEFAULT 0 NOT NULL,
 	`cropKey` text,
 	`workMode` text NOT NULL,
@@ -174,6 +174,7 @@ CREATE TABLE `cropTable` (
 	`workMode` text NOT NULL,
 	`boxTag` text DEFAULT '' NOT NULL,
 	`speciesKey` text DEFAULT '' NOT NULL,
+	`container` text,
 	`boxSizeQty` real,
 	`bundleSizeQty` real,
 	`createdAt` text DEFAULT '' NOT NULL,
@@ -184,6 +185,7 @@ CREATE TABLE `cropTable` (
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`cropKey`,`workMode`) REFERENCES `cropEntity`(`cropKey`,`workMode`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "cropTable_workMode" CHECK("cropTable"."workMode" IN ('planting', 'fruit', 'cones', 'seeds', 'shrooms')),
+	CONSTRAINT "cropTable_container" CHECK("cropTable"."container" IS NULL OR "cropTable"."container" IN ('box', 'tray', 'singles', 'bag', 'bundle', 'stakes')),
 	CONSTRAINT "cropTable_sizes" CHECK(("cropTable"."boxSizeQty" IS NULL OR "cropTable"."boxSizeQty" > 0)
 			  AND ("cropTable"."bundleSizeQty" IS NULL OR "cropTable"."bundleSizeQty" > 0))
 );
@@ -215,6 +217,14 @@ CREATE TABLE `deliveryTable` (
 --> statement-breakpoint
 CREATE INDEX `deliveryTable_key_idx` ON `deliveryTable` (`mapFeatureKey`,`cropKey`);--> statement-breakpoint
 CREATE INDEX `deliveryTable_replaces_idx` ON `deliveryTable` (`replacesKey`);--> statement-breakpoint
+CREATE TABLE `deviceKeyTable` (
+	`deviceKey` text NOT NULL,
+	`personKey` text NOT NULL,
+	PRIMARY KEY(`deviceKey`, `personKey`),
+	FOREIGN KEY (`personKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
+);
+--> statement-breakpoint
+CREATE INDEX `deviceKeyTable_person_idx` ON `deviceKeyTable` (`personKey`);--> statement-breakpoint
 CREATE TABLE `editNoteTable` (
 	`noteKey` text PRIMARY KEY NOT NULL,
 	`tableName` text NOT NULL,
@@ -238,9 +248,11 @@ CREATE TABLE `mapEntity` (
 --> statement-breakpoint
 CREATE TABLE `mapFeatureEntity` (
 	`mapFeatureKey` text PRIMARY KEY NOT NULL,
+	`workMode` text,
 	`createdAt` text NOT NULL,
 	`createdByKey` text NOT NULL,
-	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
+	FOREIGN KEY (`createdByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
+	CONSTRAINT "mapFeatureEntity_workMode" CHECK("mapFeatureEntity"."workMode" IS NULL OR "mapFeatureEntity"."workMode" IN ('planting', 'fruit', 'cones', 'seeds', 'shrooms'))
 );
 --> statement-breakpoint
 CREATE TABLE `mapFeatureTable` (
@@ -260,6 +272,7 @@ CREATE TABLE `mapFeatureTable` (
 	`linkedBlockKey` text,
 	`mergedFromJson` text DEFAULT '' NOT NULL,
 	`editorName` text DEFAULT '' NOT NULL,
+	`workMode` text,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
 	`kind` text NOT NULL,
@@ -269,6 +282,7 @@ CREATE TABLE `mapFeatureTable` (
 	FOREIGN KEY (`mapKey`) REFERENCES `mapEntity`(`mapKey`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`linkedBlockKey`) REFERENCES `blockEntity`(`blockKey`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`editedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
+	CONSTRAINT "mapFeatureTable_workMode" CHECK("mapFeatureTable"."workMode" IS NULL OR "mapFeatureTable"."workMode" IN ('planting', 'fruit', 'cones', 'seeds', 'shrooms')),
 	CONSTRAINT "mapFeatureTable_geometryJson_bare" CHECK("mapFeatureTable"."geometryJson" IS NULL OR (json_valid("mapFeatureTable"."geometryJson")
 			  AND json_extract("mapFeatureTable"."geometryJson", '$.type') IN ('Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon')
 			  AND json_type("mapFeatureTable"."geometryJson", '$.properties') IS NULL)),
@@ -392,9 +406,10 @@ CREATE TABLE `personEntity` (
 );
 --> statement-breakpoint
 CREATE TABLE `personIdTable` (
-	`personId` text PRIMARY KEY NOT NULL,
+	`personId` text NOT NULL,
 	`personKey` text NOT NULL,
 	`createdAt` text DEFAULT '' NOT NULL,
+	PRIMARY KEY(`personId`, `personKey`),
 	FOREIGN KEY (`personKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
@@ -408,6 +423,8 @@ CREATE TABLE `personTable` (
 	`colorPickedAt` text DEFAULT '' NOT NULL,
 	`sameAsKey` text,
 	`hiddenAt` text,
+	`alwaysPreviewAt` text,
+	`starredAt` text,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
 	`kind` text NOT NULL,
@@ -516,7 +533,7 @@ CREATE TABLE `settingTable` (
 	`value` text NOT NULL,
 	`updatedAt` text NOT NULL,
 	PRIMARY KEY(`settingKey`, `workMode`),
-	CONSTRAINT "settingTable_settingKey" CHECK("settingTable"."settingKey" IN ('mode', 'container', 'currency', 'distance', 'price', 'area', 'boxSize', 'bundleSize', 'measure', 'majorVessel', 'minorVessel')),
+	CONSTRAINT "settingTable_settingKey" CHECK("settingTable"."settingKey" IN ('mode', 'container', 'currency', 'distance', 'price', 'area', 'boxSize', 'bundleSize', 'measure', 'majorVessel', 'minorVessel', 'treesPerHa')),
 	CONSTRAINT "settingTable_workMode" CHECK("settingTable"."workMode" = '' OR "settingTable"."workMode" IN ('planting', 'fruit', 'cones', 'seeds', 'shrooms')),
 	CONSTRAINT "settingTable_mode_global" CHECK("settingTable"."settingKey" <> 'mode' OR "settingTable"."workMode" = '')
 );
@@ -557,6 +574,7 @@ CREATE TABLE `stockTable` (
 	`cropKey` text NOT NULL,
 	`workMode` text NOT NULL,
 	`boxQty` real,
+	`bundleQty` real,
 	`treesQty` real,
 	`createdAt` text DEFAULT '' NOT NULL,
 	`replacesKey` text DEFAULT '' NOT NULL,
@@ -567,8 +585,8 @@ CREATE TABLE `stockTable` (
 	FOREIGN KEY (`countedByKey`) REFERENCES `personEntity`(`personKey`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`cropKey`,`workMode`) REFERENCES `cropEntity`(`cropKey`,`workMode`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "stockTable_workMode" CHECK("stockTable"."workMode" IN ('planting', 'fruit', 'cones', 'seeds', 'shrooms')),
-	CONSTRAINT "stockTable_oneQty" CHECK(("stockTable"."boxQty" IS NULL) <> ("stockTable"."treesQty" IS NULL)),
 	CONSTRAINT "stockTable_boxQty" CHECK("stockTable"."boxQty" >= 0),
+	CONSTRAINT "stockTable_bundleQty" CHECK("stockTable"."bundleQty" >= 0),
 	CONSTRAINT "stockTable_treesQty" CHECK("stockTable"."treesQty" >= 0)
 );
 --> statement-breakpoint
@@ -628,7 +646,7 @@ CREATE TABLE `userProfile` (
 
 CREATE TABLE IF NOT EXISTS mapView AS SELECT v.versionKey, v.mapKey, v.mapName, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM mapTable v JOIN mapEntity e USING (mapKey) WHERE false;
 CREATE INDEX mapView_thing_idx ON mapView (mapKey);
-CREATE TABLE IF NOT EXISTS mapFeatureView AS SELECT v.versionKey, v.mapFeatureKey, v.featureName, v.featureType, v.geometryJson, v.featureDesc, v.featureDataJson, v.pinIcon, v.fillOpacity, v.isTitleShown, v.overlayJson, v.featureOrigin, v.mapKey, v.linkedBlockKey, v.mergedFromJson, v.editorName, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM mapFeatureTable v JOIN mapFeatureEntity e USING (mapFeatureKey) WHERE false;
+CREATE TABLE IF NOT EXISTS mapFeatureView AS SELECT v.versionKey, v.mapFeatureKey, v.featureName, v.featureType, v.geometryJson, v.featureDesc, v.featureDataJson, v.pinIcon, v.fillOpacity, v.isTitleShown, v.overlayJson, v.featureOrigin, v.mapKey, v.linkedBlockKey, v.mergedFromJson, v.editorName, v.workMode, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM mapFeatureTable v JOIN mapFeatureEntity e USING (mapFeatureKey) WHERE false;
 CREATE INDEX mapFeatureView_thing_idx ON mapFeatureView (mapFeatureKey);
 CREATE TABLE IF NOT EXISTS qaSurveyView AS SELECT v.versionKey, v.qaSurveyKey, v.surveyName, v.areaHa, v.treesPerHa, v.speciesChoicesJson, v.mapKey, v.blockKey, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM qaSurveyTable v JOIN qaSurveyEntity e USING (qaSurveyKey) WHERE false;
 CREATE INDEX qaSurveyView_thing_idx ON qaSurveyView (qaSurveyKey);
@@ -636,7 +654,7 @@ CREATE TABLE IF NOT EXISTS qaPlotView AS SELECT v.versionKey, v.qaPlotKey, v.pla
 CREATE INDEX qaPlotView_thing_idx ON qaPlotView (qaPlotKey);
 CREATE TABLE IF NOT EXISTS blockView AS SELECT v.versionKey, v.blockKey, v.blockName, v.treesPerHa, v.mapFeatureKey, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM blockTable v JOIN blockEntity e USING (blockKey) WHERE false;
 CREATE INDEX blockView_thing_idx ON blockView (blockKey);
-CREATE TABLE IF NOT EXISTS cropView AS SELECT v.versionKey, v.cropKey, v.workMode, v.boxTag, v.speciesKey, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM cropTable v JOIN cropEntity e USING (cropKey) WHERE false;
+CREATE TABLE IF NOT EXISTS cropView AS SELECT v.versionKey, v.cropKey, v.workMode, v.boxTag, v.speciesKey, v.container, v.boxSizeQty, v.bundleSizeQty, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM cropTable v JOIN cropEntity e USING (cropKey) WHERE false;
 CREATE INDEX cropView_thing_idx ON cropView (cropKey);
 CREATE TABLE IF NOT EXISTS bagView AS SELECT v.versionKey, v.bagKey, v.boxQty, v.bundleQty, v.pricePerTree, v.currency, v.isBox, v.isBagged, v.bundlesInBags, v.bundlesOnGround, v.halfBoxParity, v.sortOrder, v.cropKey, v.workMode, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM bagTable v JOIN bagEntity e USING (bagKey) WHERE false;
 CREATE INDEX bagView_thing_idx ON bagView (bagKey);
@@ -646,7 +664,7 @@ CREATE TABLE IF NOT EXISTS tallyView AS SELECT v.versionKey, v.tallyKey, v.boxTa
 CREATE INDEX tallyView_thing_idx ON tallyView (tallyKey);
 CREATE TABLE IF NOT EXISTS packageView AS SELECT v.versionKey, v.packageKey, v.fileName, v.direction, v.packageType, v.plantedDt, v.sentAt, v.receivedAt, v.rawJson, v.byteSize, v.logLine, v.countsJson, v.sentVersionKeysJson, v.senderHighWaterAt, v.shareLinkId, v.shareDeleteToken, v.shareAccess, e.createdAt, v.replacesKey, v.kind, v.actKey, v.editedByKey, e.createdByKey FROM packageTable v JOIN packageEntity e USING (packageKey) WHERE false;
 CREATE INDEX packageView_thing_idx ON packageView (packageKey);
-CREATE TABLE IF NOT EXISTS personView AS SELECT v.versionKey, v.personKey, v.username, v.alias, v.color, v.colorPickedAt, v.sameAsKey, v.hiddenAt, e.createdAt, v.replacesKey, v.kind, v.actKey FROM personTable v JOIN personEntity e USING (personKey) WHERE false;
+CREATE TABLE IF NOT EXISTS personView AS SELECT v.versionKey, v.personKey, v.username, v.alias, v.color, v.colorPickedAt, v.sameAsKey, v.hiddenAt, v.alwaysPreviewAt, v.starredAt, e.createdAt, v.replacesKey, v.kind, v.actKey FROM personTable v JOIN personEntity e USING (personKey) WHERE false;
 CREATE INDEX personView_thing_idx ON personView (personKey);
 CREATE TABLE IF NOT EXISTS crewView AS SELECT * FROM crewTable WHERE false;
 CREATE INDEX crewView_thing_idx ON crewView (versionKey);
@@ -661,7 +679,7 @@ CREATE INDEX stockView_thing_idx ON stockView (mapFeatureKey, cropKey);
 CREATE TABLE IF NOT EXISTS deliveryView AS SELECT * FROM deliveryTable WHERE false;
 CREATE INDEX deliveryView_thing_idx ON deliveryView (mapFeatureKey, cropKey);
 CREATE TABLE IF NOT EXISTS allocationView AS SELECT * FROM allocationTable WHERE false;
-CREATE INDEX allocationView_thing_idx ON allocationView (blockKey);
+CREATE INDEX allocationView_thing_idx ON allocationView (blockKey, workMode);
 CREATE TABLE IF NOT EXISTS speciesView AS SELECT * FROM speciesTable WHERE false;
 CREATE INDEX speciesView_thing_idx ON speciesView (speciesKey);
 CREATE TABLE IF NOT EXISTS speciesMarkView AS SELECT * FROM speciesMarkTable WHERE false;
@@ -713,28 +731,17 @@ CREATE VIEW bagUpFlagView AS SELECT * FROM (WITH line AS (SELECT b.bagUpKey, b.c
 		SELECT l.*, n.normTrees, n.madTrees, n.nTrees,
 		       TRIM(CASE WHEN n.nTrees >= 5 AND n.madTrees > 0 AND abs(0.6745 * (l.treesQty - n.normTrees) / n.madTrees) > 3.5 THEN 'trees ' || rtrim(rtrim(printf('%.2f', l.treesQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normTrees), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
 		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day);
-CREATE VIEW boxFlagView AS SELECT * FROM (WITH line AS (SELECT v.cropKey, v.boxSizeQty, v.bundleSizeQty, v.editedByKey AS personKey, '' AS unit, date(x.createdAt) AS day
-	   FROM cropView v JOIN cropTable x USING (versionKey) WHERE v.boxSizeQty IS NOT NULL OR v.bundleSizeQty IS NOT NULL),
-		days AS (SELECT DISTINCT personKey, unit, day FROM line),
-		sample AS (
-		  SELECT d.personKey, d.unit, d.day, w.boxSizeQty AS boxSizeQty, w.bundleSizeQty AS bundleSizeQty
-		    FROM days d JOIN line w ON w.personKey = d.personKey AND w.unit = d.unit AND w.day BETWEEN date(d.day, '-30 days') AND d.day),
-		ranked AS (
-		  SELECT *, COUNT(boxSizeQty) OVER (PARTITION BY personKey, unit, day) AS nBoxSize, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY boxSizeQty DESC) AS rBoxSize, COUNT(bundleSizeQty) OVER (PARTITION BY personKey, unit, day) AS nBundleSize, ROW_NUMBER() OVER (PARTITION BY personKey, unit, day ORDER BY bundleSizeQty DESC) AS rBundleSize
-		    FROM sample),
-		med AS (
-		  SELECT personKey, unit, day, MAX(nBoxSize) AS nBoxSize, AVG(CASE WHEN rBoxSize IN ((nBoxSize + 1) / 2, (nBoxSize + 2) / 2) THEN boxSizeQty END) AS normBoxSize, MAX(nBundleSize) AS nBundleSize, AVG(CASE WHEN rBundleSize IN ((nBundleSize + 1) / 2, (nBundleSize + 2) / 2) THEN bundleSizeQty END) AS normBundleSize
-		    FROM ranked GROUP BY personKey, unit, day),
-		spread AS (
-		  SELECT s.personKey, s.unit, s.day,
-		         abs(s.boxSizeQty - m.normBoxSize) AS dBoxSize, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.boxSizeQty - m.normBoxSize) DESC) AS rBoxSize, abs(s.bundleSizeQty - m.normBundleSize) AS dBundleSize, ROW_NUMBER() OVER (PARTITION BY s.personKey, s.unit, s.day ORDER BY abs(s.bundleSizeQty - m.normBundleSize) DESC) AS rBundleSize
-		    FROM sample s JOIN med m USING (personKey, unit, day)),
-		norm AS (
-		  SELECT m.*, AVG(CASE WHEN s.rBoxSize IN ((m.nBoxSize + 1) / 2, (m.nBoxSize + 2) / 2) THEN s.dBoxSize END) AS madBoxSize, AVG(CASE WHEN s.rBundleSize IN ((m.nBundleSize + 1) / 2, (m.nBundleSize + 2) / 2) THEN s.dBundleSize END) AS madBundleSize
-		    FROM med m JOIN spread s USING (personKey, unit, day) GROUP BY m.personKey, m.unit, m.day)
-		SELECT l.*, n.normBoxSize, n.madBoxSize, n.nBoxSize, n.normBundleSize, n.madBundleSize, n.nBundleSize,
-		       TRIM(CASE WHEN n.nBoxSize >= 5 AND n.madBoxSize > 0 AND abs(0.6745 * (l.boxSizeQty - n.normBoxSize) / n.madBoxSize) > 3.5 THEN 'box size ' || rtrim(rtrim(printf('%.2f', l.boxSizeQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normBoxSize), '0'), '.') || '; ' ELSE '' END || CASE WHEN n.nBundleSize >= 5 AND n.madBundleSize > 0 AND abs(0.6745 * (l.bundleSizeQty - n.normBundleSize) / n.madBundleSize) > 3.5 THEN 'bundle size ' || rtrim(rtrim(printf('%.2f', l.bundleSizeQty), '0'), '.') || ' vs usual ' || rtrim(rtrim(printf('%.2f', n.normBundleSize), '0'), '.') || '; ' ELSE '' END || '', '; ') AS flag
-		  FROM line l LEFT JOIN norm n ON n.personKey = l.personKey AND n.unit = l.unit AND n.day = l.day);
+CREATE VIEW boxFlagView AS SELECT * FROM (WITH line AS (
+	   SELECT cropKey, container, boxSizeQty, bundleSizeQty, editedByKey AS personKey
+	     FROM cropView WHERE boxSizeQty IS NOT NULL OR bundleSizeQty IS NOT NULL),
+	 kind AS (
+	   SELECT personKey, container, SUM(boxSizeQty) AS sumBox, COUNT(boxSizeQty) AS nBox, SUM(bundleSizeQty) AS sumBundle, COUNT(bundleSizeQty) AS nBundle
+	     FROM line WHERE container IS NOT NULL GROUP BY personKey, container),
+	 usual AS (
+	   SELECT l.*, (k.sumBox - COALESCE(l.boxSizeQty, 0)) / NULLIF(k.nBox - (l.boxSizeQty IS NOT NULL), 0) AS usualBox, (k.sumBundle - COALESCE(l.bundleSizeQty, 0)) / NULLIF(k.nBundle - (l.bundleSizeQty IS NOT NULL), 0) AS usualBundle
+	     FROM line l LEFT JOIN kind k USING (personKey, container))
+	 SELECT u.*, CASE WHEN u.container IS NULL OR u.container = 'singles' THEN '' ELSE COALESCE(CASE WHEN u.boxSizeQty >= 3 * u.usualBox OR 3 * u.boxSizeQty <= u.usualBox THEN u.container || ' size ' || CAST(u.boxSizeQty AS INTEGER) || ' vs usual ' || CAST(ROUND(u.usualBox) AS INTEGER) END, CASE WHEN u.bundleSizeQty >= 3 * u.usualBundle OR 3 * u.bundleSizeQty <= u.usualBundle THEN 'bundle' || ' size ' || CAST(u.bundleSizeQty AS INTEGER) || ' vs usual ' || CAST(ROUND(u.usualBundle) AS INTEGER) END, '') END AS flag
+	   FROM usual u);
 CREATE VIEW qaPlotFlagView AS SELECT * FROM (WITH line AS (SELECT v.qaPlotKey, v.plantedQty, v.editedByKey AS personKey, '' AS unit, date(x.createdAt) AS day
 	   FROM qaPlotView v JOIN qaPlotTable x USING (versionKey) WHERE v.plantedQty >= 0),
 		days AS (SELECT DISTINCT personKey, unit, day FROM line),

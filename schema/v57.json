@@ -94,6 +94,10 @@
 					"type": "TEXT"
 				},
 				{
+					"name": "container",
+					"type": "TEXT"
+				},
+				{
 					"name": "boxSizeQty",
 					"type": "REAL"
 				},
@@ -106,35 +110,11 @@
 					"type": "TEXT"
 				},
 				{
-					"name": "unit",
+					"name": "usualBox",
 					"type": ""
 				},
 				{
-					"name": "day",
-					"type": ""
-				},
-				{
-					"name": "normBoxSize",
-					"type": ""
-				},
-				{
-					"name": "madBoxSize",
-					"type": ""
-				},
-				{
-					"name": "nBoxSize",
-					"type": ""
-				},
-				{
-					"name": "normBundleSize",
-					"type": ""
-				},
-				{
-					"name": "madBundleSize",
-					"type": ""
-				},
-				{
-					"name": "nBundleSize",
+					"name": "usualBundle",
 					"type": ""
 				},
 				{
@@ -1026,6 +1006,10 @@
 					"type": "TEXT"
 				},
 				{
+					"name": "container",
+					"type": "TEXT"
+				},
+				{
 					"name": "boxSizeQty",
 					"type": "REAL"
 				},
@@ -1077,6 +1061,10 @@
 				},
 				{
 					"name": "speciesKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "container",
 					"type": "TEXT"
 				},
 				{
@@ -1238,6 +1226,20 @@
 			]
 		},
 		{
+			"name": "deviceKeyTable",
+			"kind": "table",
+			"columns": [
+				{
+					"name": "deviceKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "personKey",
+					"type": "TEXT"
+				}
+			]
+		},
+		{
 			"name": "editNoteTable",
 			"kind": "table",
 			"columns": [
@@ -1295,6 +1297,10 @@
 			"columns": [
 				{
 					"name": "mapFeatureKey",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -1373,6 +1379,10 @@
 				},
 				{
 					"name": "editorName",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -1463,6 +1473,10 @@
 				},
 				{
 					"name": "editorName",
+					"type": "TEXT"
+				},
+				{
+					"name": "workMode",
 					"type": "TEXT"
 				},
 				{
@@ -2084,6 +2098,14 @@
 					"type": "TEXT"
 				},
 				{
+					"name": "alwaysPreviewAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "starredAt",
+					"type": "TEXT"
+				},
+				{
 					"name": "createdAt",
 					"type": "TEXT"
 				},
@@ -2135,6 +2157,14 @@
 				},
 				{
 					"name": "hiddenAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "alwaysPreviewAt",
+					"type": "TEXT"
+				},
+				{
+					"name": "starredAt",
 					"type": "TEXT"
 				},
 				{
@@ -2736,6 +2766,10 @@
 					"type": "REAL"
 				},
 				{
+					"name": "bundleQty",
+					"type": "REAL"
+				},
+				{
 					"name": "treesQty",
 					"type": "REAL"
 				},
@@ -2783,6 +2817,10 @@
 				},
 				{
 					"name": "boxQty",
+					"type": "REAL"
+				},
+				{
+					"name": "bundleQty",
 					"type": "REAL"
 				},
 				{

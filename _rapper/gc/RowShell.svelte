@@ -254,13 +254,12 @@ let { title, href, onclick, tier, selected = false, active = false, inspecting =
         flex: none;
         margin-left: auto;
         text-align: right;
-        font-family: var(--rt-font-body);
+        font-family: var(--rt-font-meta);
         font-size: 0.66rem;
         font-weight: 600;
-        color: var(--rt-row-when);
+        color: var(--rust);
         white-space: nowrap;
     }
-    .rt-row__when--fresh { color: var(--rt-row-when-fresh); }
     .rt-row__when--missing { color: var(--rt-row-sep); }
     /* Visually hidden, still read by screen readers. */
     .rt-row__sr {
@@ -287,35 +286,6 @@ let { title, href, onclick, tier, selected = false, active = false, inspecting =
         font-size: 0.66rem;
         font-weight: 600;
         flex-shrink: 0;
-    }
-    .rt-row__shared {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        flex-shrink: 0;
-        color: var(--palette-sky);
-        cursor: pointer;
-        /* Over the row's tap halves, or the pill on a map with rows inside never hears a tap. */
-        z-index: 2;
-    }
-    .rt-row__shared--own {
-        height: 1.15rem;
-        padding: 0 0.5rem 0 0.35rem;
-        border-radius: 999px;
-        background: var(--palette-sky);
-        color: var(--palette-sky-ink);
-        font-family: var(--rt-font-body);
-        font-size: 0.7rem;
-        font-weight: 700;
-        line-height: 1;
-        white-space: nowrap;
-    }
-    /* 44px tap target on a pill 18px tall. */
-    .rt-row__shared::after {
-        content: "";
-        position: absolute;
-        inset: -13px -4px;
     }
     .rt-row__badge--amber { color: var(--palette-amber); border-color: var(--palette-amber); }
     .rt-row__badge--red { color: var(--palette-red); border-color: var(--palette-red); }

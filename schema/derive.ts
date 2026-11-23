@@ -29,8 +29,8 @@ const THING: Partial<Record<string, readonly string[]>> = {
 	// After an import two phones' counts can both be live: the newest said wins.
 	stockTable: ["mapFeatureKey", "cropKey"],
 	deliveryTable: ["mapFeatureKey", "cropKey"],
-	// A plan is saved whole, every line stamped alike: the newest save per block wins.
-	allocationTable: ["blockKey"],
+	// A plan is saved whole, every line stamped alike: the newest save per block and work mode wins.
+	allocationTable: ["blockKey", "workMode"],
 	speciesTable: ["speciesKey"],
 	speciesMarkTable: ["speciesKey"],
 };
