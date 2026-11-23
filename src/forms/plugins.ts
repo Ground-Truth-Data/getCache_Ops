@@ -5,7 +5,7 @@
 // given, and every form filled here, in this browser.
 import sqlite3InitModule, { type Database } from '@sqlite.org/sqlite-wasm';
 import { refused, split } from '../../_rapper/gc/form';
-import { pluginsDdl } from '../../_rapper/gc/pluginsFile';
+import { pluginsDdl } from '../../schema/pluginsFile';
 import { fresh } from '../data/auth';
 import { appHome, call } from '../company/central';
 import type { Answers, Definition, Form, Store } from './forms';

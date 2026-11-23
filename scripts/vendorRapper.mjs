@@ -16,8 +16,8 @@ const files = [
 	'gc/rowShell.css',
 	'gc/fancyButton.css',
 	'gc/form.ts',
-	'gc/pluginsFile.ts',
 	'gc/formSurvey.ts',
+	'gc/plainly.ts',
 	'gc/FormView.svelte',
 	// The inbox's furniture: Plugins draws through it.
 	...['InboxChrome', 'GoChevron', 'RowShell', 'RowGrip', 'SearchInput', 'FancyButton', 'Icon', 'IdentityPill', 'HeaderLink', 'OrgCard'].map((f) => `gc/${f}.svelte`),
@@ -42,10 +42,15 @@ if (existsSync(`${rapper}/.git`)) {
 	}
 }
 
-// schema/ likewise from getCache's last commit: its tables, and derive.ts, the phone's live rule that fills their *View tables.
+// schema/ likewise from getCache's last commit: its tables, derive.ts (the phone's live rule that fills their *View
+// tables) and the plugins file's DDL.
 const getCache = '../fetch/getCache';
 if (existsSync(`${getCache}/.git`)) {
-	for (const [from, to] of [['src/routes/(getcache)/db/sql/generatedV2/_opsDdl.sql', 'schema/v57.sql'], ['supabase/functions/_shared/derive.ts', 'schema/derive.ts']]) {
+	for (const [from, to] of [
+		['src/routes/(getcache)/db/sql/generatedV2/_opsDdl.sql', 'schema/v57.sql'],
+		['supabase/functions/_shared/derive.ts', 'schema/derive.ts'],
+		['db/pluginsFile.ts', 'schema/pluginsFile.ts'],
+	]) {
 		const bytes = execFileSync('git', ['-C', getCache, 'show', `HEAD:${from}`], { maxBuffer: 1 << 26 });
 		if (!existsSync(to) || !readFileSync(to).equals(bytes)) writeFileSync(to, bytes);
 	}

@@ -2,7 +2,7 @@ import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { resolveObjectURL } from 'node:buffer';
 import { readFileSync } from 'node:fs';
 import { expect, test, vi } from 'vitest';
-import { pluginsDdl } from '../../_rapper/gc/pluginsFile';
+import { pluginsDdl } from '../../schema/pluginsFile';
 import { disk } from './fakeDisk';
 
 vi.mock('../data/auth', () => ({ fresh: async () => null }));
